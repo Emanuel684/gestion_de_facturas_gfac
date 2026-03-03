@@ -18,6 +18,14 @@
 .invoices-title { font-size: 1.6rem; font-weight: 700; color: #1e1b4b; }
 .invoices-sub   { font-size: 0.85rem; color: #6b7280; margin-top: 0.2rem; }
 
+/* Header action buttons */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 /* Summary cards */
 .summary-row {
   display: grid;

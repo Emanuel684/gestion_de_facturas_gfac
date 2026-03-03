@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { getInvoices, deleteInvoice, getUsers } from '../api';
 import { useAuth } from '../context/AuthContext';
 import InvoiceModal from '../components/InvoiceModal';
+import UploadModal from '../components/UploadModal';
 import Navbar from '../components/Navbar';
 import './InvoicesPage.css';
 
@@ -37,6 +38,8 @@ export default function InvoicesPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [prefillData, setPrefillData] = useState(null);
 
   const fetchInvoices = useCallback(async () => {
     setLoading(true);
@@ -75,9 +78,16 @@ export default function InvoicesPage() {
       setDeletingId(null);
     }
   };
+  const openCreate = () => { setEditingInvoice(null); setPrefillData(null); setModalOpen(true); };
+  const openEdit = (inv) => { setEditingInvoice(inv); setPrefillData(null); setModalOpen(true); };
 
-  const openCreate = () => { setEditingInvoice(null); setModalOpen(true); };
-  const openEdit = (inv) => { setEditingInvoice(inv); setModalOpen(true); };
+  const handleUploadExtracted = (data) => {
+    setUploadOpen(false);
+    const extracted = data.extracted || {};
+    setPrefillData(extracted);
+    setEditingInvoice(null);
+    setModalOpen(true);
+  };
 
   const handleModalSuccess = (savedInvoice) => {
     setInvoices((prev) => {
@@ -121,7 +131,10 @@ export default function InvoicesPage() {
                 : 'Mostrando sus facturas'}
             </p>
           </div>
-          <button className="btn btn-primary" onClick={openCreate}>＋ Nueva Factura</button>
+          <div className="header-actions">
+            <button className="btn btn-secondary" onClick={() => setUploadOpen(true)}>📤 Cargar Documento</button>
+            <button className="btn btn-primary" onClick={openCreate}>＋ Nueva Factura</button>
+          </div>
         </div>
 
         {/* Summary cards */}
@@ -229,14 +242,20 @@ export default function InvoicesPage() {
             ))}
           </div>
         )}
-      </main>
-
-      {modalOpen && (
+      </main>      {modalOpen && (
         <InvoiceModal
           invoice={editingInvoice}
           users={users}
+          prefill={prefillData}
           onSuccess={handleModalSuccess}
           onClose={() => setModalOpen(false)}
+        />
+      )}
+
+      {uploadOpen && (
+        <UploadModal
+          onExtracted={handleUploadExtracted}
+          onClose={() => setUploadOpen(false)}
         />
       )}
     </>

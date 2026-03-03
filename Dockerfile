@@ -2,10 +2,12 @@ FROM python:3.13-slim
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies (gcc, pg client, tesseract OCR with Spanish language pack)
 RUN apt-get update && apt-get install -y \
     gcc \
     postgresql-client \
+    tesseract-ocr \
+    tesseract-ocr-spa \
     && rm -rf /var/lib/apt/lists/*
 
 # Install uv

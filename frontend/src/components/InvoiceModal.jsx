@@ -8,16 +8,16 @@ const STATUSES = [
   { value: 'vencida',   label: 'Vencida' },
 ];
 
-export default function InvoiceModal({ invoice, users, onSuccess, onClose }) {
+export default function InvoiceModal({ invoice, users, onSuccess, onClose, prefill }) {
   const isEdit = Boolean(invoice);
 
   const [form, setForm] = useState({
-    invoice_number:    invoice?.invoice_number ?? '',
-    supplier:          invoice?.supplier ?? '',
-    description:       invoice?.description ?? '',
-    amount:            invoice?.amount ?? '',
+    invoice_number:    invoice?.invoice_number ?? prefill?.invoice_number ?? '',
+    supplier:          invoice?.supplier ?? prefill?.supplier ?? '',
+    description:       invoice?.description ?? prefill?.description ?? '',
+    amount:            invoice?.amount ?? prefill?.amount ?? '',
     status:            invoice?.status ?? 'pendiente',
-    due_date:          invoice?.due_date ? invoice.due_date.slice(0, 16) : '',
+    due_date:          invoice?.due_date ? invoice.due_date.slice(0, 16) : prefill?.due_date ? prefill.due_date.slice(0, 16) : '',
     assigned_user_ids: invoice?.assigned_users?.map((u) => u.id) ?? [],
   });
   const [loading, setLoading] = useState(false);

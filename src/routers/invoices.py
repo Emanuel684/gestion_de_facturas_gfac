@@ -11,13 +11,14 @@ Permission rules:
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, status
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from src.db import get_db
 from src.dependencies import get_current_user
+from src.extraction import ALL_SUPPORTED_TYPES, extract_from_file
 from src.models import Invoice, InvoiceAssignee, InvoiceStatus, User, UserRole
 from src.schemas import AssignedUser, InvoiceCreate, InvoiceOut, InvoiceUpdate
 
@@ -128,6 +129,92 @@ async def list_invoices(
     result = await db.execute(query)
     invoices = result.scalars().all()
     return [_invoice_to_out(inv) for inv in invoices]
+
+
+# ── Upload & Extract ─────────────────────────────────────────────────────────
+
+MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 MB
+
+
+@router.post("/upload", status_code=status.HTTP_200_OK)
+async def upload_invoice_document(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    """
+    Upload an image, PDF, or DOCX document containing invoice data.
+    Extracts text and returns structured invoice fields that can be used
+    to pre-fill the invoice creation form.
+
+    Accepted formats: JPEG, PNG, WEBP, BMP, TIFF, PDF, DOCX.
+    Max file size: 10 MB.
+
+    Returns a JSON object with extracted fields:
+      - invoice_number, supplier, amount, description, due_date
+      - raw_text (full extracted text for reference)
+    Fields that could not be extracted are omitted.
+    """
+    # Validate file type
+    content_type = file.content_type or ""
+    filename = file.filename or "unknown"
+
+    if content_type not in ALL_SUPPORTED_TYPES:
+        # Try extension-based fallback before rejecting
+        ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+        if ext not in {"jpg", "jpeg", "png", "webp", "bmp", "tiff", "tif", "pdf", "docx"}:
+            raise HTTPException(
+                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                detail=(
+                    f"Tipo de archivo no soportado: {content_type}. "
+                    "Formatos aceptados: imágenes (JPEG, PNG), PDF, DOCX."
+                ),
+            )
+
+    # Read file with size limit
+    file_bytes = await file.read()
+    if len(file_bytes) > MAX_UPLOAD_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"El archivo excede el tamaño máximo de {MAX_UPLOAD_SIZE // (1024*1024)} MB.",
+        )
+
+    if len(file_bytes) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="El archivo está vacío.",
+        )
+
+    # Extract data
+    try:
+        extracted = extract_from_file(file_bytes, content_type, filename)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail=str(e),
+        )
+    except RuntimeError as e:
+        logger.error("Extraction library missing: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail=str(e),
+        )
+    except Exception:
+        logger.exception("Unexpected error extracting data from %s", filename)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al procesar el archivo. Intente con otro documento.",
+        )
+
+    logger.info(
+        "User id=%d uploaded %s — extracted fields: %s",
+        current_user.id, filename, list(extracted.keys()),
+    )
+
+    return {
+        "message": "Datos extraídos exitosamente" if extracted.get("invoice_number") or extracted.get("amount") else "Archivo procesado — revise los datos extraídos",
+        "extracted": extracted,
+        "filename": filename,
+    }
 
 
 # ── Create ────────────────────────────────────────────────────────────────────
