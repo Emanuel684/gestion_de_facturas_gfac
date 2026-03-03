@@ -3,6 +3,7 @@ import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import InvoicesPage from './pages/InvoicesPage';
+import UsersPage from './pages/UsersPage';
 import './App.css';
 
 export default function App() {
@@ -16,6 +17,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <InvoicesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/users"
+            element={
+              <ProtectedRoute>
+                <UsersPage />
               </ProtectedRoute>
             }
           />

@@ -34,6 +34,30 @@ class UserOut(BaseModel):
     created_at: datetime
 
 
+class UserCreate(BaseModel):
+    username: str
+    email: EmailStr
+    password: str
+    role: UserRole = UserRole.asistente
+
+    @field_validator("username")
+    @classmethod
+    def username_not_empty(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("username must not be empty")
+        if len(v) < 3:
+            raise ValueError("username must be at least 3 characters")
+        return v
+
+    @field_validator("password")
+    @classmethod
+    def password_min_length(cls, v: str) -> str:
+        if len(v) < 6:
+            raise ValueError("password must be at least 6 characters")
+        return v
+
+
 # ── Invoice ───────────────────────────────────────────────────────────────────
 
 class AssignedUser(BaseModel):

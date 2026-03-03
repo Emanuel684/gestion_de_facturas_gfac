@@ -1,0 +1,74 @@
+/* UsersPage.css — Styles for the users management page */
+
+.users-main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+.users-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.users-title { font-size: 1.6rem; font-weight: 700; color: #1e1b4b; }
+.users-sub   { font-size: 0.85rem; color: #6b7280; margin-top: 0.2rem; }
+
+/* Users grid */
+.users-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.user-card {
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.1rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+.user-card:hover {
+  box-shadow: 0 4px 20px rgba(14, 116, 144, 0.1);
+  transform: translateY(-1px);
+}
+
+.user-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.user-name  { font-size: 1.05rem; font-weight: 700; color: #111827; }
+.user-email { font-size: 0.85rem; color: #6b7280; }
+.user-since { font-size: 0.75rem; color: #9ca3af; margin-top: 0.25rem; }
+
+/* Role tags */
+.role-tag {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.role-admin    { background: #d1fae5; color: #065f46; }
+.role-contador { background: #e0f2fe; color: #0e7490; }
+.role-asistente { background: #ede9fe; color: #6d28d9; }
+
+/* Status dot */
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.status-dot.active   { background: #10b981; }
+.status-dot.inactive { background: #d1d5db; }

@@ -31,7 +31,12 @@ export default function Navbar() {
           <path d="M10 14h20M10 20h20M10 26h14" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
         </svg>
         SGF — Facturas
-      </Link>
+      </Link>      {user && (
+        <div className="navbar-links">
+          <Link to="/" className="nav-link">Facturas</Link>
+          <Link to="/users" className="nav-link">Usuarios</Link>
+        </div>
+      )}
 
       <div className="navbar-right">
         {user && (

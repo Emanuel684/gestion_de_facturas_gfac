@@ -51,3 +51,5 @@ export const deleteInvoice = (id) => api.delete(`/invoices/${id}`);
 export const getMe = () => api.get('/users/me');
 
 export const getUsers = () => api.get('/users');
+
+export const createUser = (data) => api.post('/users', data);

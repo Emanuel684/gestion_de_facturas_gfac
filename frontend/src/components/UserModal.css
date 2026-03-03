@@ -1,0 +1,3 @@
+/* UserModal.css — reuses the shared modal styles from InvoiceModal.css */
+/* No extra styles needed — the modal classes (.modal-overlay, .modal-box, etc.)
+   are already defined in InvoiceModal.css and App.css. */
