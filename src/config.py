@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables or .env file."""
 
     # Database
-    database_url: str = "postgresql+asyncpg://taskuser:taskpass@localhost:5433/taskmanager"
+    database_url: str = "postgresql+asyncpg://sgfuser:sgfpass@localhost:5433/sgf_db"
 
     # JWT
     secret_key: str = "dev-secret-key-change-in-production"

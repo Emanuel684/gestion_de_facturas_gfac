@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
-import TasksPage from './pages/TasksPage';
+import InvoicesPage from './pages/InvoicesPage';
 import './App.css';
 
 export default function App() {
@@ -15,7 +15,7 @@ export default function App() {
             path="/"
             element={
               <ProtectedRoute>
-                <TasksPage />
+                <InvoicesPage />
               </ProtectedRoute>
             }
           />

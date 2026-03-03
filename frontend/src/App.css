@@ -47,8 +47,8 @@ input[type="email"] {
   transition: border-color 0.15s;
 }
 input:focus {
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  border-color: #0e7490;
+  box-shadow: 0 0 0 3px rgba(14, 116, 144, 0.1);
 }
 
 /* ── Shared buttons ──────────────────────────────────────────── */
@@ -69,8 +69,8 @@ input:focus {
 .btn:active { transform: scale(0.97); }
 .btn:disabled { opacity: 0.55; cursor: default; }
 
-.btn-primary   { background: #4f46e5; color: #fff; }
-.btn-primary:hover:not(:disabled)   { background: #4338ca; }
+.btn-primary   { background: #0e7490; color: #fff; }
+.btn-primary:hover:not(:disabled)   { background: #0c6577; }
 
 .btn-secondary { background: #f3f4f6; color: #374151; border: 1.5px solid #e5e7eb; }
 .btn-secondary:hover:not(:disabled) { background: #e5e7eb; }
@@ -99,7 +99,7 @@ input:focus {
 .spinner {
   width: 36px; height: 36px;
   border: 3px solid #e5e7eb;
-  border-top-color: #4f46e5;
+  border-top-color: #0e7490;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }

@@ -3,14 +3,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #ede9fe 0%, #e0e7ff 100%);
+  background: linear-gradient(135deg, #ecfeff 0%, #e0f2fe 100%);
   padding: 1rem;
 }
 
 .login-card {
   background: #fff;
   border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(79, 70, 229, 0.12);
+  box-shadow: 0 10px 40px rgba(14, 116, 144, 0.12);
   padding: 2.5rem 2rem;
   width: 100%;
   max-width: 420px;
@@ -47,7 +47,7 @@
   transition: border-color 0.15s;
   outline: none;
 }
-.form-group input:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
+.form-group input:focus { border-color: #0e7490; box-shadow: 0 0 0 3px rgba(14,116,144,0.1); }
 
 .login-hint {
   margin-top: 1.5rem;

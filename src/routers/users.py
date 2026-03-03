@@ -1,5 +1,5 @@
 """
-Users router — allows listing users (for task assignment UI).
+Users router — allows listing users (for invoice assignment UI).
 """
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
@@ -24,7 +24,7 @@ async def list_users(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> list[UserOut]:
-    """List all active users. Used by the frontend for task assignment."""
+    """List all active users. Used by the frontend for invoice assignment."""
     result = await db.execute(select(User).where(User.is_active == True).order_by(User.username))
     users = result.scalars().all()
     return [UserOut.model_validate(u) for u in users]

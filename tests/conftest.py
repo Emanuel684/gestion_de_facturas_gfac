@@ -1,5 +1,5 @@
 """
-Test fixtures.
+Test fixtures — Sistema de Gestión de Facturas (SGF).
 
 Uses an in-memory SQLite database (via aiosqlite) so tests run without a
 real Postgres instance.  Each test function gets a fresh DB.
@@ -52,13 +52,13 @@ async def client(db_session: AsyncSession):
 
 
 @pytest_asyncio.fixture()
-async def owner_user(db_session: AsyncSession) -> User:
-    """Seed and return an owner-role user."""
+async def admin_user(db_session: AsyncSession) -> User:
+    """Seed and return an administrador-role user."""
     user = User(
         username="admin",
-        email="admin@test.local",
+        email="admin@sgf.local",
         hashed_password=hash_password("admin123"),
-        role=UserRole.owner,
+        role=UserRole.administrador,
     )
     db_session.add(user)
     await db_session.commit()
@@ -67,13 +67,13 @@ async def owner_user(db_session: AsyncSession) -> User:
 
 
 @pytest_asyncio.fixture()
-async def member_user(db_session: AsyncSession) -> User:
-    """Seed and return a member-role user."""
+async def contador_user(db_session: AsyncSession) -> User:
+    """Seed and return a contador-role user."""
     user = User(
-        username="alice",
-        email="alice@test.local",
-        hashed_password=hash_password("alice123"),
-        role=UserRole.member,
+        username="maria",
+        email="maria@sgf.local",
+        hashed_password=hash_password("maria123"),
+        role=UserRole.contador,
     )
     db_session.add(user)
     await db_session.commit()
@@ -82,8 +82,23 @@ async def member_user(db_session: AsyncSession) -> User:
 
 
 @pytest_asyncio.fixture()
-async def owner_token(client: AsyncClient, owner_user: User) -> str:
-    """Login as owner and return the bearer token."""
+async def asistente_user(db_session: AsyncSession) -> User:
+    """Seed and return an asistente-role user."""
+    user = User(
+        username="carlos",
+        email="carlos@sgf.local",
+        hashed_password=hash_password("carlos123"),
+        role=UserRole.asistente,
+    )
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+    return user
+
+
+@pytest_asyncio.fixture()
+async def admin_token(client: AsyncClient, admin_user: User) -> str:
+    """Login as administrador and return the bearer token."""
     resp = await client.post(
         "/api/auth/login", data={"username": "admin", "password": "admin123"}
     )
@@ -92,10 +107,20 @@ async def owner_token(client: AsyncClient, owner_user: User) -> str:
 
 
 @pytest_asyncio.fixture()
-async def member_token(client: AsyncClient, member_user: User) -> str:
-    """Login as member and return the bearer token."""
+async def contador_token(client: AsyncClient, contador_user: User) -> str:
+    """Login as contador and return the bearer token."""
     resp = await client.post(
-        "/api/auth/login", data={"username": "alice", "password": "alice123"}
+        "/api/auth/login", data={"username": "maria", "password": "maria123"}
+    )
+    assert resp.status_code == 200
+    return resp.json()["access_token"]
+
+
+@pytest_asyncio.fixture()
+async def asistente_token(client: AsyncClient, asistente_user: User) -> str:
+    """Login as asistente and return the bearer token."""
+    resp = await client.post(
+        "/api/auth/login", data={"username": "carlos", "password": "carlos123"}
     )
     assert resp.status_code == 200
     return resp.json()["access_token"]

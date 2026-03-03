@@ -1,100 +1,121 @@
-# Solution
+# SOLUTION.md — Sistema de Gestión de Facturas (SGF)
 
-## Architectural Decisions
+## Decisiones Arquitectónicas
 
 ### Backend
 
-**Async-first with FastAPI + asyncpg**
-I chose an async stack throughout (`asyncpg` driver, `AsyncSession`, `async_sessionmaker`) because FastAPI is built on ASGI and async I/O avoids blocking the event loop on DB calls. For a team-facing API this means better concurrency without needing extra worker processes.
+**Async-first con FastAPI + asyncpg**
+Se eligió un stack completamente asíncrono (`asyncpg` driver, `AsyncSession`, `async_sessionmaker`) porque FastAPI está construido sobre ASGI y la E/S asíncrona evita bloquear el event loop en llamadas a la base de datos. Para una API orientada a equipos de PYMES, esto significa mejor concurrencia sin necesidad de procesos worker adicionales.
 
-**SQLAlchemy 2.0 ORM with `Mapped` annotations**
-SQLAlchemy 2.0's `Mapped[T]` / `mapped_column()` style gives full type-checker coverage of model fields with zero boilerplate, and is the recommended modern approach over the legacy `Column()` API.
+**SQLAlchemy 2.0 ORM con anotaciones `Mapped`**
+El estilo `Mapped[T]` / `mapped_column()` de SQLAlchemy 2.0 brinda cobertura completa del type-checker sin boilerplate, y es el enfoque moderno recomendado sobre la API legacy `Column()`.
 
-**JWT via `python-jose`, passwords via `bcrypt` directly**
-`passlib` is effectively unmaintained and breaks with `bcrypt >= 4.1` (missing `__about__` attribute). I replaced it with a thin wrapper around `bcrypt` directly — two functions, no magic. JWTs carry `sub` (user id) and `role` so downstream middleware can do role checks without an extra DB query.
+**JWT via `python-jose`, contraseñas con `bcrypt` directo**
+`passlib` está efectivamente sin mantenimiento y falla con `bcrypt >= 4.1` (atributo `__about__` faltante). Se reemplazó con un wrapper delgado sobre `bcrypt` directamente — dos funciones, sin magia. Los JWTs llevan `sub` (user id) y `role` para que el middleware pueda hacer verificaciones de rol sin una consulta extra a la BD.
 
-**Role-Based Access Control (RBAC)**
-Two roles — `owner` and `member`:
-- `owner`: full visibility and edit rights over all tasks.
-- `member`: can create tasks; can only read/edit/delete tasks they created **or** are assigned to.
+**Control de Acceso Basado en Roles (RBAC)**
+Tres roles — `administrador`, `contador` y `asistente`:
+- `administrador` (Gerente): visibilidad total y derechos de edición/eliminación sobre todas las facturas.
+- `contador`: puede ver todas las facturas, crear facturas, y editar las que creó o tiene asignadas. No puede eliminar.
+- `asistente`: puede ver facturas que creó o tiene asignadas, puede crear facturas, pero no puede editar ni eliminar.
 
-This is enforced in the task router helpers `_check_task_access` and `_check_task_edit`, keeping permission logic co-located with the resource.
+Esto se aplica en los helpers del router de facturas `_check_invoice_access`, `_check_invoice_edit` y `_check_invoice_delete`, manteniendo la lógica de permisos co-localizada con el recurso.
 
-**Data model**
-Three tables: `users`, `tasks`, `task_members` (assignment join table with a unique constraint on `(task_id, user_id)`). This covers the MVP and the "task assignment" stretch goal with a clean many-to-many.
+**Modelo de datos**
+Tres tablas: `users`, `invoices`, `invoice_assignees` (tabla join con constraint único sobre `(invoice_id, user_id)`). El modelo de `Invoice` incluye: `invoice_number` (único), `supplier`, `amount` (Numeric 12,2), `due_date`, `status` (pendiente/pagada/vencida) y relación con el usuario que la registró. Esto cubre el MVP y la funcionalidad de asignación de facturas.
 
-**Seeded default users at startup**
-Registration is explicitly out of scope. On first boot the startup hook creates three users (`admin`/owner, `alice`/member, `bob`/member) if they don't already exist — idempotent and safe to re-run.
+**Usuarios predeterminados al inicio**
+El registro no es requerido. Al arrancar por primera vez, el hook de startup crea tres usuarios (`admin`/administrador, `maria`/contador, `carlos`/asistente) si no existen — idempotente y seguro de re-ejecutar.
 
 ---
 
 ### Frontend
 
 **React Router v6 + Axios**
-Simple, well-known libraries. Axios interceptors handle token injection and automatic redirect on 401 globally — no per-request boilerplate.
+Librerías simples y bien conocidas. Los interceptores de Axios manejan la inyección del token y redirección automática en 401 globalmente.
 
-**Auth flow**
-Token stored in `localStorage`. On app load `AuthContext` re-validates it against `/api/users/me` so stale or revoked tokens are caught immediately.
+**Flujo de autenticación**
+Token almacenado en `localStorage`. Al cargar la app, `AuthContext` re-valida contra `/api/users/me` para detectar tokens expirados inmediatamente.
 
-**Component structure**
+**Estructura de componentes**
 ```
-App.jsx            ← router + AuthProvider
+App.jsx              ← router + AuthProvider
 pages/
-  LoginPage        ← login form
-  TasksPage        ← task list, filter bar, CRUD actions
+  LoginPage          ← formulario de login
+  InvoicesPage       ← dashboard de facturas con resumen, filtros y CRUD
 components/
-  Navbar           ← sticky nav with user/role badge + logout
-  TaskModal        ← create / edit modal (shared)
-  ProtectedRoute   ← redirects unauthenticated users to /login
+  Navbar             ← navegación sticky con badge de rol + logout
+  InvoiceModal       ← modal para crear / editar factura (compartido)
+  ProtectedRoute     ← redirige usuarios no autenticados a /login
 context/
-  AuthContext      ← user state, signIn, signOut
-api.js             ← axios instance + all API calls
+  AuthContext        ← estado del usuario, signIn, signOut
+api.js               ← instancia axios + todas las llamadas a la API
 ```
 
-**No state management library**
-React's built-in `useState` / `useEffect` / `useContext` is sufficient for this scope. Adding Redux or Zustand would be over-engineering.
+**Dashboard con tarjetas de resumen**
+El frontend muestra tarjetas de resumen con totales por estado (Pendiente, Vencida, Pagada) en formato COP, dando visibilidad inmediata del estado financiero.
+
+**Filtros por estado y proveedor**
+Búsqueda rápida por estado (botones de filtro) y por proveedor (campo de texto), reduciendo el tiempo de búsqueda de 10-30 min a segundos como se especifica en los requisitos.
+
+**Sin librería de state management**
+`useState` / `useEffect` / `useContext` de React son suficientes para este alcance. Agregar Redux o Zustand sería sobre-ingeniería.
 
 ---
 
-### Docker / Production
+### Docker / Producción
 
-**Multi-stage frontend build**
-`node:20-alpine` builds the Vite bundle; `nginx:alpine` serves the static files. Nginx also proxies `/api/*` to the backend container so the frontend never needs CORS configuration in production — the browser only ever talks to one origin.
+**Build multi-etapa para frontend**
+`node:20-alpine` construye el bundle de Vite; `nginx:alpine` sirve los archivos estáticos. Nginx también proxifica `/api/*` al contenedor backend para que el frontend nunca necesite configuración CORS en producción.
 
-**Health check on Postgres**
-`pg_isready` health check ensures the `api` service only starts after the DB is accepting connections, preventing startup race conditions.
+**Health check en Postgres**
+`pg_isready` asegura que el servicio `api` solo arranca después de que la BD acepta conexiones.
+
+---
+
+## Impacto Económico Esperado
+
+Según el análisis de la problemática de gestión de facturas en PYMES:
+
+| Métrica | Antes (manual) | Después (SGF) | Mejora |
+|---|---|---|---|
+| Horas mensuales en procesamiento | 79-146 h | 20-50 h | **65-75% reducción** |
+| Errores de digitación | 15-20% | 1-3% | **85-90% reducción** |
+| Tiempo de búsqueda de facturas | 10-30 min | Segundos | **>95% reducción** |
+| Ahorro anual proyectado | — | $10.2M - $31.2M COP | — |
 
 ---
 
 ## Trade-offs
 
-| Decision | Trade-off |
+| Decisión | Compromiso |
 |---|---|
-| Passwords hashed with `bcrypt` directly | More control, avoids passlib's stale deps; slightly more code than `passlib.hash` |
-| SQLite in-memory for tests | Fast, zero infrastructure; tests don't cover Postgres-specific behaviour (e.g. enum types) |
-| `@app.on_event("startup")` for DB init | Deprecated in FastAPI ≥ 0.93 in favour of lifespan; fine for this scope, easy to migrate |
-| No Alembic migrations | Tables are created with `create_all` on startup — simpler for a take-home, but not suitable for production schema changes |
-| JWT expiry = 24 h | Convenient for development; production should use short-lived access tokens + refresh tokens |
+| Contraseñas con `bcrypt` directo | Más control, evita deps obsoletas de passlib; algo más de código |
+| SQLite en memoria para tests | Rápido, sin infraestructura; no cubre comportamiento específico de Postgres (ej. tipos enum) |
+| `@app.on_event("startup")` para init BD | Deprecated en FastAPI ≥ 0.93 a favor de lifespan; adecuado para este alcance |
+| Sin migraciones Alembic | Tablas creadas con `create_all` al inicio — más simple, pero no apto para cambios de esquema en producción |
+| JWT expiry = 24 h | Conveniente para desarrollo; producción debería usar tokens de corta duración + refresh tokens |
 
 ---
 
-## What I Would Improve With More Time
+## Qué Mejoraría con Más Tiempo
 
-- **Alembic migrations** — replace `create_all` with versioned migrations for safe schema evolution
-- **Refresh tokens** — short-lived JWTs (15 min) + a `/api/auth/refresh` endpoint
-- **Pagination** — `GET /api/tasks` should accept `?page=` / `?limit=` for large datasets
-- **Task comments** — a `comments` table linked to `tasks` + `users`; routes under `/api/tasks/{id}/comments`
-- **Due-date notifications** — a background task (APScheduler / Celery) that emails assignees before due dates
-- **Activity log** — an `events` table recording every create/update/delete with actor + diff
-- **Input sanitisation** — strip HTML from free-text fields before storage
-- **Rate limiting** — `slowapi` middleware on the login endpoint to prevent brute-force
-- **E2E tests** — Playwright tests against the running Docker stack
+- **Migraciones Alembic** — reemplazar `create_all` con migraciones versionadas
+- **Refresh tokens** — JWTs de corta duración (15 min) + endpoint `/api/auth/refresh`
+- **Paginación** — `GET /api/invoices` debería aceptar `?page=` / `?limit=`
+- **Carga de documentos** — adjuntar archivos PDF/imágenes de facturas (almacenamiento S3/MinIO)
+- **Notificaciones de vencimiento** — tarea en segundo plano (APScheduler/Celery) que envíe alertas antes del vencimiento
+- **Generación de reportes** — exportar datos financieros a PDF/Excel con gráficos
+- **Log de actividad** — tabla `events` registrando cada operación con actor + diff
+- **Sanitización de entrada** — limpiar HTML de campos de texto libre
+- **Rate limiting** — middleware `slowapi` en el endpoint de login
+- **Tests E2E** — tests de Playwright contra el stack Docker completo
 
 ---
 
-## How to Run
+## Cómo Ejecutar
 
-### Full stack (Docker)
+### Stack completo (Docker)
 
 ```bash
 docker compose up --build
@@ -103,36 +124,36 @@ docker compose up --build
 - Frontend: http://localhost:5173
 - API docs: http://localhost:8000/docs
 
-### Local development
+### Desarrollo local
 
 ```bash
-# 1. Start the database
+# 1. Iniciar la base de datos
 docker compose up -d db
 
-# 2. Install backend dependencies
+# 2. Instalar dependencias del backend
 uv pip install -e ".[dev]"
 
-# 3. Run the API
+# 3. Ejecutar la API
 uvicorn src.main:app --reload
 
-# 4. In a separate terminal, run the frontend
+# 4. En otra terminal, ejecutar el frontend
 cd frontend
 npm install
 npm run dev
 ```
 
-### Run tests
+### Ejecutar tests
 
 ```bash
 pytest -v
 ```
 
-Tests use an in-memory SQLite database — no running Postgres required.
+Los tests usan una base de datos SQLite en memoria — no requieren Postgres corriendo.
 
-### Default accounts
+### Cuentas predeterminadas
 
-| Username | Password | Role   |
-|----------|----------|--------|
-| admin    | admin123 | owner  |
-| alice    | alice123 | member |
-| bob      | bob123   | member |
+| Usuario | Contraseña | Rol            |
+|---------|------------|----------------|
+| admin   | admin123   | Administrador  |
+| maria   | maria123   | Contador       |
+| carlos  | carlos123  | Asistente      |

@@ -1,0 +1,163 @@
+/* InvoicesPage.css — Styles for the invoice dashboard */
+
+.invoices-main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+.invoices-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.invoices-title { font-size: 1.6rem; font-weight: 700; color: #1e1b4b; }
+.invoices-sub   { font-size: 0.85rem; color: #6b7280; margin-top: 0.2rem; }
+
+/* Summary cards */
+.summary-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.summary-card {
+  border-radius: 12px;
+  padding: 1rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.summary-label { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+.summary-value { font-size: 1.2rem; font-weight: 700; }
+.summary-pendiente { background: #fef3c7; color: #92400e; }
+.summary-vencida   { background: #fee2e2; color: #991b1b; }
+.summary-pagada    { background: #d1fae5; color: #065f46; }
+
+/* Filter bar */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+.filter-label { font-size: 0.85rem; color: #6b7280; margin-right: 0.25rem; }
+.filter-btn {
+  padding: 0.35rem 0.85rem;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 20px;
+  background: #fff;
+  font-size: 0.82rem;
+  cursor: pointer;
+  color: #374151;
+  transition: all 0.15s;
+}
+.filter-btn:hover  { border-color: #0e7490; color: #0e7490; }
+.filter-btn.active { background: #0e7490; color: #fff; border-color: #0e7490; }
+
+.supplier-search {
+  margin-left: auto;
+  padding: 0.4rem 0.75rem;
+  border: 1.5px solid #d1d5db;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  outline: none;
+  width: 220px;
+  transition: border-color 0.15s;
+}
+.supplier-search:focus { border-color: #0e7490; box-shadow: 0 0 0 3px rgba(14,116,144,0.1); }
+
+/* Invoice grid */
+.invoices-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.invoice-card {
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+.invoice-card:hover { box-shadow: 0 4px 20px rgba(14,116,144,0.1); transform: translateY(-1px); }
+
+.invoice-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.invoice-number  { font-size: 1.05rem; font-weight: 700; color: #111827; line-height: 1.4; }
+.invoice-supplier { font-size: 0.88rem; color: #374151; font-weight: 500; }
+.invoice-amount  { font-size: 1.15rem; font-weight: 700; color: #0e7490; }
+.invoice-desc    { font-size: 0.82rem; color: #6b7280; line-height: 1.5; }
+
+.invoice-meta {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.78rem;
+  color: #9ca3af;
+  flex-wrap: wrap;
+}
+
+.invoice-assignees { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-top: 0.25rem; }
+.assignee-chip {
+  background: #e0f2fe;
+  color: #0e7490;
+  border-radius: 12px;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.badge-pendiente { background: #fef3c7; color: #92400e; }
+.badge-pagada    { background: #d1fae5; color: #065f46; }
+.badge-vencida   { background: #fee2e2; color: #991b1b; }
+
+/* Action buttons on card */
+.invoice-actions { display: flex; gap: 0.3rem; }
+.icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 6px;
+  transition: background 0.12s;
+  line-height: 1;
+}
+.icon-btn.edit:hover   { background: #e0f2fe; color: #0e7490; }
+.icon-btn.delete:hover { background: #fee2e2; color: #dc2626; }
+.icon-btn:disabled     { opacity: 0.4; cursor: default; }
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #9ca3af;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.95rem;
+}

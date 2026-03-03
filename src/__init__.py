@@ -1,3 +1,3 @@
-"""Task Manager API"""
+"""Sistema de Gestión de Facturas (SGF) API"""
 
-__version__ = "0.1.0"
+__version__ = "1.0.0"

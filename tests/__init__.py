@@ -1,1 +1,1 @@
-"""Test suite for Task Manager API"""
+"""Test suite for Sistema de Gestión de Facturas (SGF) API"""

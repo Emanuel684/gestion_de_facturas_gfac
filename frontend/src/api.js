@@ -1,5 +1,5 @@
 /**
- * Axios instance pre-configured for the Task Manager API.
+ * Axios instance pre-configured for the SGF (Sistema de Gestión de Facturas) API.
  * The Vite dev proxy forwards /api/* → http://localhost:8000,
  * so we use a relative base URL (works in both dev and production builds).
  */
@@ -35,17 +35,17 @@ export const login = (username, password) => {
   return api.post('/auth/login', form);
 };
 
-// ── Tasks ─────────────────────────────────────────────────────────────────────
-export const getTasks = (status) =>
-  api.get('/tasks', { params: status ? { status } : {} });
+// ── Invoices ─────────────────────────────────────────────────────────────────
+export const getInvoices = (params = {}) =>
+  api.get('/invoices', { params });
 
-export const getTask = (id) => api.get(`/tasks/${id}`);
+export const getInvoice = (id) => api.get(`/invoices/${id}`);
 
-export const createTask = (data) => api.post('/tasks', data);
+export const createInvoice = (data) => api.post('/invoices', data);
 
-export const updateTask = (id, data) => api.put(`/tasks/${id}`, data);
+export const updateInvoice = (id, data) => api.put(`/invoices/${id}`, data);
 
-export const deleteTask = (id) => api.delete(`/tasks/${id}`);
+export const deleteInvoice = (id) => api.delete(`/invoices/${id}`);
 
 // ── Users ─────────────────────────────────────────────────────────────────────
 export const getMe = () => api.get('/users/me');

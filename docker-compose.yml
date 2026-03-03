@@ -1,17 +1,17 @@
 services:
   db:
     image: postgres:18-alpine
-    container_name: taskmanager_db
+    container_name: sgf_db
     environment:
-      POSTGRES_USER: taskuser
-      POSTGRES_PASSWORD: taskpass
-      POSTGRES_DB: taskmanager
+      POSTGRES_USER: sgfuser
+      POSTGRES_PASSWORD: sgfpass
+      POSTGRES_DB: sgf_db
     ports:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U taskuser -d taskmanager"]
+      test: ["CMD-SHELL", "pg_isready -U sgfuser -d sgf_db"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -21,7 +21,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql+asyncpg://taskuser:taskpass@db:5432/taskmanager
+      DATABASE_URL: postgresql+asyncpg://sgfuser:sgfpass@db:5432/sgf_db
       SECRET_KEY: dev-secret-key-change-in-production
       ALGORITHM: HS256
       CORS_ORIGINS: http://localhost:5173
@@ -35,7 +35,7 @@ services:
 
   frontend:
     build: ./frontend
-    container_name: taskmanager_frontend
+    container_name: sgf_frontend
     ports:
       - "5173:80"
     depends_on:
