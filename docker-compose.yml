@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:18-alpine
+    image: postgres:17-alpine
     container_name: sgf_db
     environment:
       POSTGRES_USER: sgfuser
