@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getInvoices, deleteInvoice, getUsers } from '../api';
+import { getInvoicesPage, deleteInvoice, getUsers } from '../api';
 import { useAuth } from '../context/AuthContext';
 import InvoiceModal from '../components/InvoiceModal';
 import UploadModal from '../components/UploadModal';
@@ -27,9 +27,11 @@ function formatCurrency(amount) {
   }).format(amount);
 }
 
-export default function InvoicesPage() {
-  const { user } = useAuth();
+export default function InvoicesPage() {  const { user } = useAuth();
   const [invoices, setInvoices] = useState([]);
+  const [hasNext, setHasNext] = useState(false);
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 10;
   const [users, setUsers] = useState([]);
   const [statusFilter, setStatusFilter] = useState('');
   const [supplierSearch, setSupplierSearch] = useState('');
@@ -40,24 +42,29 @@ export default function InvoicesPage() {
   const [deletingId, setDeletingId] = useState(null);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [prefillData, setPrefillData] = useState(null);
-
   const fetchInvoices = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const params = {};
-      if (statusFilter) params.status = statusFilter;
-      if (supplierSearch.trim()) params.supplier = supplierSearch.trim();
-      const resp = await getInvoices(params);
-      setInvoices(resp.data);
+      const resp = await getInvoicesPage({
+        page,
+        pageSize: PAGE_SIZE,
+        status: statusFilter || undefined,
+        supplier: supplierSearch.trim() || undefined,
+      });
+      setInvoices(resp.data.items);
+      setHasNext(resp.data.has_next);
     } catch {
       setError('Error al cargar facturas. Intente de nuevo.');
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, supplierSearch]);
+  }, [page, statusFilter, supplierSearch]);
 
   useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
+
+  // Reset to page 0 whenever filters change
+  useEffect(() => { setPage(0); }, [statusFilter, supplierSearch]);
 
   useEffect(() => {
     getUsers().then((r) => setUsers(r.data)).catch(() => {});
@@ -65,13 +72,13 @@ export default function InvoicesPage() {
 
   const canDelete = user?.role === 'administrador';
   const canEdit = user?.role !== 'asistente';
-
   const handleDelete = async (id) => {
     if (!window.confirm('¿Eliminar esta factura?')) return;
     setDeletingId(id);
     try {
       await deleteInvoice(id);
-      setInvoices((prev) => prev.filter((inv) => inv.id !== id));
+      // Refresh current page so the grid stays consistent
+      await fetchInvoices();
     } catch (err) {
       alert(err.response?.data?.detail || 'Error al eliminar factura.');
     } finally {
@@ -88,17 +95,9 @@ export default function InvoicesPage() {
     setEditingInvoice(null);
     setModalOpen(true);
   };
-
-  const handleModalSuccess = (savedInvoice) => {
-    setInvoices((prev) => {
-      const idx = prev.findIndex((inv) => inv.id === savedInvoice.id);
-      if (idx >= 0) {
-        const updated = [...prev];
-        updated[idx] = savedInvoice;
-        return updated;
-      }
-      return [savedInvoice, ...prev];
-    });
+  const handleModalSuccess = () => {
+    // After create/edit, go to page 0 so the user sees the freshest data
+    setPage(0);
     setModalOpen(false);
   };
 
@@ -239,10 +238,30 @@ export default function InvoicesPage() {
                   </div>
                 )}
               </div>
-            ))}
+            ))}          </div>
+        )}
+
+        {/* Pagination bar — only shown when there is more than one page or data exists */}
+        {!loading && (invoices.length > 0 || page > 0) && (
+          <div className="pagination-bar">
+            <button
+              className="pagination-btn"
+              disabled={page === 0}
+              onClick={() => setPage((p) => p - 1)}
+            >
+              ← Anterior
+            </button>
+            <span className="pagination-info">Página {page + 1}</span>
+            <button
+              className="pagination-btn"
+              disabled={!hasNext}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Siguiente →
+            </button>
           </div>
         )}
-      </main>      {modalOpen && (
+      </main>{modalOpen && (
         <InvoiceModal
           invoice={editingInvoice}
           users={users}

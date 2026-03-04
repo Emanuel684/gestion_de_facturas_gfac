@@ -102,13 +102,12 @@ async def test_admin_sees_all_invoices(
     )
     await client.post(
         "/api/invoices",
-        json={**SAMPLE_INVOICE, "invoice_number": "FAC-101"},
-        headers=auth(admin_token),
+        json={**SAMPLE_INVOICE, "invoice_number": "FAC-101"},        headers=auth(admin_token),
     )
 
     resp = await client.get("/api/invoices", headers=auth(admin_token))
     assert resp.status_code == 200
-    assert len(resp.json()) == 2
+    assert len(resp.json()["items"]) == 2
 
 
 @pytest.mark.asyncio
@@ -128,7 +127,7 @@ async def test_contador_sees_all_invoices(
 
     resp = await client.get("/api/invoices", headers=auth(contador_token))
     assert resp.status_code == 200
-    assert len(resp.json()) == 2
+    assert len(resp.json()["items"]) == 2
 
 
 @pytest.mark.asyncio
@@ -148,7 +147,7 @@ async def test_asistente_sees_only_own_invoices(
 
     resp = await client.get("/api/invoices", headers=auth(asistente_token))
     assert resp.status_code == 200
-    invoices = resp.json()
+    invoices = resp.json()["items"]
     assert len(invoices) == 1
     assert invoices[0]["invoice_number"] == "FAC-301"
 
@@ -168,7 +167,7 @@ async def test_filter_by_status(client: AsyncClient, admin_token: str):
 
     resp = await client.get("/api/invoices?status=pagada", headers=auth(admin_token))
     assert resp.status_code == 200
-    invoices = resp.json()
+    invoices = resp.json()["items"]
     assert len(invoices) == 1
     assert invoices[0]["invoice_number"] == "FAC-401"
 
@@ -188,7 +187,7 @@ async def test_filter_by_supplier(client: AsyncClient, admin_token: str):
 
     resp = await client.get("/api/invoices?supplier=acme", headers=auth(admin_token))
     assert resp.status_code == 200
-    invoices = resp.json()
+    invoices = resp.json()["items"]
     assert len(invoices) == 1
     assert invoices[0]["supplier"] == "Acme Corp"
 
@@ -360,8 +359,89 @@ async def test_assigned_asistente_can_see_invoice(
         "/api/invoices",
         json={**SAMPLE_INVOICE, "invoice_number": "FAC-980", "assigned_user_ids": [asistente_user.id]},
         headers=auth(admin_token),
-    )
+    )    
     invoice_id = create_resp.json()["id"]
 
     resp = await client.get(f"/api/invoices/{invoice_id}", headers=auth(asistente_token))
     assert resp.status_code == 200
+
+
+# ── Pagination ────────────────────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_pagination_response_shape(client: AsyncClient, admin_token: str):
+    """Response must include items, has_next, page, page_size."""
+    await client.post(
+        "/api/invoices",
+        json={**SAMPLE_INVOICE, "invoice_number": "PAG-001"},
+        headers=auth(admin_token),
+    )
+    resp = await client.get("/api/invoices", headers=auth(admin_token))
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "items" in body
+    assert "has_next" in body
+    assert "page" in body
+    assert "page_size" in body
+
+
+@pytest.mark.asyncio
+async def test_pagination_first_page_no_next(client: AsyncClient, admin_token: str):
+    """With fewer items than page_size, has_next must be False."""
+    for i in range(3):
+        await client.post(
+            "/api/invoices",
+            json={**SAMPLE_INVOICE, "invoice_number": f"PAG-1{i:02d}"},
+            headers=auth(admin_token),
+        )
+    resp = await client.get("/api/invoices?page=0&page_size=10", headers=auth(admin_token))
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["has_next"] is False
+    assert len(body["items"]) == 3
+
+
+@pytest.mark.asyncio
+async def test_pagination_has_next_when_more_items(client: AsyncClient, admin_token: str):
+    """With 11 items and page_size=10, page 0 must have has_next=True."""
+    for i in range(11):
+        await client.post(
+            "/api/invoices",
+            json={**SAMPLE_INVOICE, "invoice_number": f"PAG-2{i:02d}"},
+            headers=auth(admin_token),
+        )
+    resp = await client.get("/api/invoices?page=0&page_size=10", headers=auth(admin_token))
+    body = resp.json()
+    assert body["has_next"] is True
+    assert len(body["items"]) == 10
+
+
+@pytest.mark.asyncio
+async def test_pagination_second_page(client: AsyncClient, admin_token: str):
+    """Page 1 returns remaining items and has_next=False."""
+    for i in range(11):
+        await client.post(
+            "/api/invoices",
+            json={**SAMPLE_INVOICE, "invoice_number": f"PAG-3{i:02d}"},
+            headers=auth(admin_token),
+        )
+    resp = await client.get("/api/invoices?page=1&page_size=10", headers=auth(admin_token))
+    body = resp.json()
+    assert len(body["items"]) == 1
+    assert body["has_next"] is False
+    assert body["page"] == 1
+
+
+@pytest.mark.asyncio
+async def test_pagination_empty_page_beyond_data(client: AsyncClient, admin_token: str):
+    """Requesting a page well beyond the data returns an empty items list."""
+    await client.post(
+        "/api/invoices",
+        json={**SAMPLE_INVOICE, "invoice_number": "PAG-400"},
+        headers=auth(admin_token),
+    )
+    resp = await client.get("/api/invoices?page=99&page_size=10", headers=auth(admin_token))
+    body = resp.json()
+    assert resp.status_code == 200
+    assert body["items"] == []
+    assert body["has_next"] is False

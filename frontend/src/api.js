@@ -39,6 +39,13 @@ export const login = (username, password) => {
 export const getInvoices = (params = {}) =>
   api.get('/invoices', { params });
 
+export const getInvoicesPage = ({ page = 0, pageSize = 10, status, supplier } = {}) => {
+  const params = { page, page_size: pageSize };
+  if (status) params.status = status;
+  if (supplier) params.supplier = supplier;
+  return api.get('/invoices', { params });
+};
+
 export const getInvoice = (id) => api.get(`/invoices/${id}`);
 
 export const createInvoice = (data) => api.post('/invoices', data);

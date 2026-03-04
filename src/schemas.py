@@ -142,3 +142,12 @@ class InvoiceOut(BaseModel):
     created_at: datetime
     updated_at: datetime
     assigned_users: list[AssignedUser] = []
+
+
+class InvoicePage(BaseModel):
+    """Paginated response envelope for invoice list queries."""
+
+    items: list[InvoiceOut]
+    has_next: bool
+    page: int
+    page_size: int

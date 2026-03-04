@@ -20,7 +20,7 @@ from src.db import get_db
 from src.dependencies import get_current_user
 from src.extraction import ALL_SUPPORTED_TYPES, extract_from_file
 from src.models import Invoice, InvoiceAssignee, InvoiceStatus, User, UserRole
-from src.schemas import AssignedUser, InvoiceCreate, InvoiceOut, InvoiceUpdate
+from src.schemas import AssignedUser, InvoiceCreate, InvoiceOut, InvoicePage, InvoiceUpdate
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/invoices", tags=["invoices"])
@@ -94,17 +94,25 @@ def _check_invoice_delete(invoice: Invoice, user: User) -> None:
 
 # ── List ─────────────────────────────────────────────────────────────────────
 
-@router.get("", response_model=list[InvoiceOut])
+# ── List ─────────────────────────────────────────────────────────────────────
+
+@router.get("", response_model=InvoicePage)
 async def list_invoices(
     status_filter: Annotated[InvoiceStatus | None, Query(alias="status")] = None,
     supplier_filter: Annotated[str | None, Query(alias="supplier")] = None,
+    page: Annotated[int, Query(ge=0)] = 0,
+    page_size: Annotated[int, Query(ge=1, le=100, alias="page_size")] = 10,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> list[InvoiceOut]:
+) -> InvoicePage:
     """
-    List invoices.
-    - Administrador and Contador see all invoices.
-    - Asistente sees only invoices they created or are assigned to.
+    List invoices with cursor-style pagination.
+    - page: zero-based page index.
+    - page_size: number of items per page (default 10, max 100).
+    - Returns `has_next=true` when there are more items after the current page.
+
+    Administrador and Contador see all invoices.
+    Asistente sees only invoices they created or are assigned to.
     Supports optional ?status= and ?supplier= filters.
     """
     query = select(Invoice).options(
@@ -125,10 +133,20 @@ async def list_invoices(
     if supplier_filter:
         query = query.where(Invoice.supplier.ilike(f"%{supplier_filter}%"))
 
-    query = query.order_by(Invoice.created_at.desc())
+    # Fetch one extra row to detect whether a next page exists
+    query = query.order_by(Invoice.created_at.desc()).offset(page * page_size).limit(page_size + 1)
     result = await db.execute(query)
-    invoices = result.scalars().all()
-    return [_invoice_to_out(inv) for inv in invoices]
+    rows = result.scalars().all()
+
+    has_next = len(rows) > page_size
+    items = rows[:page_size]
+
+    return InvoicePage(
+        items=[_invoice_to_out(inv) for inv in items],
+        has_next=has_next,
+        page=page,
+        page_size=page_size,
+    )
 
 
 # ── Upload & Extract ─────────────────────────────────────────────────────────
