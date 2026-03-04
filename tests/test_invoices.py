@@ -439,9 +439,125 @@ async def test_pagination_empty_page_beyond_data(client: AsyncClient, admin_toke
         "/api/invoices",
         json={**SAMPLE_INVOICE, "invoice_number": "PAG-400"},
         headers=auth(admin_token),
-    )
+    )    
     resp = await client.get("/api/invoices?page=99&page_size=10", headers=auth(admin_token))
     body = resp.json()
     assert resp.status_code == 200
     assert body["items"] == []
     assert body["has_next"] is False
+
+
+# ── Overdue ───────────────────────────────────────────────────────────────────
+
+PAST_DATE   = "2020-01-01T00:00:00"   # always in the past
+FUTURE_DATE = "2099-12-31T00:00:00"   # always in the future
+
+
+@pytest.mark.asyncio
+async def test_overdue_returns_only_past_due_pendiente(client: AsyncClient, admin_token: str):
+    """Only pendiente invoices with a past due_date must appear."""
+    # past-due pendiente → should appear
+    await client.post(
+        "/api/invoices",
+        json={**SAMPLE_INVOICE, "invoice_number": "OVD-001",
+              "status": "pendiente", "due_date": PAST_DATE},
+        headers=auth(admin_token),
+    )
+    # future-due pendiente → should NOT appear
+    await client.post(
+        "/api/invoices",
+        json={**SAMPLE_INVOICE, "invoice_number": "OVD-002",
+              "status": "pendiente", "due_date": FUTURE_DATE},
+        headers=auth(admin_token),
+    )
+    # past-due but already pagada → should NOT appear
+    await client.post(
+        "/api/invoices",
+        json={**SAMPLE_INVOICE, "invoice_number": "OVD-003",
+              "status": "pagada", "due_date": PAST_DATE},
+        headers=auth(admin_token),
+    )
+    # no due_date → should NOT appear
+    await client.post(
+        "/api/invoices",
+        json={**SAMPLE_INVOICE, "invoice_number": "OVD-004", "status": "pendiente"},
+        headers=auth(admin_token),
+    )
+
+    resp = await client.get("/api/invoices/overdue", headers=auth(admin_token))
+    assert resp.status_code == 200
+    numbers = [inv["invoice_number"] for inv in resp.json()]
+    assert "OVD-001" in numbers
+    assert "OVD-002" not in numbers
+    assert "OVD-003" not in numbers
+    assert "OVD-004" not in numbers
+
+
+@pytest.mark.asyncio
+async def test_overdue_empty_when_none(client: AsyncClient, admin_token: str):
+    """Returns an empty list when no invoices are overdue."""
+    await client.post(
+        "/api/invoices",
+        json={**SAMPLE_INVOICE, "invoice_number": "OVD-100",
+              "status": "pendiente", "due_date": FUTURE_DATE},
+        headers=auth(admin_token),
+    )
+    resp = await client.get("/api/invoices/overdue", headers=auth(admin_token))
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
+@pytest.mark.asyncio
+async def test_overdue_requires_auth(client: AsyncClient):
+    """Unauthenticated requests must be rejected."""
+    resp = await client.get("/api/invoices/overdue")
+    assert resp.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_overdue_asistente_sees_only_own(
+    client: AsyncClient, admin_token: str, asistente_token: str, asistente_user
+):
+    """Asistente only sees overdue invoices they created or are assigned to."""
+    # created by admin — should NOT be visible to asistente
+    await client.post(
+        "/api/invoices",
+        json={**SAMPLE_INVOICE, "invoice_number": "OVD-200",
+              "status": "pendiente", "due_date": PAST_DATE},
+        headers=auth(admin_token),
+    )
+    # created by asistente — should be visible
+    await client.post(
+        "/api/invoices",
+        json={**SAMPLE_INVOICE, "invoice_number": "OVD-201",
+              "status": "pendiente", "due_date": PAST_DATE},
+        headers=auth(asistente_token),
+    )
+
+    resp = await client.get("/api/invoices/overdue", headers=auth(asistente_token))
+    assert resp.status_code == 200
+    numbers = [inv["invoice_number"] for inv in resp.json()]
+    assert "OVD-201" in numbers
+    assert "OVD-200" not in numbers
+
+
+@pytest.mark.asyncio
+async def test_overdue_ordered_by_due_date_asc(client: AsyncClient, admin_token: str):
+    """Overdue invoices must be ordered oldest due_date first."""
+    await client.post(
+        "/api/invoices",
+        json={**SAMPLE_INVOICE, "invoice_number": "OVD-300",
+              "status": "pendiente", "due_date": "2022-06-01T00:00:00"},
+        headers=auth(admin_token),
+    )
+    await client.post(
+        "/api/invoices",
+        json={**SAMPLE_INVOICE, "invoice_number": "OVD-301",
+              "status": "pendiente", "due_date": "2021-01-01T00:00:00"},
+        headers=auth(admin_token),
+    )
+
+    resp = await client.get("/api/invoices/overdue", headers=auth(admin_token))
+    assert resp.status_code == 200
+    numbers = [inv["invoice_number"] for inv in resp.json()]
+    assert numbers.index("OVD-301") < numbers.index("OVD-300")

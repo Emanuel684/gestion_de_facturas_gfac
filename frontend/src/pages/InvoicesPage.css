@@ -98,6 +98,7 @@
   transition: box-shadow 0.15s, transform 0.15s;
 }
 .invoice-card:hover { box-shadow: 0 4px 20px rgba(14,116,144,0.1); transform: translateY(-1px); }
+.invoice-card-overdue { border-color: #fca5a5; background: #fff9f9; }
 
 .invoice-card-header {
   display: flex;
@@ -168,6 +169,78 @@
   align-items: center;
   gap: 1rem;
   font-size: 0.95rem;
+}
+
+/* Overdue alert banner */
+.overdue-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background: #fff7ed;
+  border: 1.5px solid #fed7aa;
+  border-left: 4px solid #f97316;
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1.25rem;
+  animation: fadeIn 0.2s ease;
+}
+
+.overdue-banner-icon {
+  font-size: 1.15rem;
+  flex-shrink: 0;
+  margin-top: 0.05rem;
+}
+
+.overdue-banner-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.88rem;
+  color: #7c2d12;
+}
+
+.overdue-banner-body strong {
+  font-size: 0.92rem;
+  color: #9a3412;
+}
+
+.overdue-banner-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.overdue-chip {
+  background: #ffedd5;
+  border: 1px solid #fdba74;
+  color: #7c2d12;
+  border-radius: 20px;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.76rem;
+  font-weight: 500;
+}
+
+.overdue-chip-more {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+
+.overdue-banner-dismiss {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #c2410c;
+  font-size: 0.85rem;
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+  flex-shrink: 0;
+  line-height: 1;
+  transition: background 0.12s;
+}
+.overdue-banner-dismiss:hover {
+  background: #fed7aa;
 }
 
 /* Pagination */

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getInvoicesPage, deleteInvoice, getUsers } from '../api';
+import { getInvoicesPage, deleteInvoice, getUsers, getOverdueInvoices } from '../api';
 import { useAuth } from '../context/AuthContext';
 import InvoiceModal from '../components/InvoiceModal';
 import UploadModal from '../components/UploadModal';
@@ -27,7 +27,8 @@ function formatCurrency(amount) {
   }).format(amount);
 }
 
-export default function InvoicesPage() {  const { user } = useAuth();
+export default function InvoicesPage() {
+  const { user } = useAuth();
   const [invoices, setInvoices] = useState([]);
   const [hasNext, setHasNext] = useState(false);
   const [page, setPage] = useState(0);
@@ -42,6 +43,11 @@ export default function InvoicesPage() {  const { user } = useAuth();
   const [deletingId, setDeletingId] = useState(null);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [prefillData, setPrefillData] = useState(null);
+  const [overdueInvoices, setOverdueInvoices] = useState([]);
+  const [overdueDismissed, setOverdueDismissed] = useState(false);
+
+  // ── Data fetching ──────────────────────────────────────────────────────────
+
   const fetchInvoices = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -61,23 +67,43 @@ export default function InvoicesPage() {  const { user } = useAuth();
     }
   }, [page, statusFilter, supplierSearch]);
 
+  const fetchOverdue = useCallback(async () => {
+    try {
+      const resp = await getOverdueInvoices();
+      setOverdueInvoices(resp.data);
+      // Re-show the banner if new overdue invoices appear
+      if (resp.data.length > 0) setOverdueDismissed(false);
+    } catch {
+      // non-critical — silently ignore
+    }
+  }, []);
+
+  // Fetch invoices when page/filters change
   useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
+
+  // Refresh overdue list whenever the invoice list updates
+  useEffect(() => { fetchOverdue(); }, [fetchOverdue, invoices]);
 
   // Reset to page 0 whenever filters change
   useEffect(() => { setPage(0); }, [statusFilter, supplierSearch]);
 
+  // Load users for assignment chips (once)
   useEffect(() => {
     getUsers().then((r) => setUsers(r.data)).catch(() => {});
   }, []);
 
+  // ── RBAC helpers ──────────────────────────────────────────────────────────
+
   const canDelete = user?.role === 'administrador';
   const canEdit = user?.role !== 'asistente';
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
   const handleDelete = async (id) => {
     if (!window.confirm('¿Eliminar esta factura?')) return;
     setDeletingId(id);
     try {
       await deleteInvoice(id);
-      // Refresh current page so the grid stays consistent
       await fetchInvoices();
     } catch (err) {
       alert(err.response?.data?.detail || 'Error al eliminar factura.');
@@ -85,25 +111,26 @@ export default function InvoicesPage() {  const { user } = useAuth();
       setDeletingId(null);
     }
   };
+
   const openCreate = () => { setEditingInvoice(null); setPrefillData(null); setModalOpen(true); };
   const openEdit = (inv) => { setEditingInvoice(inv); setPrefillData(null); setModalOpen(true); };
 
   const handleUploadExtracted = (data) => {
     setUploadOpen(false);
-    const extracted = data.extracted || {};
-    setPrefillData(extracted);
+    setPrefillData(data.extracted || {});
     setEditingInvoice(null);
     setModalOpen(true);
   };
+
   const handleModalSuccess = () => {
-    // After create/edit, go to page 0 so the user sees the freshest data
     setPage(0);
     setModalOpen(false);
   };
 
   const getUserName = (id) => users.find((u) => u.id === id)?.username ?? `#${id}`;
 
-  // Summary stats
+  // ── Summary stats (current page) ──────────────────────────────────────────
+
   const totalPendiente = invoices
     .filter((inv) => inv.status === 'pendiente')
     .reduce((sum, inv) => sum + parseFloat(inv.amount), 0);
@@ -114,29 +141,65 @@ export default function InvoicesPage() {  const { user } = useAuth();
     .filter((inv) => inv.status === 'pagada')
     .reduce((sum, inv) => sum + parseFloat(inv.amount), 0);
 
+  // ── Render ─────────────────────────────────────────────────────────────────
+
   return (
     <>
       <Navbar />
       <main className="invoices-main">
-        {/* Header row */}
+
+        {/* ── Header ── */}
         <div className="invoices-header">
           <div>
             <h2 className="invoices-title">📋 Facturas</h2>
             <p className="invoices-sub">
-              {user?.role === 'administrador'
-                ? 'Mostrando todas las facturas'
-                : user?.role === 'contador'
-                ? 'Mostrando todas las facturas'
-                : 'Mostrando sus facturas'}
+              {user?.role === 'asistente' ? 'Mostrando sus facturas' : 'Mostrando todas las facturas'}
             </p>
           </div>
           <div className="header-actions">
-            <button className="btn btn-secondary" onClick={() => setUploadOpen(true)}>📤 Cargar Documento</button>
-            <button className="btn btn-primary" onClick={openCreate}>＋ Nueva Factura</button>
+            <button className="btn btn-secondary" onClick={() => setUploadOpen(true)}>
+              📤 Cargar Documento
+            </button>
+            <button className="btn btn-primary" onClick={openCreate}>
+              ＋ Nueva Factura
+            </button>
           </div>
         </div>
 
-        {/* Summary cards */}
+        {/* ── Overdue alert banner ── */}
+        {overdueInvoices.length > 0 && !overdueDismissed && (
+          <div className="overdue-banner">
+            <span className="overdue-banner-icon">⚠️</span>
+            <div className="overdue-banner-body">
+              <strong>
+                {overdueInvoices.length === 1
+                  ? '1 factura vencida sin pagar'
+                  : `${overdueInvoices.length} facturas vencidas sin pagar`}
+              </strong>
+              <span className="overdue-banner-list">
+                {overdueInvoices.slice(0, 5).map((inv) => (
+                  <span key={inv.id} className="overdue-chip">
+                    {inv.invoice_number} — {inv.supplier}
+                  </span>
+                ))}
+                {overdueInvoices.length > 5 && (
+                  <span className="overdue-chip overdue-chip-more">
+                    +{overdueInvoices.length - 5} más
+                  </span>
+                )}
+              </span>
+            </div>
+            <button
+              className="overdue-banner-dismiss"
+              title="Descartar"
+              onClick={() => setOverdueDismissed(true)}
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
+        {/* ── Summary cards ── */}
         <div className="summary-row">
           <div className="summary-card summary-pendiente">
             <span className="summary-label">Pendiente</span>
@@ -152,7 +215,7 @@ export default function InvoicesPage() {  const { user } = useAuth();
           </div>
         </div>
 
-        {/* Filter bar */}
+        {/* ── Filter bar ── */}
         <div className="filter-bar">
           <span className="filter-label">Filtrar:</span>
           {['', 'pendiente', 'pagada', 'vencida'].map((s) => (
@@ -173,7 +236,7 @@ export default function InvoicesPage() {  const { user } = useAuth();
           />
         </div>
 
-        {/* Content */}
+        {/* ── Content ── */}
         {error && <div className="alert alert-error">{error}</div>}
 
         {loading ? (
@@ -181,26 +244,27 @@ export default function InvoicesPage() {  const { user } = useAuth();
         ) : invoices.length === 0 ? (
           <div className="empty-state">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5">
-              <rect x="3" y="3" width="18" height="18" rx="3"/>
-              <path d="M7 8h10M7 12h10M7 16h6"/>
+              <rect x="3" y="3" width="18" height="18" rx="3" />
+              <path d="M7 8h10M7 12h10M7 16h6" />
             </svg>
             <p>No se encontraron facturas. ¡Cree una!</p>
           </div>
         ) : (
           <div className="invoices-grid">
             {invoices.map((inv) => (
-              <div key={inv.id} className="invoice-card">
+              <div
+                key={inv.id}
+                className={`invoice-card${inv.status === 'vencida' ? ' invoice-card-overdue' : ''}`}
+              >
                 <div className="invoice-card-header">
                   <span className={`badge ${STATUS_COLORS[inv.status]}`}>
                     {STATUS_LABELS[inv.status]}
                   </span>
                   <div className="invoice-actions">
                     {canEdit && (
-                      <button
-                        className="icon-btn edit"
-                        title="Editar"
-                        onClick={() => openEdit(inv)}
-                      >✎</button>
+                      <button className="icon-btn edit" title="Editar" onClick={() => openEdit(inv)}>
+                        ✎
+                      </button>
                     )}
                     {canDelete && (
                       <button
@@ -208,7 +272,9 @@ export default function InvoicesPage() {  const { user } = useAuth();
                         title="Eliminar"
                         disabled={deletingId === inv.id}
                         onClick={() => handleDelete(inv.id)}
-                      >✕</button>
+                      >
+                        ✕
+                      </button>
                     )}
                   </div>
                 </div>
@@ -217,9 +283,7 @@ export default function InvoicesPage() {  const { user } = useAuth();
                 <p className="invoice-supplier">🏢 {inv.supplier}</p>
                 <p className="invoice-amount">{formatCurrency(inv.amount)}</p>
 
-                {inv.description && (
-                  <p className="invoice-desc">{inv.description}</p>
-                )}
+                {inv.description && <p className="invoice-desc">{inv.description}</p>}
 
                 <div className="invoice-meta">
                   <span title="Registrado por">👤 {getUserName(inv.creator_id)}</span>
@@ -238,10 +302,11 @@ export default function InvoicesPage() {  const { user } = useAuth();
                   </div>
                 )}
               </div>
-            ))}          </div>
+            ))}
+          </div>
         )}
 
-        {/* Pagination bar — only shown when there is more than one page or data exists */}
+        {/* ── Pagination bar ── */}
         {!loading && (invoices.length > 0 || page > 0) && (
           <div className="pagination-bar">
             <button
@@ -261,7 +326,10 @@ export default function InvoicesPage() {  const { user } = useAuth();
             </button>
           </div>
         )}
-      </main>{modalOpen && (
+
+      </main>
+
+      {modalOpen && (
         <InvoiceModal
           invoice={editingInvoice}
           users={users}

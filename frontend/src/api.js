@@ -54,6 +54,8 @@ export const updateInvoice = (id, data) => api.put(`/invoices/${id}`, data);
 
 export const deleteInvoice = (id) => api.delete(`/invoices/${id}`);
 
+export const getOverdueInvoices = () => api.get('/invoices/overdue');
+
 export const uploadInvoiceFile = (file) => {
   const formData = new FormData();
   formData.append('file', file);

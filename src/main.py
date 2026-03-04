@@ -8,16 +8,17 @@ On startup:
      - maria   / maria123   (role: contador)
      - carlos  / carlos123  (role: asistente)
 """
+import asyncio
 import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import select
+from sqlalchemy import select, and_
 
 from src.auth import hash_password
 from src.config import settings
 from src.db import engine, Base
-from src.models import User, UserRole
+from src.models import User, UserRole, Invoice, InvoiceStatus
 from src.routers import auth, invoices, users
 
 logging.basicConfig(
@@ -77,6 +78,54 @@ async def on_startup() -> None:
                 )
                 logger.info("Seeded user: %s (%s)", data["username"], data["role"].value)
         await db.commit()
+
+    # Start background expiry task
+    asyncio.create_task(_expire_overdue_invoices_loop())
+
+
+# ── Background: auto-expire overdue invoices ──────────────────────────────────
+
+EXPIRE_INTERVAL_SECONDS = 3600  # run every hour
+
+
+async def _expire_overdue_invoices_loop() -> None:
+    """
+    Background loop that wakes up every hour and marks as 'vencida' any invoice
+    that is still 'pendiente' but whose due_date is in the past.
+    """
+    from src.db import AsyncSessionLocal
+    from datetime import datetime, timezone
+    from sqlalchemy import update
+
+    while True:
+        try:
+            now = datetime.now(timezone.utc)
+            async with AsyncSessionLocal() as db:
+                result = await db.execute(
+                    update(Invoice)
+                    .where(
+                        and_(
+                            Invoice.status == InvoiceStatus.pendiente,
+                            Invoice.due_date != None,          # noqa: E711
+                            Invoice.due_date < now,
+                        )
+                    )
+                    .values(status=InvoiceStatus.vencida)
+                    .returning(Invoice.id)
+                )
+                expired_ids = result.scalars().all()
+                await db.commit()
+
+            if expired_ids:
+                logger.info(
+                    "Auto-expired %d invoice(s) to 'vencida': ids=%s",
+                    len(expired_ids),
+                    expired_ids,
+                )
+        except Exception:
+            logger.exception("Error in overdue-invoice expiry task")
+
+        await asyncio.sleep(EXPIRE_INTERVAL_SECONDS)
 
 
 # ── Health ────────────────────────────────────────────────────────────────────
