@@ -58,7 +58,7 @@ export default function InvoiceModal({ invoice, users, onSuccess, onClose, prefi
       const resp = isEdit
         ? await updateInvoice(invoice.id, payload)
         : await createInvoice(payload);
-      onSuccess(resp.data);
+      await Promise.resolve(onSuccess?.(resp.data));
     } catch (err) {
       setError(err.response?.data?.detail || 'Ocurrió un error.');
     } finally {

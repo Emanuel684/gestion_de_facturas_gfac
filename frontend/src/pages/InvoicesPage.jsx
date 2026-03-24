@@ -122,10 +122,29 @@ export default function InvoicesPage() {
     setModalOpen(true);
   };
 
-  const handleModalSuccess = () => {
-    setPage(0);
+  const handleModalSuccess = useCallback(async () => {
+    setEditingInvoice(null);
+    setPrefillData(null);
     setModalOpen(false);
-  };
+    setPage(0);
+    // Recarga explícita con página 0 y filtros actuales (no depender del closure de `page` ni de que el efecto se dispare).
+    setLoading(true);
+    setError('');
+    try {
+      const resp = await getInvoicesPage({
+        page: 0,
+        pageSize: PAGE_SIZE,
+        status: statusFilter || undefined,
+        supplier: supplierSearch.trim() || undefined,
+      });
+      setInvoices(resp.data.items);
+      setHasNext(resp.data.has_next);
+    } catch {
+      setError('Error al cargar facturas. Intente de nuevo.');
+    } finally {
+      setLoading(false);
+    }
+  }, [statusFilter, supplierSearch]);
 
   const getUserName = (id) => users.find((u) => u.id === id)?.username ?? `#${id}`;
 
