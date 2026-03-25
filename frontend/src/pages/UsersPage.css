@@ -46,6 +46,31 @@
   justify-content: space-between;
 }
 
+.user-card-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.user-delete-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0.3rem 0.45rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  line-height: 1;
+  color: #9ca3af;
+}
+.user-delete-btn:hover:not(:disabled) {
+  background: #fee2e2;
+  color: #dc2626;
+}
+.user-delete-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
 .user-name  { font-size: 1.05rem; font-weight: 700; color: #111827; }
 .user-email { font-size: 0.85rem; color: #6b7280; }
 .user-since { font-size: 0.75rem; color: #9ca3af; margin-top: 0.25rem; }

@@ -56,3 +56,25 @@
   text-align: center;
   line-height: 1.6;
 }
+
+.login-hint code {
+  background: #f1f5f9;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
+.login-back {
+  margin-top: 1.25rem;
+  text-align: center;
+  font-size: 0.88rem;
+}
+
+.login-back a {
+  color: #0e7490;
+  text-decoration: none;
+  font-weight: 600;
+}
+.login-back a:hover {
+  text-decoration: underline;
+}

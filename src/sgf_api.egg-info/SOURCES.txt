@@ -12,6 +12,7 @@ src/schemas.py
 src/routers/__init__.py
 src/routers/auth.py
 src/routers/invoices.py
+src/routers/organizations.py
 src/routers/users.py
 src/sgf_api.egg-info/PKG-INFO
 src/sgf_api.egg-info/SOURCES.txt
@@ -21,5 +22,6 @@ src/sgf_api.egg-info/top_level.txt
 tests/test_auth.py
 tests/test_extraction.py
 tests/test_invoices.py
+tests/test_organizations.py
 tests/test_upload.py
 tests/test_users.py

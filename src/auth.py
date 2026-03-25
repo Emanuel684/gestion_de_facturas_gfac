@@ -20,12 +20,13 @@ def verify_password(plain: str, hashed: str) -> bool:
     return bcrypt.checkpw(plain.encode(), hashed.encode())
 
 
-def create_access_token(subject: str | int, role: str) -> str:
-    """Create a signed JWT for the given user id and role."""
+def create_access_token(subject: str | int, role: str, organization_id: int) -> str:
+    """Create a signed JWT for the given user id, role, and organization."""
     expire = datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes)
     payload = {
         "sub": str(subject),
         "role": role,
+        "org": organization_id,
         "exp": expire,
     }
     return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)

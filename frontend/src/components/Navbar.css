@@ -44,6 +44,9 @@
   font-size: 0.88rem; color: #374151; font-weight: 500;
 }
 
+.navbar-user-text { display: inline-flex; align-items: baseline; flex-wrap: wrap; max-width: 280px; }
+.navbar-org { font-weight: 400; color: #6b7280; font-size: 0.82rem; }
+
 .role-badge {
   display: inline-block;
   padding: 0.15rem 0.55rem;

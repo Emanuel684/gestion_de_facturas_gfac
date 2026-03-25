@@ -3,12 +3,14 @@ import { useAuth } from '../context/AuthContext';
 import './Navbar.css';
 
 const ROLE_COLORS = {
+  plataforma_admin: '#7c2d12',
   administrador: '#059669',
   contador: '#0e7490',
   asistente: '#7c3aed',
 };
 
 const ROLE_LABELS = {
+  plataforma_admin: 'Plataforma',
   administrador: 'Admin',
   contador: 'Contador',
   asistente: 'Asistente',
@@ -23,18 +25,26 @@ export default function Navbar() {
     navigate('/login', { replace: true });
   };
 
+  const isPlatform = user?.role === 'plataforma_admin';
+
   return (
     <nav className="navbar">
-      <Link to="/" className="navbar-brand">
+      <Link to={user ? (isPlatform ? '/app/organizaciones' : '/app') : '/'} className="navbar-brand">
         <svg width="26" height="26" viewBox="0 0 40 40" fill="none">
           <rect width="40" height="40" rx="10" fill="#0e7490"/>
           <path d="M10 14h20M10 20h20M10 26h14" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
         </svg>
         SGF — Facturas
-      </Link>      {user && (
+      </Link>
+      {user && !isPlatform && (
         <div className="navbar-links">
-          <Link to="/" className="nav-link">Facturas</Link>
-          <Link to="/users" className="nav-link">Usuarios</Link>
+          <Link to="/app" className="nav-link">Facturas</Link>
+          <Link to="/app/users" className="nav-link">Usuarios</Link>
+        </div>
+      )}
+      {user && isPlatform && (
+        <div className="navbar-links">
+          <Link to="/app/organizaciones" className="nav-link">Organizaciones</Link>
         </div>
       )}
 
@@ -48,7 +58,12 @@ export default function Navbar() {
               >
                 {ROLE_LABELS[user.role] || user.role}
               </span>
-              {user.username}
+              <span className="navbar-user-text">
+                {user.username}
+                {user.organization?.name && (
+                  <span className="navbar-org"> · {user.organization.name}</span>
+                )}
+              </span>
             </span>
             <button className="btn btn-secondary btn-sm" onClick={handleLogout}>
               Cerrar Sesión

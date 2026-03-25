@@ -172,7 +172,10 @@ export default function InvoicesPage() {
           <div>
             <h2 className="invoices-title">📋 Facturas</h2>
             <p className="invoices-sub">
-              {user?.role === 'asistente' ? 'Mostrando sus facturas' : 'Mostrando todas las facturas'}
+              {user?.organization?.name && (
+                <span className="invoices-org">{user.organization.name} · </span>
+              )}
+              {user?.role === 'asistente' ? 'Mostrando sus facturas' : 'Mostrando todas las facturas de la organización'}
             </p>
           </div>
           <div className="header-actions">

@@ -18,7 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from src.db import get_db
-from src.dependencies import get_current_user
+from src.dependencies import require_tenant_user
 from src.extraction import ALL_SUPPORTED_TYPES, extract_from_file
 from src.models import Invoice, InvoiceAssignee, InvoiceStatus, User, UserRole
 from src.schemas import AssignedUser, InvoiceCreate, InvoiceOut, InvoicePage, InvoiceUpdate
@@ -44,11 +44,11 @@ def _invoice_to_out(invoice: Invoice) -> InvoiceOut:
     )
 
 
-async def _get_invoice_or_404(invoice_id: int, db: AsyncSession) -> Invoice:
+async def _get_invoice_or_404(invoice_id: int, org_id: int, db: AsyncSession) -> Invoice:
     result = await db.execute(
         select(Invoice)
         .options(selectinload(Invoice.assignees).selectinload(InvoiceAssignee.user))
-        .where(Invoice.id == invoice_id)
+        .where(Invoice.id == invoice_id, Invoice.organization_id == org_id)
     )
     invoice = result.scalar_one_or_none()
     if not invoice:
@@ -103,7 +103,7 @@ async def list_invoices(
     supplier_filter: Annotated[str | None, Query(alias="supplier")] = None,
     page: Annotated[int, Query(ge=0)] = 0,
     page_size: Annotated[int, Query(ge=1, le=100, alias="page_size")] = 10,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_tenant_user),
     db: AsyncSession = Depends(get_db),
 ) -> InvoicePage:
     """
@@ -116,9 +116,11 @@ async def list_invoices(
     Asistente sees only invoices they created or are assigned to.
     Supports optional ?status= and ?supplier= filters.
     """
+    org_id = current_user.organization_id
     query = select(Invoice).options(
         selectinload(Invoice.assignees).selectinload(InvoiceAssignee.user)
     )
+    query = query.where(Invoice.organization_id == org_id)
 
     if current_user.role == UserRole.asistente:
         assigned_subq = select(InvoiceAssignee.invoice_id).where(
@@ -158,7 +160,7 @@ MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 MB
 @router.post("/upload", status_code=status.HTTP_200_OK)
 async def upload_invoice_document(
     file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_tenant_user),
 ) -> dict:
     """
     Upload an image, PDF, or DOCX document containing invoice data.
@@ -241,12 +243,15 @@ async def upload_invoice_document(
 @router.post("", response_model=InvoiceOut, status_code=status.HTTP_201_CREATED)
 async def create_invoice(
     payload: InvoiceCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_tenant_user),
     db: AsyncSession = Depends(get_db),
 ) -> InvoiceOut:
-    # Check for duplicate invoice number
+    org_id = current_user.organization_id
     existing = await db.execute(
-        select(Invoice).where(Invoice.invoice_number == payload.invoice_number)
+        select(Invoice).where(
+            Invoice.organization_id == org_id,
+            Invoice.invoice_number == payload.invoice_number,
+        )
     )
     if existing.scalar_one_or_none():
         raise HTTPException(
@@ -255,6 +260,7 @@ async def create_invoice(
         )
 
     invoice = Invoice(
+        organization_id=org_id,
         invoice_number=payload.invoice_number,
         supplier=payload.supplier,
         description=payload.description,
@@ -266,18 +272,18 @@ async def create_invoice(
     db.add(invoice)
     await db.flush()
 
-    for user_id in set(payload.assigned_user_ids):
-        u = await db.get(User, user_id)
-        if not u:
+    for uid in set(payload.assigned_user_ids):
+        u = await db.get(User, uid)
+        if not u or u.organization_id != org_id:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"Usuario con id={user_id} no encontrado",
+                detail=f"Usuario con id={uid} no encontrado en la organización",
             )
-        db.add(InvoiceAssignee(invoice_id=invoice.id, user_id=user_id))
+        db.add(InvoiceAssignee(invoice_id=invoice.id, user_id=uid))
 
     await db.commit()
 
-    invoice = await _get_invoice_or_404(invoice.id, db)
+    invoice = await _get_invoice_or_404(invoice.id, org_id, db)
     logger.info("Invoice id=%d created by user id=%d", invoice.id, current_user.id)
     return _invoice_to_out(invoice)
 
@@ -286,7 +292,7 @@ async def create_invoice(
 
 @router.get("/overdue", response_model=list[InvoiceOut])
 async def list_overdue_invoices(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_tenant_user),
     db: AsyncSession = Depends(get_db),
 ) -> list[InvoiceOut]:
     """
@@ -295,10 +301,12 @@ async def list_overdue_invoices(
     Ordered by due_date ascending (oldest first).
     """
     now = datetime.now(timezone.utc)
+    org_id = current_user.organization_id
     query = (
         select(Invoice)
         .options(selectinload(Invoice.assignees).selectinload(InvoiceAssignee.user))
         .where(
+            Invoice.organization_id == org_id,
             Invoice.status == InvoiceStatus.pendiente,
             Invoice.due_date.is_not(None),
             Invoice.due_date < now,
@@ -324,10 +332,10 @@ async def list_overdue_invoices(
 @router.get("/{invoice_id}", response_model=InvoiceOut)
 async def get_invoice(
     invoice_id: int,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_tenant_user),
     db: AsyncSession = Depends(get_db),
 ) -> InvoiceOut:
-    invoice = await _get_invoice_or_404(invoice_id, db)
+    invoice = await _get_invoice_or_404(invoice_id, current_user.organization_id, db)
     _check_invoice_access(invoice, current_user)
     return _invoice_to_out(invoice)
 
@@ -338,16 +346,17 @@ async def get_invoice(
 async def update_invoice(
     invoice_id: int,
     payload: InvoiceUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_tenant_user),
     db: AsyncSession = Depends(get_db),
 ) -> InvoiceOut:
-    invoice = await _get_invoice_or_404(invoice_id, db)
+    org_id = current_user.organization_id
+    invoice = await _get_invoice_or_404(invoice_id, org_id, db)
     _check_invoice_edit(invoice, current_user)
 
     if payload.invoice_number is not None:
-        # Check uniqueness if changing invoice number
         existing = await db.execute(
             select(Invoice).where(
+                Invoice.organization_id == org_id,
                 Invoice.invoice_number == payload.invoice_number,
                 Invoice.id != invoice_id,
             )
@@ -381,17 +390,17 @@ async def update_invoice(
                 await db.delete(a)
 
         to_add = new_user_ids - existing_user_ids
-        for user_id in to_add:
-            u = await db.get(User, user_id)
-            if not u:
+        for uid in to_add:
+            u = await db.get(User, uid)
+            if not u or u.organization_id != org_id:
                 raise HTTPException(
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    detail=f"Usuario con id={user_id} no encontrado",
+                    detail=f"Usuario con id={uid} no encontrado en la organización",
                 )
-            db.add(InvoiceAssignee(invoice_id=invoice.id, user_id=user_id))
+            db.add(InvoiceAssignee(invoice_id=invoice.id, user_id=uid))
 
     await db.commit()
-    invoice = await _get_invoice_or_404(invoice_id, db)
+    invoice = await _get_invoice_or_404(invoice_id, org_id, db)
     logger.info("Invoice id=%d updated by user id=%d", invoice.id, current_user.id)
     return _invoice_to_out(invoice)
 
@@ -401,10 +410,10 @@ async def update_invoice(
 @router.delete("/{invoice_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_invoice(
     invoice_id: int,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_tenant_user),
     db: AsyncSession = Depends(get_db),
 ) -> None:
-    invoice = await _get_invoice_or_404(invoice_id, db)
+    invoice = await _get_invoice_or_404(invoice_id, current_user.organization_id, db)
     _check_invoice_delete(invoice, current_user)
     await db.delete(invoice)
     await db.commit()

@@ -1,0 +1,116 @@
+.orgs-main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+.orgs-header h1 {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #134e4a;
+}
+
+.orgs-sub {
+  color: #64748b;
+  margin-top: 0.35rem;
+  font-size: 0.95rem;
+}
+
+.orgs-form-section,
+.orgs-list-section {
+  margin-top: 2rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.orgs-form-section h2,
+.orgs-list-section h2 {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  color: #0f172a;
+}
+
+.orgs-form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.orgs-form .form-group label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 0.25rem;
+}
+
+.orgs-form .form-group input,
+.orgs-form .form-group select {
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.orgs-admin-hint {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin: 0.5rem 0 1rem;
+}
+
+.orgs-empty {
+  color: #94a3b8;
+  font-size: 0.95rem;
+}
+
+.orgs-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.orgs-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.orgs-card strong {
+  display: block;
+  color: #0f172a;
+}
+
+.orgs-slug {
+  display: block;
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-top: 0.2rem;
+}
+
+.orgs-slug code {
+  background: #e2e8f0;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+}
+
+.orgs-plan {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #0e7490;
+  background: #ecfeff;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+}

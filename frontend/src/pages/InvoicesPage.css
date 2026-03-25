@@ -17,6 +17,7 @@
 
 .invoices-title { font-size: 1.6rem; font-weight: 700; color: #1e1b4b; }
 .invoices-sub   { font-size: 0.85rem; color: #6b7280; margin-top: 0.2rem; }
+.invoices-org   { font-weight: 600; color: #0e7490; }
 
 /* Header action buttons */
 .header-actions {

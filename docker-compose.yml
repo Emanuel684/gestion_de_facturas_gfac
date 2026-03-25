@@ -31,7 +31,10 @@ services:
     volumes:
       - ./src:/app/src
       - ./tests:/app/tests
-    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+    # Si la BD ya tenía tablas creadas antes de Alembic: `docker compose run --rm api alembic stamp f72dc0a687f8` una vez.
+    command: >
+      sh -c "alembic upgrade head &&
+      uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload"
 
   frontend:
     build: ./frontend

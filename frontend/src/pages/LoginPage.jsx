@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { login, getMe } from '../api';
 import { useAuth } from '../context/AuthContext';
 import './LoginPage.css';
@@ -7,6 +7,7 @@ import './LoginPage.css';
 export default function LoginPage() {
   const { signIn } = useAuth();
   const navigate = useNavigate();
+  const [organizationSlug, setOrganizationSlug] = useState('demo');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -17,14 +18,19 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      const { data } = await login(username, password);
+      const { data } = await login(organizationSlug.trim(), username, password);
       localStorage.setItem('token', data.access_token);
       const me = await getMe();
       signIn(data.access_token, me.data);
-      navigate('/', { replace: true });
+      if (me.data.role === 'plataforma_admin') {
+        navigate('/app/organizaciones', { replace: true });
+      } else {
+        navigate('/app', { replace: true });
+      }
     } catch (err) {
       localStorage.removeItem('token');
-      setError(err.response?.data?.detail || 'Error al iniciar sesión. Verifique sus credenciales.');
+      const d = err.response?.data?.detail;
+      setError(typeof d === 'string' ? d : 'Error al iniciar sesión. Verifique organización y credenciales.');
     } finally {
       setLoading(false);
     }
@@ -40,9 +46,21 @@ export default function LoginPage() {
           </svg>
           <h1>Gestión de Facturas</h1>
         </div>
-        <p className="login-subtitle">Inicie sesión en el sistema SGF</p>
+        <p className="login-subtitle">Inicie sesión en su organización</p>
 
         <form onSubmit={handleSubmit} className="login-form">
+          <div className="form-group">
+            <label htmlFor="org">Organización (slug)</label>
+            <input
+              id="org"
+              type="text"
+              value={organizationSlug}
+              onChange={(e) => setOrganizationSlug(e.target.value)}
+              placeholder="demo"
+              required
+              autoFocus
+            />
+          </div>
           <div className="form-group">
             <label htmlFor="username">Usuario</label>
             <input
@@ -52,7 +70,6 @@ export default function LoginPage() {
               onChange={(e) => setUsername(e.target.value)}
               placeholder="admin"
               required
-              autoFocus
             />
           </div>
           <div className="form-group">
@@ -75,9 +92,14 @@ export default function LoginPage() {
         </form>
 
         <div className="login-hint">
-          <strong>Cuentas predeterminadas:</strong><br/>
-          admin / admin123 (Administrador) &nbsp;·&nbsp; maria / maria123 (Contador) &nbsp;·&nbsp; carlos / carlos123 (Asistente)
+          <strong>Demo cliente:</strong> organización <code>demo</code> — admin / admin123 · maria / maria123 · carlos / carlos123
+          <br />
+          <strong>Plataforma:</strong> organización <code>plataforma</code> — super / super123
         </div>
+
+        <p className="login-back">
+          <Link to="/">← Volver al inicio</Link>
+        </p>
       </div>
     </div>
   );

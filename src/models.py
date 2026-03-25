@@ -1,13 +1,9 @@
 """
 SQLAlchemy ORM models for the Invoice Management System (SGF).
 
-Design decisions:
-- User.role defines access level:
-    - "administrador" (Gerente): full control over all invoices and users.
-    - "contador": can create, view, and update invoices.
-    - "asistente": can view and register invoices but cannot delete.
-- Invoice tracks: supplier, amount, due date, status (pendiente/pagada/vencida).
-- InvoiceAssignee is a join table so multiple users can be associated with an invoice.
+Multi-tenant: each Organization has isolated users and invoices.
+- plataforma_admin: manages organizations (lives in the reserved "plataforma" org).
+- administrador / contador / asistente: tenant roles inside an organization.
 """
 import enum
 from datetime import datetime, timezone
@@ -28,7 +24,16 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.db import Base
 
 
+class PlanTier(str, enum.Enum):
+    """Commercial plan shown on the public landing (pricing differentiation)."""
+
+    basico = "basico"
+    profesional = "profesional"
+    empresarial = "empresarial"
+
+
 class UserRole(str, enum.Enum):
+    plataforma_admin = "plataforma_admin"
     administrador = "administrador"
     contador = "contador"
     asistente = "asistente"
@@ -44,12 +49,40 @@ def utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
-class User(Base):
-    __tablename__ = "users"
+class Organization(Base):
+    __tablename__ = "organizations"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    username: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
-    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    slug: Mapped[str] = mapped_column(String(80), unique=True, index=True, nullable=False)
+    plan_tier: Mapped[PlanTier] = mapped_column(
+        Enum(PlanTier, name="plantier"), default=PlanTier.basico, nullable=False
+    )
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, nullable=False
+    )
+
+    users: Mapped[list["User"]] = relationship("User", back_populates="organization")
+    invoices: Mapped[list["Invoice"]] = relationship("Invoice", back_populates="organization")
+
+    def __repr__(self) -> str:
+        return f"<Organization id={self.id} slug={self.slug!r}>"
+
+
+class User(Base):
+    __tablename__ = "users"
+    __table_args__ = (
+        UniqueConstraint("organization_id", "username", name="uq_user_org_username"),
+        UniqueConstraint("organization_id", "email", name="uq_user_org_email"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    organization_id: Mapped[int] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    username: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    email: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[UserRole] = mapped_column(
         Enum(UserRole, name="userrole"), default=UserRole.asistente, nullable=False
@@ -59,7 +92,7 @@ class User(Base):
         DateTime(timezone=True), default=utcnow, nullable=False
     )
 
-    # Relationships
+    organization: Mapped["Organization"] = relationship("Organization", back_populates="users")
     created_invoices: Mapped[list["Invoice"]] = relationship(
         "Invoice", back_populates="creator", foreign_keys="Invoice.creator_id"
     )
@@ -73,9 +106,15 @@ class User(Base):
 
 class Invoice(Base):
     __tablename__ = "invoices"
+    __table_args__ = (
+        UniqueConstraint("organization_id", "invoice_number", name="uq_org_invoice_number"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    invoice_number: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
+    organization_id: Mapped[int] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    invoice_number: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     supplier: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
@@ -91,7 +130,7 @@ class Invoice(Base):
         DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False
     )
 
-    # Relationships
+    organization: Mapped["Organization"] = relationship("Organization", back_populates="invoices")
     creator: Mapped["User"] = relationship(
         "User", back_populates="created_invoices", foreign_keys=[creator_id]
     )
@@ -116,7 +155,6 @@ class InvoiceAssignee(Base):
         DateTime(timezone=True), default=utcnow, nullable=False
     )
 
-    # Relationships
     invoice: Mapped["Invoice"] = relationship("Invoice", back_populates="assignees")
     user: Mapped["User"] = relationship("User", back_populates="invoice_assignments")
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getUsers } from '../api';
+import { getUsers, deleteUser } from '../api';
 import { useAuth } from '../context/AuthContext';
 import UserModal from '../components/UserModal';
 import Navbar from '../components/Navbar';
@@ -23,6 +23,7 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -44,6 +45,26 @@ export default function UsersPage() {
   const handleUserCreated = (newUser) => {
     setUsers((prev) => [...prev, newUser].sort((a, b) => a.username.localeCompare(b.username)));
     setModalOpen(false);
+  };
+
+  const handleDeleteUser = async (u) => {
+    if (u.id === user?.id) return;
+    const msg =
+      `¿Eliminar al usuario «${u.username}»?\n\n` +
+      'Se eliminarán también todas las facturas que haya creado. ' +
+      'En facturas de otros solo se quitará como asignado.';
+    if (!window.confirm(msg)) return;
+    setDeletingId(u.id);
+    try {
+      await deleteUser(u.id);
+      await fetchUsers();
+    } catch (err) {
+      const d = err.response?.data?.detail;
+      const text = typeof d === 'string' ? d : Array.isArray(d) ? d.map((e) => e.msg).join(' ') : 'No se pudo eliminar el usuario.';
+      alert(text);
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   return (
@@ -80,8 +101,23 @@ export default function UsersPage() {
                   <span className={`role-tag ${ROLE_COLORS[u.role] || ''}`}>
                     {ROLE_LABELS[u.role] || u.role}
                   </span>
-                  <span className={`status-dot ${u.is_active ? 'active' : 'inactive'}`}
-                        title={u.is_active ? 'Activo' : 'Inactivo'} />
+                  <div className="user-card-header-right">
+                    {isAdmin && u.id !== user?.id && (
+                      <button
+                        type="button"
+                        className="user-delete-btn"
+                        title="Eliminar usuario"
+                        disabled={deletingId === u.id}
+                        onClick={() => handleDeleteUser(u)}
+                      >
+                        ✕
+                      </button>
+                    )}
+                    <span
+                      className={`status-dot ${u.is_active ? 'active' : 'inactive'}`}
+                      title={u.is_active ? 'Activo' : 'Inactivo'}
+                    />
+                  </div>
                 </div>
                 <h3 className="user-name">{u.username}</h3>
                 <p className="user-email">{u.email}</p>

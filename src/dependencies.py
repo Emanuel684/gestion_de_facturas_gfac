@@ -51,3 +51,22 @@ async def require_admin(current_user: User = Depends(get_current_user)) -> User:
             detail="Se requiere rol de administrador",
         )
     return current_user
+
+
+async def require_tenant_user(current_user: User = Depends(get_current_user)) -> User:
+    """Tenant-only: facturas y usuarios de una organización cliente."""
+    if current_user.role == UserRole.plataforma_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Los administradores de plataforma gestionan organizaciones, no datos de clientes.",
+        )
+    return current_user
+
+
+async def require_platform_admin(current_user: User = Depends(get_current_user)) -> User:
+    if current_user.role != UserRole.plataforma_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Se requiere rol de administrador de plataforma",
+        )
+    return current_user

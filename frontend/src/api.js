@@ -28,12 +28,12 @@ api.interceptors.response.use(
 );
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
-export const login = (username, password) => {
-  const form = new URLSearchParams();
-  form.append('username', username);
-  form.append('password', password);
-  return api.post('/auth/login', form);
-};
+export const login = (organizationSlug, username, password) =>
+  api.post('/auth/login', {
+    organization_slug: organizationSlug,
+    username,
+    password,
+  });
 
 // ── Invoices ─────────────────────────────────────────────────────────────────
 export const getInvoices = (params = {}) =>
@@ -70,3 +70,10 @@ export const getMe = () => api.get('/users/me');
 export const getUsers = () => api.get('/users');
 
 export const createUser = (data) => api.post('/users', data);
+
+export const deleteUser = (id) => api.delete(`/users/${id}`);
+
+// ── Organizations (plataforma_admin) ────────────────────────────────────────
+export const listOrganizations = () => api.get('/organizations');
+
+export const createOrganization = (data) => api.post('/organizations', data);
