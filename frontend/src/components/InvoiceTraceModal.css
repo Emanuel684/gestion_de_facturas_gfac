@@ -1,0 +1,156 @@
+.trace-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.trace-box {
+  background: #fff;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 560px;
+  max-height: min(90vh, 640px);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+}
+
+.trace-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem 0;
+  flex-shrink: 0;
+}
+
+.trace-header h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1e1b4b;
+  margin: 0;
+}
+
+.trace-sub {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.trace-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.btn-sm {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.82rem;
+}
+
+.trace-close {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  color: #9ca3af;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+}
+.trace-close:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.trace-body {
+  padding: 1rem 1.5rem 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.trace-loading,
+.trace-empty {
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+.trace-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  position: relative;
+}
+
+.trace-timeline::before {
+  content: '';
+  position: absolute;
+  left: 10px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #e5e7eb;
+}
+
+.trace-item {
+  position: relative;
+  padding-left: 2.25rem;
+  margin-bottom: 1rem;
+}
+
+.trace-dot {
+  position: absolute;
+  left: 5px;
+  top: 6px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #0e7490;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px #e5e7eb;
+}
+
+.trace-card {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+}
+
+.trace-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.trace-card-head time {
+  font-size: 0.78rem;
+  color: #6b7280;
+}
+
+.trace-actor {
+  display: block;
+  font-size: 0.78rem;
+  color: #6b7280;
+  margin-top: 0.35rem;
+}
+
+.trace-payload {
+  margin: 0.5rem 0 0;
+  font-size: 0.72rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 0.5rem;
+  overflow-x: auto;
+  max-height: 120px;
+}

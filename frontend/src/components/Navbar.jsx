@@ -40,6 +40,7 @@ export default function Navbar() {
         <div className="navbar-links">
           <Link to="/app" className="nav-link">Facturas</Link>
           <Link to="/app/users" className="nav-link">Usuarios</Link>
+          <Link to="/app/billing" className="nav-link">Suscripcion</Link>
         </div>
       )}
       {user && isPlatform && (

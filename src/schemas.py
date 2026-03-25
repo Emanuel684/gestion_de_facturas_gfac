@@ -7,7 +7,18 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 
-from src.models import InvoiceStatus, PlanTier, UserRole
+from src.models import (
+    CheckoutSessionStatus,
+    DianDocumentType,
+    DianLifecycleStatus,
+    InvoiceEventType,
+    InvoiceStatus,
+    PaymentStatus,
+    PlanTier,
+    SubscriptionStatus,
+    TaxRegime,
+    UserRole,
+)
 
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
@@ -100,6 +111,57 @@ class OrganizationCreate(BaseModel):
         return v
 
 
+class PublicSignupIn(BaseModel):
+    name: str
+    slug: str
+    plan_tier: PlanTier = PlanTier.basico
+    admin_username: str
+    admin_email: EmailStr
+    admin_password: str
+
+    @field_validator("name")
+    @classmethod
+    def name_strip(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("name must not be empty")
+        return v
+
+    @field_validator("slug")
+    @classmethod
+    def slug_normalize(cls, v: str) -> str:
+        v = v.strip().lower()
+        if not v or len(v) > 80:
+            raise ValueError("invalid slug")
+        if not _SLUG_RE.match(v):
+            raise ValueError("slug: solo minúsculas, números y guiones")
+        if v == "plataforma":
+            raise ValueError("slug reservado")
+        return v
+
+    @field_validator("admin_username")
+    @classmethod
+    def admin_username_ok(cls, v: str) -> str:
+        v = v.strip()
+        if len(v) < 3:
+            raise ValueError("admin_username must be at least 3 characters")
+        return v
+
+    @field_validator("admin_password")
+    @classmethod
+    def admin_password_ok(cls, v: str) -> str:
+        if len(v) < 6:
+            raise ValueError("admin_password must be at least 6 characters")
+        return v
+
+
+class PublicSignupOut(BaseModel):
+    organization_id: int
+    organization_slug: str
+    checkout_session_token: str
+    checkout_url: str
+
+
 # ── User ──────────────────────────────────────────────────────────────────────
 
 class UserOut(BaseModel):
@@ -146,6 +208,46 @@ class UserCreate(BaseModel):
         return v
 
 
+class UserUpdate(BaseModel):
+    """Patch-like update for tenant users (admin-only)."""
+
+    username: str | None = None
+    email: EmailStr | None = None
+    password: str | None = None
+    role: UserRole | None = None
+    is_active: bool | None = None
+
+    @field_validator("username")
+    @classmethod
+    def username_not_empty(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        v = v.strip()
+        if not v:
+            raise ValueError("username must not be empty")
+        if len(v) < 3:
+            raise ValueError("username must be at least 3 characters")
+        return v
+
+    @field_validator("password")
+    @classmethod
+    def password_min_length(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        if len(v) < 6:
+            raise ValueError("password must be at least 6 characters")
+        return v
+
+    @field_validator("role")
+    @classmethod
+    def no_platform_role(cls, v: UserRole | None) -> UserRole | None:
+        if v is None:
+            return v
+        if v == UserRole.plataforma_admin:
+            raise ValueError("cannot assign plataforma_admin via tenant API")
+        return v
+
+
 # ── Invoice ───────────────────────────────────────────────────────────────────
 
 class AssignedUser(BaseModel):
@@ -162,6 +264,20 @@ class InvoiceCreate(BaseModel):
     status: InvoiceStatus = InvoiceStatus.pendiente
     due_date: datetime | None = None
     assigned_user_ids: list[int] = []
+    # Preparación DIAN (opcional; valores por defecto en servidor si no se envían)
+    document_type: DianDocumentType | None = None
+    issue_date: datetime | None = None
+    currency: str | None = None
+    buyer_id_type: str | None = None
+    buyer_id_number: str | None = None
+    buyer_name: str | None = None
+    subtotal: Decimal | None = None
+    taxable_base: Decimal | None = None
+    iva_rate: Decimal | None = None
+    iva_amount: Decimal | None = None
+    withholding_amount: Decimal | None = None
+    total_document: Decimal | None = None
+    dian_lifecycle_status: DianLifecycleStatus | None = None
 
     @field_validator("invoice_number")
     @classmethod
@@ -193,6 +309,19 @@ class InvoiceUpdate(BaseModel):
     status: InvoiceStatus | None = None
     due_date: datetime | None = None
     assigned_user_ids: list[int] | None = None
+    document_type: DianDocumentType | None = None
+    issue_date: datetime | None = None
+    currency: str | None = None
+    buyer_id_type: str | None = None
+    buyer_id_number: str | None = None
+    buyer_name: str | None = None
+    subtotal: Decimal | None = None
+    taxable_base: Decimal | None = None
+    iva_rate: Decimal | None = None
+    iva_amount: Decimal | None = None
+    withholding_amount: Decimal | None = None
+    total_document: Decimal | None = None
+    dian_lifecycle_status: DianLifecycleStatus | None = None
 
     @field_validator("invoice_number")
     @classmethod
@@ -230,6 +359,23 @@ class InvoiceOut(BaseModel):
     created_at: datetime
     updated_at: datetime
     assigned_users: list[AssignedUser] = []
+    document_type: DianDocumentType
+    issue_date: datetime
+    currency: str
+    buyer_id_type: str | None
+    buyer_id_number: str | None
+    buyer_name: str | None
+    seller_snapshot_nit: str | None
+    seller_snapshot_dv: str | None
+    seller_snapshot_business_name: str | None
+    subtotal: Decimal | None
+    taxable_base: Decimal | None
+    iva_rate: Decimal | None
+    iva_amount: Decimal | None
+    withholding_amount: Decimal | None
+    total_document: Decimal | None
+    dian_lifecycle_status: DianLifecycleStatus
+    document_locked: bool
 
 
 class InvoicePage(BaseModel):
@@ -239,6 +385,118 @@ class InvoicePage(BaseModel):
     has_next: bool
     page: int
     page_size: int
+
+
+class InvoiceEventOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    event_type: InvoiceEventType
+    actor_user_id: int | None
+    payload: dict | None
+    created_at: datetime
+
+
+class InvoiceTraceResponse(BaseModel):
+    invoice: InvoiceOut
+    events: list[InvoiceEventOut]
+
+
+class FiscalProfileOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int | None = None
+    organization_id: int
+    nit: str
+    dv: str
+    business_name: str
+    trade_name: str | None
+    department_code: str | None
+    city_code: str | None
+    tax_regime: TaxRegime
+    invoice_prefix_default: str | None
+    updated_at: datetime | None = None
+
+
+class FiscalProfileUpdate(BaseModel):
+    nit: str
+    dv: str
+    business_name: str
+    trade_name: str | None = None
+    department_code: str | None = None
+    city_code: str | None = None
+    tax_regime: TaxRegime = TaxRegime.responsable_iva
+    invoice_prefix_default: str | None = None
+
+    @field_validator("nit", "dv", "business_name")
+    @classmethod
+    def strip_required(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        return v.strip()
+
+
+# ── Billing ───────────────────────────────────────────────────────────────────
+
+class CheckoutCreateIn(BaseModel):
+    plan_tier: PlanTier
+
+
+class CheckoutSessionOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    session_token: str
+    plan_tier: PlanTier
+    amount: Decimal
+    currency: str
+    status: CheckoutSessionStatus
+    expires_at: datetime
+    completed_at: datetime | None = None
+
+
+class CheckoutCreateOut(BaseModel):
+    checkout_url: str
+    session: CheckoutSessionOut
+
+
+class CheckoutActionIn(BaseModel):
+    outcome: PaymentStatus
+
+    @field_validator("outcome")
+    @classmethod
+    def allowed_outcomes(cls, v: PaymentStatus) -> PaymentStatus:
+        if v not in (PaymentStatus.paid, PaymentStatus.failed):
+            raise ValueError("outcome must be paid or failed")
+        return v
+
+
+class PaymentOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    amount: Decimal
+    currency: str
+    status: PaymentStatus
+    provider: str
+    provider_reference: str
+    paid_at: datetime | None
+    created_at: datetime
+
+
+class SubscriptionOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    organization_id: int
+    plan_tier: PlanTier
+    status: SubscriptionStatus
+    current_period_start: datetime | None
+    current_period_end: datetime | None
+    next_due_date: datetime | None
+    grace_expires_at: datetime | None
+    last_paid_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
 
 
 def user_to_out(user) -> UserOut:

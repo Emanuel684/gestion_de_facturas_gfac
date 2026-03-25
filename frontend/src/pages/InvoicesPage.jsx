@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { getInvoicesPage, deleteInvoice, getUsers, getOverdueInvoices } from '../api';
 import { useAuth } from '../context/AuthContext';
 import InvoiceModal from '../components/InvoiceModal';
+import InvoiceTraceModal from '../components/InvoiceTraceModal';
 import UploadModal from '../components/UploadModal';
 import Navbar from '../components/Navbar';
 import './InvoicesPage.css';
@@ -16,6 +17,15 @@ const STATUS_COLORS = {
   pendiente: 'badge-pendiente',
   pagada: 'badge-pagada',
   vencida: 'badge-vencida',
+};
+
+const DIAN_LABELS = {
+  borrador: 'Borrador',
+  lista_para_envio: 'Lista envío',
+  enviada_proveedor: 'Enviada',
+  aceptada_dian: 'Aceptada DIAN',
+  rechazada_dian: 'Rechazada',
+  contingencia: 'Contingencia',
 };
 
 function formatCurrency(amount) {
@@ -45,6 +55,7 @@ export default function InvoicesPage() {
   const [prefillData, setPrefillData] = useState(null);
   const [overdueInvoices, setOverdueInvoices] = useState([]);
   const [overdueDismissed, setOverdueDismissed] = useState(false);
+  const [traceInvoice, setTraceInvoice] = useState(null);
 
   // ── Data fetching ──────────────────────────────────────────────────────────
 
@@ -283,6 +294,13 @@ export default function InvoicesPage() {
                     {STATUS_LABELS[inv.status]}
                   </span>
                   <div className="invoice-actions">
+                    <button
+                      className="icon-btn trace"
+                      title="Trazabilidad y auditoría"
+                      onClick={() => setTraceInvoice({ id: inv.id, invoice_number: inv.invoice_number })}
+                    >
+                      📜
+                    </button>
                     {canEdit && (
                       <button className="icon-btn edit" title="Editar" onClick={() => openEdit(inv)}>
                         ✎
@@ -302,6 +320,13 @@ export default function InvoicesPage() {
                 </div>
 
                 <h3 className="invoice-number">{inv.invoice_number}</h3>
+                {inv.dian_lifecycle_status && (
+                  <p className="invoice-dian-line">
+                    <span className="badge badge-dian">
+                      {DIAN_LABELS[inv.dian_lifecycle_status] || inv.dian_lifecycle_status}
+                    </span>
+                  </p>
+                )}
                 <p className="invoice-supplier">🏢 {inv.supplier}</p>
                 <p className="invoice-amount">{formatCurrency(inv.amount)}</p>
 
@@ -353,11 +378,20 @@ export default function InvoicesPage() {
 
       {modalOpen && (
         <InvoiceModal
+          key={`${editingInvoice?.id ?? 'new'}-${prefillData ? 'p' : 'n'}`}
           invoice={editingInvoice}
           users={users}
           prefill={prefillData}
           onSuccess={handleModalSuccess}
           onClose={() => setModalOpen(false)}
+        />
+      )}
+
+      {traceInvoice && (
+        <InvoiceTraceModal
+          invoiceId={traceInvoice.id}
+          invoiceNumber={traceInvoice.invoice_number}
+          onClose={() => setTraceInvoice(null)}
         />
       )}
 

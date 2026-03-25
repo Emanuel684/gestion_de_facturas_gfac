@@ -4,15 +4,18 @@ Test fixtures — Sistema de Gestión de Facturas (SGF).
 Uses an in-memory SQLite database (via aiosqlite). Each test gets a fresh DB.
 Login uses organization_slug + username + password.
 """
+from datetime import timedelta
+
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from src.auth import hash_password
+from src.billing import now_utc
 from src.db import Base, get_db
 from src.main import app
-from src.models import Organization, PlanTier, User, UserRole
+from src.models import Organization, PlanTier, Subscription, SubscriptionStatus, User, UserRole
 
 TEST_DB_URL = "sqlite+aiosqlite:///:memory:"
 TEST_ORG_SLUG = "test-org"
@@ -57,6 +60,20 @@ async def tenant_org(db_session: AsyncSession) -> Organization:
         plan_tier=PlanTier.basico,
     )
     db_session.add(org)
+    await db_session.flush()
+    now = now_utc()
+    db_session.add(
+        Subscription(
+            organization_id=org.id,
+            plan_tier=PlanTier.basico,
+            status=SubscriptionStatus.active,
+            current_period_start=now,
+            current_period_end=now + timedelta(days=30),
+            next_due_date=now + timedelta(days=30),
+            grace_expires_at=now + timedelta(days=40),
+            last_paid_at=now,
+        )
+    )
     await db_session.commit()
     await db_session.refresh(org)
     return org

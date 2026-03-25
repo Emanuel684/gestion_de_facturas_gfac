@@ -22,7 +22,8 @@ export default function UsersPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [modalOpen, setModalOpen] = useState(false);
+  /** `undefined` = modal cerrado; `null` = crear; objeto = editar */
+  const [modalUser, setModalUser] = useState(undefined);
   const [deletingId, setDeletingId] = useState(null);
 
   const fetchUsers = useCallback(async () => {
@@ -42,9 +43,13 @@ export default function UsersPage() {
 
   const isAdmin = user?.role === 'administrador';
 
-  const handleUserCreated = (newUser) => {
-    setUsers((prev) => [...prev, newUser].sort((a, b) => a.username.localeCompare(b.username)));
-    setModalOpen(false);
+  const handleUserSaved = (saved) => {
+    setUsers((prev) => {
+      const exists = prev.some((x) => x.id === saved.id);
+      const next = exists ? prev.map((x) => (x.id === saved.id ? saved : x)) : [...prev, saved];
+      return next.sort((a, b) => a.username.localeCompare(b.username));
+    });
+    setModalUser(undefined);
   };
 
   const handleDeleteUser = async (u) => {
@@ -79,7 +84,7 @@ export default function UsersPage() {
             </p>
           </div>
           {isAdmin && (
-            <button className="btn btn-primary" onClick={() => setModalOpen(true)}>
+            <button className="btn btn-primary" onClick={() => setModalUser(null)}>
               ＋ Nuevo Usuario
             </button>
           )}
@@ -102,6 +107,16 @@ export default function UsersPage() {
                     {ROLE_LABELS[u.role] || u.role}
                   </span>
                   <div className="user-card-header-right">
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        className="user-edit-btn"
+                        title="Editar usuario"
+                        onClick={() => setModalUser(u)}
+                      >
+                        Editar
+                      </button>
+                    )}
                     {isAdmin && u.id !== user?.id && (
                       <button
                         type="button"
@@ -130,10 +145,12 @@ export default function UsersPage() {
         )}
       </main>
 
-      {modalOpen && (
+      {modalUser !== undefined && (
         <UserModal
-          onSuccess={handleUserCreated}
-          onClose={() => setModalOpen(false)}
+          key={modalUser === null ? 'new' : modalUser.id}
+          user={modalUser}
+          onSuccess={handleUserSaved}
+          onClose={() => setModalUser(undefined)}
         />
       )}
     </>

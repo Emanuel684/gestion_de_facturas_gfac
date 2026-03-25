@@ -14,14 +14,21 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// On 401, clear token so the app redirects to login
+// On 401, clear session and go to login — except failed /auth/login (wrong credentials),
+// where a full redirect would reload the page and wipe the form before the user reads the error.
 api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      const url = err.config?.url ?? '';
+      const isLoginFailure = url.includes('/auth/login');
+      if (!isLoginFailure) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
+      }
     }
     return Promise.reject(err);
   }
@@ -71,9 +78,33 @@ export const getUsers = () => api.get('/users');
 
 export const createUser = (data) => api.post('/users', data);
 
+export const updateUser = (id, data) => api.put(`/users/${id}`, data);
+
 export const deleteUser = (id) => api.delete(`/users/${id}`);
 
 // ── Organizations (plataforma_admin) ────────────────────────────────────────
 export const listOrganizations = () => api.get('/organizations');
 
 export const createOrganization = (data) => api.post('/organizations', data);
+
+// ── Public signup / mock checkout ────────────────────────────────────────────
+export const publicSignup = (data) => api.post('/public/signup', data);
+export const getPublicCheckout = (token) => api.get(`/public/checkout/${token}`);
+export const completePublicCheckout = (token, outcome) =>
+  api.post(`/public/checkout/${token}/complete`, { outcome });
+
+// ── Billing (tenant) ─────────────────────────────────────────────────────────
+export const getSubscription = () => api.get('/billing/subscription/me');
+export const getPayments = () => api.get('/billing/payments');
+export const createCheckout = (planTier) => api.post('/billing/checkout', { plan_tier: planTier });
+export const getCheckout = (token) => api.get(`/billing/checkout/${token}`);
+export const completeCheckout = (token, outcome) =>
+  api.post(`/billing/checkout/${token}/complete`, { outcome });
+
+// ── Fiscal profile (tenant) ─────────────────────────────────────────────────
+export const getFiscalProfile = () => api.get('/fiscal/profile');
+export const putFiscalProfile = (data) => api.put('/fiscal/profile', data);
+
+// ── Invoice traceability / audit ────────────────────────────────────────────
+export const getInvoiceTrace = (id) => api.get(`/invoices/${id}/trace`);
+export const getInvoiceAuditPack = (id) => api.get(`/invoices/${id}/audit-pack`);

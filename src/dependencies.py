@@ -9,9 +9,10 @@ from jose import JWTError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.billing import recompute_subscription_status
 from src.auth import decode_access_token
 from src.db import get_db
-from src.models import User, UserRole
+from src.models import Subscription, SubscriptionStatus, User, UserRole
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +60,32 @@ async def require_tenant_user(current_user: User = Depends(get_current_user)) ->
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Los administradores de plataforma gestionan organizaciones, no datos de clientes.",
+        )
+    return current_user
+
+
+async def require_active_tenant_user(
+    current_user: User = Depends(require_tenant_user),
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    """Tenant user with active subscription or within grace period."""
+    result = await db.execute(
+        select(Subscription)
+        .where(Subscription.organization_id == current_user.organization_id)
+        .order_by(Subscription.id.desc())
+    )
+    subscription = result.scalars().first()
+    if subscription is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="La organización no tiene suscripción activa",
+        )
+    recompute_subscription_status(subscription)
+    await db.commit()
+    if subscription.status not in (SubscriptionStatus.active, SubscriptionStatus.past_due):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Suscripción vencida. Regularice el pago para recuperar el acceso.",
         )
     return current_user
 

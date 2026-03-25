@@ -52,6 +52,22 @@
   gap: 0.35rem;
 }
 
+.user-edit-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0.3rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  color: #0e7490;
+}
+.user-edit-btn:hover {
+  background: #e0f2fe;
+  color: #0c4a6e;
+}
+
 .user-delete-btn {
   border: none;
   background: transparent;

@@ -163,6 +163,72 @@ async def test_create_user_invalid_email(client: AsyncClient, admin_token: str):
     assert resp.status_code == 422
 
 
+@pytest.mark.asyncio
+async def test_update_user_as_admin(
+    client: AsyncClient, admin_token: str, contador_user
+):
+    resp = await client.put(
+        f"/api/users/{contador_user.id}",
+        json={
+            "username": "maria_updated",
+            "email": "maria_updated@example.com",
+            "role": "asistente",
+        },
+        headers=auth(admin_token),
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["username"] == "maria_updated"
+    assert body["email"] == "maria_updated@example.com"
+    assert body["role"] == "asistente"
+
+
+@pytest.mark.asyncio
+async def test_contador_cannot_edit_user(client: AsyncClient, contador_token: str, contador_user):
+    resp = await client.put(
+        f"/api/users/{contador_user.id}",
+        json={"username": "should_fail"},
+        headers=auth(contador_token),
+    )
+    assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_update_user_cannot_assign_plataforma_admin(
+    client: AsyncClient, admin_token: str, contador_user
+):
+    resp = await client.put(
+        f"/api/users/{contador_user.id}",
+        json={"role": "plataforma_admin"},
+        headers=auth(admin_token),
+    )
+    assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_update_user_cannot_demote_last_admin(
+    client: AsyncClient, admin_token: str, admin_user
+):
+    resp = await client.put(
+        f"/api/users/{admin_user.id}",
+        json={"role": "asistente"},
+        headers=auth(admin_token),
+    )
+    assert resp.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_update_user_duplicate_username_conflict(
+    client: AsyncClient, admin_token: str, contador_user
+):
+    resp = await client.put(
+        f"/api/users/{contador_user.id}",
+        json={"username": "admin"},
+        headers=auth(admin_token),
+    )
+    assert resp.status_code == 409
+
+
 # ── Permission checks ────────────────────────────────────────────────────────
 
 @pytest.mark.asyncio
@@ -231,7 +297,7 @@ SAMPLE_INVOICE = {
 
 @pytest.mark.asyncio
 async def test_delete_user_as_admin_cascades_created_invoices(client: AsyncClient, admin_token: str):
-    """Deleting a user removes every invoice they created."""
+    """Soft-deleting a user must not delete the invoices they created."""
     await client.post(
         "/api/users",
         json={
@@ -268,7 +334,7 @@ async def test_delete_user_as_admin_cascades_created_invoices(client: AsyncClien
     list_resp = await client.get("/api/invoices", headers=auth(admin_token))
     assert list_resp.status_code == 200
     numbers = [item["invoice_number"] for item in list_resp.json()["items"]]
-    assert "FAC-DEL-USER" not in numbers
+    assert "FAC-DEL-USER" in numbers
 
 
 @pytest.mark.asyncio

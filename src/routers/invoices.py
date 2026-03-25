@@ -7,28 +7,63 @@ Permission rules:
     or are assigned to. Cannot delete.
   - asistente role: can see invoices they created or are assigned to,
     can create invoices, cannot edit status or delete.
+
+DIAN traceability: `dian_lifecycle_status` + `invoice_events`; `document_locked` bloquea
+campos fiscales salvo transiciones de estado permitidas.
 """
 import logging
 from datetime import datetime, timezone
+from decimal import Decimal
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, status
+from fastapi.responses import JSONResponse
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from src.db import get_db
-from src.dependencies import require_tenant_user
+from src.dependencies import require_active_tenant_user
+from src.dian.audit import build_audit_pack
+from src.dian.events import record_invoice_event
+from src.dian.validation import is_document_editing_locked, totals_match
 from src.extraction import ALL_SUPPORTED_TYPES, extract_from_file
-from src.models import Invoice, InvoiceAssignee, InvoiceStatus, User, UserRole
-from src.schemas import AssignedUser, InvoiceCreate, InvoiceOut, InvoicePage, InvoiceUpdate
+from src.models import (
+    DianDocumentType,
+    DianLifecycleStatus,
+    Invoice,
+    InvoiceAssignee,
+    InvoiceEventType,
+    InvoiceStatus,
+    OrganizationFiscalProfile,
+    User,
+    UserRole,
+)
+from src.schemas import (
+    AssignedUser,
+    InvoiceCreate,
+    InvoiceEventOut,
+    InvoiceOut,
+    InvoicePage,
+    InvoiceTraceResponse,
+    InvoiceUpdate,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/invoices", tags=["invoices"])
 
 
+def _sync_document_lock(invoice: Invoice) -> None:
+    unlocked = {DianLifecycleStatus.borrador, DianLifecycleStatus.rechazada_dian}
+    invoice.document_locked = invoice.dian_lifecycle_status not in unlocked
+
+
 def _invoice_to_out(invoice: Invoice) -> InvoiceOut:
-    assigned = [AssignedUser(id=a.user.id, username=a.user.username) for a in invoice.assignees]
+    assigned = [
+        AssignedUser(id=a.user.id, username=a.user.username)
+        for a in invoice.assignees
+        if a.user is not None and a.user.is_active
+    ]
     return InvoiceOut(
         id=invoice.id,
         invoice_number=invoice.invoice_number,
@@ -41,6 +76,23 @@ def _invoice_to_out(invoice: Invoice) -> InvoiceOut:
         created_at=invoice.created_at,
         updated_at=invoice.updated_at,
         assigned_users=assigned,
+        document_type=invoice.document_type,
+        issue_date=invoice.issue_date,
+        currency=invoice.currency,
+        buyer_id_type=invoice.buyer_id_type,
+        buyer_id_number=invoice.buyer_id_number,
+        buyer_name=invoice.buyer_name,
+        seller_snapshot_nit=invoice.seller_snapshot_nit,
+        seller_snapshot_dv=invoice.seller_snapshot_dv,
+        seller_snapshot_business_name=invoice.seller_snapshot_business_name,
+        subtotal=invoice.subtotal,
+        taxable_base=invoice.taxable_base,
+        iva_rate=invoice.iva_rate,
+        iva_amount=invoice.iva_amount,
+        withholding_amount=invoice.withholding_amount,
+        total_document=invoice.total_document,
+        dian_lifecycle_status=invoice.dian_lifecycle_status,
+        document_locked=invoice.document_locked,
     )
 
 
@@ -57,17 +109,14 @@ async def _get_invoice_or_404(invoice_id: int, org_id: int, db: AsyncSession) ->
 
 
 def _check_invoice_access(invoice: Invoice, user: User) -> None:
-    """Raise 403 if user does not have read access to this invoice."""
     if user.role == UserRole.administrador or user.role == UserRole.contador:
-        return  # admin and contador can see all invoices
-    # asistente can only see invoices they created or are assigned to
+        return
     is_assigned = any(a.user_id == user.id for a in invoice.assignees)
     if invoice.creator_id != user.id and not is_assigned:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado")
 
 
 def _check_invoice_edit(invoice: Invoice, user: User) -> None:
-    """Raise 403 if user cannot edit this invoice."""
     if user.role == UserRole.administrador:
         return
     if user.role == UserRole.asistente:
@@ -75,7 +124,6 @@ def _check_invoice_edit(invoice: Invoice, user: User) -> None:
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Los asistentes no pueden modificar facturas",
         )
-    # contador can only edit invoices they created or are assigned to
     is_assigned = any(a.user_id == user.id for a in invoice.assignees)
     if invoice.creator_id != user.id and not is_assigned:
         raise HTTPException(
@@ -85,7 +133,6 @@ def _check_invoice_edit(invoice: Invoice, user: User) -> None:
 
 
 def _check_invoice_delete(invoice: Invoice, user: User) -> None:
-    """Raise 403 if user cannot delete this invoice. Only administrador can delete."""
     if user.role != UserRole.administrador:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -93,7 +140,93 @@ def _check_invoice_delete(invoice: Invoice, user: User) -> None:
         )
 
 
-# ── List ─────────────────────────────────────────────────────────────────────
+def _locked_field_update_attempt(payload: InvoiceUpdate) -> bool:
+    return any(
+        [
+            payload.invoice_number is not None,
+            payload.supplier is not None,
+            payload.description is not None,
+            payload.amount is not None,
+            payload.document_type is not None,
+            payload.issue_date is not None,
+            payload.currency is not None,
+            payload.buyer_id_type is not None,
+            payload.buyer_id_number is not None,
+            payload.buyer_name is not None,
+            payload.subtotal is not None,
+            payload.taxable_base is not None,
+            payload.iva_rate is not None,
+            payload.iva_amount is not None,
+            payload.withholding_amount is not None,
+            payload.total_document is not None,
+        ]
+    )
+
+
+def _resolve_monetary_fields_create(payload: InvoiceCreate, base_amount: Decimal) -> dict:
+    """Deriva subtotales/IVA/total coherente con el monto interno si no se envían."""
+    subtotal = payload.subtotal
+    taxable_base = payload.taxable_base
+    iva_rate = payload.iva_rate
+    iva_amount = payload.iva_amount
+    wh = payload.withholding_amount
+    total_doc = payload.total_document
+
+    if subtotal is None and total_doc is None and iva_rate is None and iva_amount is None:
+        return {
+            "subtotal": base_amount,
+            "taxable_base": base_amount,
+            "iva_rate": Decimal("0"),
+            "iva_amount": Decimal("0"),
+            "withholding_amount": wh,
+            "total_document": base_amount,
+        }
+
+    sub = subtotal if subtotal is not None else base_amount
+    rate = iva_rate if iva_rate is not None else Decimal("0")
+    iva = iva_amount if iva_amount is not None else (sub * rate).quantize(Decimal("0.01"))
+    tax_base = taxable_base if taxable_base is not None else sub
+    w = wh or Decimal("0")
+    total = total_doc if total_doc is not None else (sub + iva - w).quantize(Decimal("0.01"))
+    return {
+        "subtotal": sub,
+        "taxable_base": tax_base,
+        "iva_rate": rate,
+        "iva_amount": iva,
+        "withholding_amount": wh,
+        "total_document": total,
+    }
+
+
+def _resolve_monetary_fields_update(invoice: Invoice, payload: InvoiceUpdate) -> dict:
+    """Fusiona montos DIAN existentes con el payload parcial."""
+    amt = payload.amount if payload.amount is not None else invoice.amount
+    sub = payload.subtotal if payload.subtotal is not None else invoice.subtotal
+    if sub is None:
+        sub = amt
+    taxable_base = payload.taxable_base if payload.taxable_base is not None else invoice.taxable_base
+    if taxable_base is None:
+        taxable_base = sub
+    rate = payload.iva_rate if payload.iva_rate is not None else invoice.iva_rate
+    if rate is None:
+        rate = Decimal("0")
+    wh = payload.withholding_amount if payload.withholding_amount is not None else invoice.withholding_amount
+    iva = payload.iva_amount if payload.iva_amount is not None else invoice.iva_amount
+    if iva is None:
+        iva = (sub * rate).quantize(Decimal("0.01"))
+    w = wh or Decimal("0")
+    total = payload.total_document if payload.total_document is not None else invoice.total_document
+    if total is None:
+        total = (sub + iva - w).quantize(Decimal("0.01"))
+    return {
+        "subtotal": sub,
+        "taxable_base": taxable_base,
+        "iva_rate": rate,
+        "iva_amount": iva,
+        "withholding_amount": wh,
+        "total_document": total,
+    }
+
 
 # ── List ─────────────────────────────────────────────────────────────────────
 
@@ -103,19 +236,9 @@ async def list_invoices(
     supplier_filter: Annotated[str | None, Query(alias="supplier")] = None,
     page: Annotated[int, Query(ge=0)] = 0,
     page_size: Annotated[int, Query(ge=1, le=100, alias="page_size")] = 10,
-    current_user: User = Depends(require_tenant_user),
+    current_user: User = Depends(require_active_tenant_user),
     db: AsyncSession = Depends(get_db),
 ) -> InvoicePage:
-    """
-    List invoices with cursor-style pagination.
-    - page: zero-based page index.
-    - page_size: number of items per page (default 10, max 100).
-    - Returns `has_next=true` when there are more items after the current page.
-
-    Administrador and Contador see all invoices.
-    Asistente sees only invoices they created or are assigned to.
-    Supports optional ?status= and ?supplier= filters.
-    """
     org_id = current_user.organization_id
     query = select(Invoice).options(
         selectinload(Invoice.assignees).selectinload(InvoiceAssignee.user)
@@ -136,7 +259,6 @@ async def list_invoices(
     if supplier_filter:
         query = query.where(Invoice.supplier.ilike(f"%{supplier_filter}%"))
 
-    # Fetch one extra row to detect whether a next page exists
     query = query.order_by(Invoice.created_at.desc()).offset(page * page_size).limit(page_size + 1)
     result = await db.execute(query)
     rows = result.scalars().all()
@@ -160,27 +282,12 @@ MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 MB
 @router.post("/upload", status_code=status.HTTP_200_OK)
 async def upload_invoice_document(
     file: UploadFile = File(...),
-    current_user: User = Depends(require_tenant_user),
+    current_user: User = Depends(require_active_tenant_user),
 ) -> dict:
-    """
-    Upload an image, PDF, or DOCX document containing invoice data.
-    Extracts text and returns structured invoice fields that can be used
-    to pre-fill the invoice creation form.
-
-    Accepted formats: JPEG, PNG, WEBP, BMP, TIFF, PDF, DOCX.
-    Max file size: 10 MB.
-
-    Returns a JSON object with extracted fields:
-      - invoice_number, supplier, amount, description, due_date
-      - raw_text (full extracted text for reference)
-    Fields that could not be extracted are omitted.
-    """
-    # Validate file type
     content_type = file.content_type or ""
     filename = file.filename or "unknown"
 
     if content_type not in ALL_SUPPORTED_TYPES:
-        # Try extension-based fallback before rejecting
         ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
         if ext not in {"jpg", "jpeg", "png", "webp", "bmp", "tiff", "tif", "pdf", "docx"}:
             raise HTTPException(
@@ -191,7 +298,6 @@ async def upload_invoice_document(
                 ),
             )
 
-    # Read file with size limit
     file_bytes = await file.read()
     if len(file_bytes) > MAX_UPLOAD_SIZE:
         raise HTTPException(
@@ -205,7 +311,6 @@ async def upload_invoice_document(
             detail="El archivo está vacío.",
         )
 
-    # Extract data
     try:
         extracted = extract_from_file(file_bytes, content_type, filename)
     except ValueError as e:
@@ -243,7 +348,7 @@ async def upload_invoice_document(
 @router.post("", response_model=InvoiceOut, status_code=status.HTTP_201_CREATED)
 async def create_invoice(
     payload: InvoiceCreate,
-    current_user: User = Depends(require_tenant_user),
+    current_user: User = Depends(require_active_tenant_user),
     db: AsyncSession = Depends(get_db),
 ) -> InvoiceOut:
     org_id = current_user.organization_id
@@ -259,6 +364,35 @@ async def create_invoice(
             detail=f"Ya existe una factura con número '{payload.invoice_number}'",
         )
 
+    now = datetime.now(timezone.utc)
+    issue_dt = payload.issue_date or now
+    doc_type = payload.document_type or DianDocumentType.factura_venta
+    currency = (payload.currency or "COP").strip().upper()
+    dian_st = payload.dian_lifecycle_status or DianLifecycleStatus.borrador
+
+    fp_result = await db.execute(
+        select(OrganizationFiscalProfile).where(OrganizationFiscalProfile.organization_id == org_id)
+    )
+    fp = fp_result.scalar_one_or_none()
+    seller_nit = fp.nit if fp else None
+    seller_dv = fp.dv if fp else None
+    seller_bn = fp.business_name if fp else None
+
+    monetary = _resolve_monetary_fields_create(payload, payload.amount)
+    subtotal = monetary.get("subtotal", payload.amount)
+    taxable_base = monetary.get("taxable_base", payload.amount)
+    iva_rate = monetary.get("iva_rate", Decimal("0"))
+    iva_amount = monetary.get("iva_amount", Decimal("0"))
+    wh = monetary.get("withholding_amount")
+    total_doc = monetary.get("total_document", payload.amount)
+
+    if subtotal is not None and iva_amount is not None and total_doc is not None:
+        if not totals_match(subtotal, iva_amount, wh, total_doc):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Los totales (subtotal + IVA - retenciones) no coinciden con el total del documento",
+            )
+
     invoice = Invoice(
         organization_id=org_id,
         invoice_number=payload.invoice_number,
@@ -268,7 +402,24 @@ async def create_invoice(
         status=payload.status,
         due_date=payload.due_date,
         creator_id=current_user.id,
+        document_type=doc_type,
+        issue_date=issue_dt,
+        currency=currency,
+        buyer_id_type=payload.buyer_id_type,
+        buyer_id_number=payload.buyer_id_number,
+        buyer_name=payload.buyer_name,
+        seller_snapshot_nit=seller_nit,
+        seller_snapshot_dv=seller_dv,
+        seller_snapshot_business_name=seller_bn,
+        subtotal=subtotal,
+        taxable_base=taxable_base,
+        iva_rate=iva_rate,
+        iva_amount=iva_amount,
+        withholding_amount=wh,
+        total_document=total_doc,
+        dian_lifecycle_status=dian_st,
     )
+    _sync_document_lock(invoice)
     db.add(invoice)
     await db.flush()
 
@@ -279,8 +430,20 @@ async def create_invoice(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=f"Usuario con id={uid} no encontrado en la organización",
             )
+        if not u.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Usuario con id={uid} está deshabilitado",
+            )
         db.add(InvoiceAssignee(invoice_id=invoice.id, user_id=uid))
 
+    await record_invoice_event(
+        db,
+        invoice=invoice,
+        event_type=InvoiceEventType.created,
+        actor=current_user,
+        payload={"invoice_number": invoice.invoice_number},
+    )
     await db.commit()
 
     invoice = await _get_invoice_or_404(invoice.id, org_id, db)
@@ -288,18 +451,85 @@ async def create_invoice(
     return _invoice_to_out(invoice)
 
 
-# ── Overdue (must be registered before /{invoice_id} or "overdue" is parsed as int) ─
+# ── Trace & audit (before /{invoice_id} single segment handlers if any) ─────
+
+@router.get("/{invoice_id}/trace", response_model=InvoiceTraceResponse)
+async def get_invoice_trace(
+    invoice_id: int,
+    current_user: User = Depends(require_active_tenant_user),
+    db: AsyncSession = Depends(get_db),
+) -> InvoiceTraceResponse:
+    from src.models import InvoiceEvent
+
+    invoice = await _get_invoice_or_404(invoice_id, current_user.organization_id, db)
+    _check_invoice_access(invoice, current_user)
+    r = await db.execute(
+        select(InvoiceEvent)
+        .where(
+            InvoiceEvent.invoice_id == invoice_id,
+            InvoiceEvent.organization_id == current_user.organization_id,
+        )
+        .order_by(InvoiceEvent.created_at.asc())
+    )
+    events = r.scalars().all()
+    return InvoiceTraceResponse(
+        invoice=_invoice_to_out(invoice),
+        events=[InvoiceEventOut.model_validate(e) for e in events],
+    )
+
+
+@router.get("/{invoice_id}/audit-pack")
+async def get_invoice_audit_pack(
+    invoice_id: int,
+    current_user: User = Depends(require_active_tenant_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from src.models import InvoiceEvent
+
+    invoice = await _get_invoice_or_404(invoice_id, current_user.organization_id, db)
+    _check_invoice_access(invoice, current_user)
+
+    r_ev = await db.execute(
+        select(InvoiceEvent)
+        .where(
+            InvoiceEvent.invoice_id == invoice_id,
+            InvoiceEvent.organization_id == current_user.organization_id,
+        )
+        .order_by(InvoiceEvent.created_at.asc())
+    )
+    events = r_ev.scalars().all()
+
+    r_fp = await db.execute(
+        select(OrganizationFiscalProfile).where(
+            OrganizationFiscalProfile.organization_id == current_user.organization_id
+        )
+    )
+    fp = r_fp.scalar_one_or_none()
+
+    pack = build_audit_pack(
+        invoice,
+        list(events),
+        fp,
+        datetime.now(timezone.utc),
+    )
+    await record_invoice_event(
+        db,
+        invoice=invoice,
+        event_type=InvoiceEventType.export_generated,
+        actor=current_user,
+        payload={"format": "json"},
+    )
+    await db.commit()
+    return JSONResponse(content=pack)
+
+
+# ── Overdue ───────────────────────────────────────────────────────────────────
 
 @router.get("/overdue", response_model=list[InvoiceOut])
 async def list_overdue_invoices(
-    current_user: User = Depends(require_tenant_user),
+    current_user: User = Depends(require_active_tenant_user),
     db: AsyncSession = Depends(get_db),
 ) -> list[InvoiceOut]:
-    """
-    Invoices in status pendiente whose due_date is in the past.
-    Same visibility rules as list: asistente only sees own or assigned.
-    Ordered by due_date ascending (oldest first).
-    """
     now = datetime.now(timezone.utc)
     org_id = current_user.organization_id
     query = (
@@ -332,7 +562,7 @@ async def list_overdue_invoices(
 @router.get("/{invoice_id}", response_model=InvoiceOut)
 async def get_invoice(
     invoice_id: int,
-    current_user: User = Depends(require_tenant_user),
+    current_user: User = Depends(require_active_tenant_user),
     db: AsyncSession = Depends(get_db),
 ) -> InvoiceOut:
     invoice = await _get_invoice_or_404(invoice_id, current_user.organization_id, db)
@@ -346,12 +576,21 @@ async def get_invoice(
 async def update_invoice(
     invoice_id: int,
     payload: InvoiceUpdate,
-    current_user: User = Depends(require_tenant_user),
+    current_user: User = Depends(require_active_tenant_user),
     db: AsyncSession = Depends(get_db),
 ) -> InvoiceOut:
     org_id = current_user.organization_id
     invoice = await _get_invoice_or_404(invoice_id, org_id, db)
     _check_invoice_edit(invoice, current_user)
+
+    locked = is_document_editing_locked(invoice.dian_lifecycle_status, invoice.document_locked)
+    if locked and _locked_field_update_attempt(payload):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Documento bloqueado para edición fiscal; solo puede cambiar estado de cobro, asignaciones o estado DIAN permitido",
+        )
+
+    old_dian = invoice.dian_lifecycle_status
 
     if payload.invoice_number is not None:
         existing = await db.execute(
@@ -379,7 +618,63 @@ async def update_invoice(
     if payload.due_date is not None:
         invoice.due_date = payload.due_date
 
-    # Sync assigned users if provided
+    if payload.document_type is not None:
+        invoice.document_type = payload.document_type
+    if payload.issue_date is not None:
+        invoice.issue_date = payload.issue_date
+    if payload.currency is not None:
+        invoice.currency = payload.currency.strip().upper()
+    if payload.buyer_id_type is not None:
+        invoice.buyer_id_type = payload.buyer_id_type
+    if payload.buyer_id_number is not None:
+        invoice.buyer_id_number = payload.buyer_id_number
+    if payload.buyer_name is not None:
+        invoice.buyer_name = payload.buyer_name
+
+    amt = invoice.amount
+    if any(
+        x is not None
+        for x in (
+            payload.subtotal,
+            payload.taxable_base,
+            payload.iva_rate,
+            payload.iva_amount,
+            payload.withholding_amount,
+            payload.total_document,
+        )
+    ):
+        monetary = _resolve_monetary_fields_update(invoice, payload)
+        invoice.subtotal = monetary["subtotal"]
+        invoice.taxable_base = monetary["taxable_base"]
+        invoice.iva_rate = monetary["iva_rate"]
+        invoice.iva_amount = monetary["iva_amount"]
+        invoice.withholding_amount = monetary["withholding_amount"]
+        invoice.total_document = monetary["total_document"]
+
+    if invoice.subtotal is not None and invoice.iva_amount is not None and invoice.total_document is not None:
+        if not totals_match(
+            invoice.subtotal,
+            invoice.iva_amount,
+            invoice.withholding_amount,
+            invoice.total_document,
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Los totales no son coherentes",
+            )
+
+    if payload.dian_lifecycle_status is not None:
+        invoice.dian_lifecycle_status = payload.dian_lifecycle_status
+        _sync_document_lock(invoice)
+        if old_dian != invoice.dian_lifecycle_status:
+            await record_invoice_event(
+                db,
+                invoice=invoice,
+                event_type=InvoiceEventType.status_changed,
+                actor=current_user,
+                payload={"from": old_dian.value, "to": invoice.dian_lifecycle_status.value},
+            )
+
     if payload.assigned_user_ids is not None:
         existing_user_ids = {a.user_id for a in invoice.assignees}
         new_user_ids = set(payload.assigned_user_ids)
@@ -397,8 +692,20 @@ async def update_invoice(
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                     detail=f"Usuario con id={uid} no encontrado en la organización",
                 )
+            if not u.is_active:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"Usuario con id={uid} está deshabilitado",
+                )
             db.add(InvoiceAssignee(invoice_id=invoice.id, user_id=uid))
 
+    await record_invoice_event(
+        db,
+        invoice=invoice,
+        event_type=InvoiceEventType.updated,
+        actor=current_user,
+        payload={"fields": [k for k, v in payload.model_dump(exclude_unset=True).items() if v is not None]},
+    )
     await db.commit()
     invoice = await _get_invoice_or_404(invoice_id, org_id, db)
     logger.info("Invoice id=%d updated by user id=%d", invoice.id, current_user.id)
@@ -410,7 +717,7 @@ async def update_invoice(
 @router.delete("/{invoice_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_invoice(
     invoice_id: int,
-    current_user: User = Depends(require_tenant_user),
+    current_user: User = Depends(require_active_tenant_user),
     db: AsyncSession = Depends(get_db),
 ) -> None:
     invoice = await _get_invoice_or_404(invoice_id, current_user.organization_id, db)

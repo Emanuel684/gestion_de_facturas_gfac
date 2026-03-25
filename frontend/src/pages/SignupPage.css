@@ -1,0 +1,142 @@
+/* Signup — mismo lenguaje visual que LoginPage */
+
+.signup-bg {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #ecfeff 0%, #e0f2fe 100%);
+  padding: 1rem;
+}
+
+.signup-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(14, 116, 144, 0.12);
+  padding: 2.25rem 2rem;
+  width: 100%;
+  max-width: 520px;
+}
+
+.signup-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.signup-logo h1 {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #1e1b4b;
+}
+
+.signup-subtitle {
+  color: #6b7280;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+}
+
+.signup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.signup-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.signup-section-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #0e7490;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.signup-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 520px) {
+  .signup-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.signup-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.signup-form .form-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.signup-form .form-group input,
+.signup-form .form-group select {
+  padding: 0.6rem 0.85rem;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  background: #fff;
+}
+
+.signup-form .form-group select {
+  cursor: pointer;
+}
+
+.signup-form .form-group input:focus,
+.signup-form .form-group select:focus {
+  border-color: #0e7490;
+  box-shadow: 0 0 0 3px rgba(14, 116, 144, 0.1);
+}
+
+.signup-hint {
+  margin-top: 0.25rem;
+  font-size: 0.78rem;
+  color: #9ca3af;
+  line-height: 1.45;
+}
+
+.signup-footer {
+  margin-top: 1.35rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #f3f4f6;
+  text-align: center;
+  font-size: 0.88rem;
+  color: #6b7280;
+}
+
+.signup-footer a {
+  color: #0e7490;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.signup-footer a:hover {
+  text-decoration: underline;
+}
+
+.signup-footer-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem 0.75rem;
+}

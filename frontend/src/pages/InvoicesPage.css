@@ -143,6 +143,14 @@
 .badge-pendiente { background: #fef3c7; color: #92400e; }
 .badge-pagada    { background: #d1fae5; color: #065f46; }
 .badge-vencida   { background: #fee2e2; color: #991b1b; }
+.badge-dian {
+  background: #e0e7ff;
+  color: #3730a3;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-size: 0.68rem;
+}
+.invoice-dian-line { margin: 0 0 0.15rem; }
 
 /* Action buttons on card */
 .invoice-actions { display: flex; gap: 0.3rem; }
@@ -156,6 +164,7 @@
   transition: background 0.12s;
   line-height: 1;
 }
+.icon-btn.trace:hover { background: #f3e8ff; }
 .icon-btn.edit:hover   { background: #e0f2fe; color: #0e7490; }
 .icon-btn.delete:hover { background: #fee2e2; color: #dc2626; }
 .icon-btn:disabled     { opacity: 0.4; cursor: default; }

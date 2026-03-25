@@ -5,20 +5,21 @@ Endpoints:
   GET    /api/users/me    — current user profile
   GET    /api/users       — list active users in the same organization (tenant)
   POST   /api/users       — create user (administrador del tenant)
+  PUT    /api/users/{id} — edit user (tenant admin only)
   DELETE /api/users/{id}  — delete user (admin; scoped to organization)
 """
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import delete, func, select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from src.auth import hash_password
 from src.db import get_db
-from src.dependencies import get_current_user, require_admin, require_tenant_user
-from src.models import Invoice, InvoiceAssignee, User, UserRole
-from src.schemas import UserCreate, UserOut, user_to_out
+from src.dependencies import get_current_user, require_active_tenant_user, require_admin
+from src.models import User, UserRole
+from src.schemas import UserCreate, UserOut, UserUpdate, user_to_out
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/users", tags=["users"])
@@ -39,7 +40,7 @@ async def get_me(
 
 @router.get("", response_model=list[UserOut])
 async def list_users(
-    current_user: User = Depends(require_tenant_user),
+    current_user: User = Depends(require_active_tenant_user),
     db: AsyncSession = Depends(get_db),
 ) -> list[UserOut]:
     """List active users in the same organization (for invoice assignment)."""
@@ -112,13 +113,112 @@ async def create_user(
     return user_to_out(user)
 
 
+@router.put("/{user_id}", response_model=UserOut)
+async def update_user(
+    user_id: int,
+    payload: UserUpdate,
+    current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> UserOut:
+    """Edit a user in the same organization (tenant admin only)."""
+    result = await db.execute(
+        select(User)
+        .options(selectinload(User.organization))
+        .where(
+            User.id == user_id,
+            User.organization_id == current_user.organization_id,
+        )
+    )
+    target = result.scalar_one_or_none()
+    if target is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado",
+        )
+
+    # Prevent the last active admin from being disabled/demoted.
+    new_role = payload.role if payload.role is not None else target.role
+    new_is_active = payload.is_active if payload.is_active is not None else target.is_active
+    if target.role == UserRole.administrador and (
+        new_role != UserRole.administrador or new_is_active is False
+    ):
+        n_admins = await db.execute(
+            select(func.count()).select_from(User).where(
+                User.role == UserRole.administrador,
+                User.organization_id == target.organization_id,
+                User.is_active == True,  # noqa: E712
+                User.id != target.id,
+            )
+        )
+        if n_admins.scalar_one() <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No puede deshabilitar o cambiar el último administrador de la organización",
+            )
+
+    # Uniqueness checks within org (excluding current target).
+    if payload.username is not None and payload.username != target.username:
+        r = await db.execute(
+            select(User.id).where(
+                User.organization_id == current_user.organization_id,
+                User.username == payload.username,
+                User.id != target.id,
+            )
+        )
+        if r.scalar_one_or_none() is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"El nombre de usuario '{payload.username}' ya está en uso en esta organización",
+            )
+
+    if payload.email is not None and payload.email != target.email:
+        r = await db.execute(
+            select(User.id).where(
+                User.organization_id == current_user.organization_id,
+                User.email == payload.email,
+                User.id != target.id,
+            )
+        )
+        if r.scalar_one_or_none() is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"El email '{payload.email}' ya está en uso en esta organización",
+            )
+
+    # Apply updates.
+    if payload.username is not None:
+        target.username = payload.username
+    if payload.email is not None:
+        target.email = payload.email
+    if payload.password is not None:
+        target.hashed_password = hash_password(payload.password)
+    if payload.role is not None:
+        target.role = payload.role
+    if payload.is_active is not None:
+        target.is_active = payload.is_active
+
+    await db.commit()
+    await db.refresh(target)
+
+    # Reload with organization relationship for `user_to_out`.
+    r2 = await db.execute(
+        select(User).options(selectinload(User.organization)).where(User.id == target.id)
+    )
+    target = r2.scalar_one()
+    return user_to_out(target)
+
+
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user(
     user_id: int,
     current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ) -> None:
-    """Delete a user in the same organization; removes their invoices as creator."""
+    """Soft-delete a user.
+
+    El usuario deja de aparecer en la app (`is_active=False`) pero sus facturas
+    se conservan (no se eliminan ni la asociación histórica).
+    """
     if user_id == current_user.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -138,6 +238,12 @@ async def delete_user(
             detail="Usuario no encontrado",
         )
 
+    if not target.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Usuario ya deshabilitado",
+        )
+
     if target.role == UserRole.administrador:
         n_admins = await db.execute(
             select(func.count()).select_from(User).where(
@@ -151,18 +257,12 @@ async def delete_user(
                 detail="No puede eliminar el último administrador de la organización",
             )
 
-    created_invoice_ids = select(Invoice.id).where(Invoice.creator_id == user_id)
-
-    await db.execute(delete(InvoiceAssignee).where(InvoiceAssignee.user_id == user_id))
-    await db.execute(
-        delete(InvoiceAssignee).where(InvoiceAssignee.invoice_id.in_(created_invoice_ids))
-    )
-    await db.execute(delete(Invoice).where(Invoice.creator_id == user_id))
-    await db.execute(delete(User).where(User.id == user_id))
+    # Soft delete: keep invoices and assignment rows.
+    target.is_active = False
     await db.commit()
 
     logger.info(
-        "User id=%d (%s) deleted by admin id=%d (org id=%d)",
+        "User id=%d (%s) soft-deleted by admin id=%d (org id=%d)",
         user_id,
         target.username,
         current_user.id,

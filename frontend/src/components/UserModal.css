@@ -1,3 +1,14 @@
-/* UserModal.css — reuses the shared modal styles from InvoiceModal.css */
-/* No extra styles needed — the modal classes (.modal-overlay, .modal-box, etc.)
-   are already defined in InvoiceModal.css and App.css. */
+/* UserModal.css — base modal in InvoiceModal.css */
+
+.user-modal-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #374151;
+  cursor: pointer;
+  margin-bottom: 0.25rem;
+}
+.user-modal-checkbox input {
+  margin-top: 0.15rem;
+}

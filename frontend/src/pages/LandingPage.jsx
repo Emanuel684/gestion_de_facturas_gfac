@@ -60,8 +60,8 @@ export default function LandingPage() {
           <a href="#planes" className="btn btn-landing-primary">
             Ver planes
           </a>
-          <Link to="/login" className="btn btn-landing-ghost">
-            Acceder a mi cuenta
+          <Link to="/signup" className="btn btn-landing-ghost">
+            Crear cuenta
           </Link>
         </div>
       </section>
@@ -85,7 +85,7 @@ export default function LandingPage() {
                 ))}
               </ul>
               <Link
-                to="/login"
+                to={`/signup?plan=${p.key}`}
                 className={p.highlight ? 'btn btn-landing-primary btn-plan' : 'btn btn-landing-outline btn-plan'}
               >
                 {p.cta}

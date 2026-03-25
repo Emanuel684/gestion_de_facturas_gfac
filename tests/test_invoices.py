@@ -561,3 +561,95 @@ async def test_overdue_ordered_by_due_date_asc(client: AsyncClient, admin_token:
     assert resp.status_code == 200
     numbers = [inv["invoice_number"] for inv in resp.json()]
     assert numbers.index("OVD-301") < numbers.index("OVD-300")
+
+
+# ── DIAN traceability / fiscal ────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_create_invoice_emits_created_event(client: AsyncClient, admin_token: str):
+    r = await client.post(
+        "/api/invoices",
+        json={**SAMPLE_INVOICE, "invoice_number": "DIAN-EV-1"},
+        headers=auth(admin_token),
+    )
+    assert r.status_code == 201
+    iid = r.json()["id"]
+    tr = await client.get(f"/api/invoices/{iid}/trace", headers=auth(admin_token))
+    assert tr.status_code == 200
+    types = [e["event_type"] for e in tr.json()["events"]]
+    assert "created" in types
+
+
+@pytest.mark.asyncio
+async def test_audit_pack_json_and_export_event(client: AsyncClient, admin_token: str):
+    r = await client.post(
+        "/api/invoices",
+        json={**SAMPLE_INVOICE, "invoice_number": "DIAN-AUD-1"},
+        headers=auth(admin_token),
+    )
+    assert r.status_code == 201
+    iid = r.json()["id"]
+
+    ap = await client.get(f"/api/invoices/{iid}/audit-pack", headers=auth(admin_token))
+    assert ap.status_code == 200
+    body = ap.json()
+    assert body["schema_version"] == 1
+    assert body["invoice"]["invoice_number"] == "DIAN-AUD-1"
+    assert "events" in body
+
+    tr = await client.get(f"/api/invoices/{iid}/trace", headers=auth(admin_token))
+    types = [e["event_type"] for e in tr.json()["events"]]
+    assert "export_generated" in types
+
+
+@pytest.mark.asyncio
+async def test_locked_invoice_rejects_fiscal_field_update(client: AsyncClient, admin_token: str):
+    r = await client.post(
+        "/api/invoices",
+        json={**SAMPLE_INVOICE, "invoice_number": "DIAN-LOCK-1"},
+        headers=auth(admin_token),
+    )
+    assert r.status_code == 201
+    iid = r.json()["id"]
+
+    up = await client.put(
+        f"/api/invoices/{iid}",
+        json={"dian_lifecycle_status": "lista_para_envio"},
+        headers=auth(admin_token),
+    )
+    assert up.status_code == 200
+    assert up.json()["document_locked"] is True
+
+    bad = await client.put(
+        f"/api/invoices/{iid}",
+        json={"supplier": "Otro proveedor"},
+        headers=auth(admin_token),
+    )
+    assert bad.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_create_invoice_rejects_incoherent_totals(client: AsyncClient, admin_token: str):
+    resp = await client.post(
+        "/api/invoices",
+        json={
+            **SAMPLE_INVOICE,
+            "invoice_number": "DIAN-TOT-BAD",
+            "subtotal": 100,
+            "iva_amount": 0,
+            "total_document": 50,
+        },
+        headers=auth(admin_token),
+    )
+    assert resp.status_code == 422
+    assert "total" in resp.json()["detail"].lower() or "totales" in resp.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
+async def test_fiscal_profile_get_returns_for_tenant(client: AsyncClient, admin_token: str):
+    r = await client.get("/api/fiscal/profile", headers=auth(admin_token))
+    assert r.status_code == 200
+    data = r.json()
+    assert "organization_id" in data
+    assert data["nit"] == ""

@@ -15,16 +15,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select, and_
 
 from src.auth import hash_password
+from src.billing import grace_end_from, now_utc, period_end_from, recompute_subscription_status
 from src.config import settings
 from src.models import (
     Organization,
     PlanTier,
+    Subscription,
+    SubscriptionStatus,
     User,
     UserRole,
     Invoice,
     InvoiceStatus,
 )
-from src.routers import auth, invoices, users, organizations
+from src.routers import auth, billing, fiscal, invoices, organizations, public_signup, users
 
 logging.basicConfig(
     level=logging.INFO,
@@ -52,6 +55,9 @@ app.include_router(auth.router)
 app.include_router(organizations.router)
 app.include_router(invoices.router)
 app.include_router(users.router)
+app.include_router(billing.router)
+app.include_router(public_signup.router)
+app.include_router(fiscal.router)
 
 
 # ── Startup ───────────────────────────────────────────────────────────────────
@@ -93,6 +99,22 @@ async def on_startup() -> None:
             db.add(demo)
             await db.flush()
             logger.info("Seeded organization: demo")
+        r_sub = await db.execute(select(Subscription).where(Subscription.organization_id == demo.id))
+        if r_sub.scalar_one_or_none() is None:
+            now = now_utc()
+            end = period_end_from(now)
+            db.add(
+                Subscription(
+                    organization_id=demo.id,
+                    plan_tier=PlanTier.profesional,
+                    status=SubscriptionStatus.active,
+                    current_period_start=now,
+                    current_period_end=end,
+                    next_due_date=end,
+                    grace_expires_at=grace_end_from(end),
+                    last_paid_at=now,
+                )
+            )
 
         seed_users = [
             {"username": "admin", "email": "admin@example.com", "password": "admin123", "role": UserRole.administrador},
@@ -121,11 +143,13 @@ async def on_startup() -> None:
         await db.commit()
 
     asyncio.create_task(_expire_overdue_invoices_loop())
+    asyncio.create_task(_reconcile_subscriptions_loop())
 
 
 # ── Background: auto-expire overdue invoices ──────────────────────────────────
 
 EXPIRE_INTERVAL_SECONDS = 3600
+SUBSCRIPTION_RECONCILE_SECONDS = 3600
 
 
 async def _expire_overdue_invoices_loop() -> None:
@@ -162,6 +186,23 @@ async def _expire_overdue_invoices_loop() -> None:
             logger.exception("Error in overdue-invoice expiry task")
 
         await asyncio.sleep(EXPIRE_INTERVAL_SECONDS)
+
+
+async def _reconcile_subscriptions_loop() -> None:
+    from src.db import AsyncSessionLocal
+
+    while True:
+        try:
+            async with AsyncSessionLocal() as db:
+                result = await db.execute(select(Subscription))
+                subscriptions = result.scalars().all()
+                for sub in subscriptions:
+                    recompute_subscription_status(sub)
+                await db.commit()
+        except Exception:
+            logger.exception("Error reconciling subscriptions")
+
+        await asyncio.sleep(SUBSCRIPTION_RECONCILE_SECONDS)
 
 
 @app.get("/health", tags=["health"])
