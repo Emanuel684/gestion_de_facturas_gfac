@@ -5,13 +5,16 @@
   scroll-behavior: smooth;
 }
 
-.landing-header {
+/* Mayor especificidad que `header.landing-header` en App.css (barra oscura del CRA). */
+.landing header.landing-header {
   position: sticky;
   top: 0;
   z-index: 50;
   background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+  color: inherit;
+  padding: 0;
 }
 
 .landing-header-inner {

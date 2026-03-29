@@ -104,3 +104,18 @@
 .checkout-mock-card .alert-error {
   margin-top: 1rem;
 }
+
+@media (max-width: 480px) {
+  .checkout-mock-card {
+    padding: 1.65rem 1.15rem;
+  }
+
+  .checkout-mock-actions {
+    flex-direction: column;
+  }
+
+  .checkout-mock-actions .btn {
+    width: 100%;
+    min-height: 44px;
+  }
+}

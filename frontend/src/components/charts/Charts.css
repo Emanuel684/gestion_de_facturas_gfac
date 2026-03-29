@@ -101,3 +101,33 @@
   border: 1px solid #e5e7eb !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
 }
+
+@media (max-width: 640px) {
+  .chart-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .chart-card {
+    min-height: 280px;
+    padding: 0.85rem 0.65rem 0.4rem;
+  }
+
+  .chart-card--tall {
+    min-height: 300px;
+  }
+
+  .chart-card-body {
+    min-height: 220px;
+  }
+
+  .chart-card-title {
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .chart-card-body {
+    min-height: 200px;
+  }
+}

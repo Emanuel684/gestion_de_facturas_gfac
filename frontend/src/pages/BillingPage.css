@@ -158,3 +158,30 @@
   margin: 0;
   padding: 0.5rem 0;
 }
+
+@media (max-width: 640px) {
+  .billing-main {
+    padding: 1rem 0.85rem;
+  }
+
+  .billing-title {
+    font-size: clamp(1.2rem, 4vw, 1.6rem);
+  }
+
+  .billing-actions .btn {
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 560px) {
+  .billing-payment-row {
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
+    align-items: start;
+  }
+
+  .billing-pay-amount,
+  .billing-pay-status {
+    justify-self: start;
+  }
+}

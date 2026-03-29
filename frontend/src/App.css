@@ -105,3 +105,40 @@ input:focus {
   animation: spin 0.7s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Responsive global ───────────────────────────────────────── */
+#root {
+  min-height: 100vh;
+}
+
+@media (max-width: 640px) {
+  main {
+    padding: 1rem 1rem 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  main {
+    padding: 0.85rem 0.75rem 1.25rem;
+  }
+
+  .btn {
+    min-height: 44px;
+  }
+
+  .btn-sm {
+    min-height: 40px;
+  }
+
+  /* Evita zoom automático en iOS al enfocar campos */
+  input[type='text'],
+  input[type='password'],
+  input[type='datetime-local'],
+  input[type='email'],
+  input[type='date'],
+  input[type='number'],
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}

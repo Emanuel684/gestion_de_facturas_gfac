@@ -217,3 +217,22 @@
   margin-top: 0.5rem;
   line-height: 1.5;
 }
+
+@media (max-width: 480px) {
+  .file-preview {
+    flex-wrap: wrap;
+  }
+
+  .extracted-field {
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .extracted-field-label {
+    min-width: 0;
+  }
+
+  .drop-zone {
+    padding: 1.5rem 1rem;
+  }
+}

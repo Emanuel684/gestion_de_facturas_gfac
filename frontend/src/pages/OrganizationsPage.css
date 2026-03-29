@@ -150,3 +150,33 @@
   padding: 0.35rem 0.65rem;
   border-radius: 999px;
 }
+
+@media (max-width: 640px) {
+  .orgs-main {
+    padding: 1rem 0.85rem;
+  }
+
+  .orgs-header h1 {
+    font-size: clamp(1.2rem, 4vw, 1.6rem);
+  }
+
+  .orgs-form-section,
+  .orgs-list-section {
+    padding: 1rem;
+  }
+
+  .orgs-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .orgs-card-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .orgs-form .btn,
+  .btn-org-delete {
+    min-height: 44px;
+  }
+}

@@ -140,3 +140,14 @@
   justify-content: center;
   gap: 0.35rem 0.75rem;
 }
+
+@media (max-width: 480px) {
+  .signup-card {
+    padding: 1.65rem 1.15rem;
+    border-radius: 14px;
+  }
+
+  .signup-logo h1 {
+    font-size: 1.25rem;
+  }
+}

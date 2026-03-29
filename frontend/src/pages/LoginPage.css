@@ -78,3 +78,14 @@
 .login-back a:hover {
   text-decoration: underline;
 }
+
+@media (max-width: 480px) {
+  .login-card {
+    padding: 1.75rem 1.25rem;
+    border-radius: 14px;
+  }
+
+  .login-logo h1 {
+    font-size: 1.35rem;
+  }
+}

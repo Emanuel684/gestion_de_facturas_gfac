@@ -113,3 +113,28 @@
 }
 .status-dot.active   { background: #10b981; }
 .status-dot.inactive { background: #d1d5db; }
+
+@media (max-width: 768px) {
+  .users-main {
+    padding: 1.25rem 1rem;
+  }
+
+  .users-title {
+    font-size: clamp(1.2rem, 4vw, 1.6rem);
+  }
+}
+
+@media (max-width: 640px) {
+  .users-main {
+    padding: 1rem 0.85rem;
+  }
+
+  .users-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .users-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -294,3 +294,70 @@ main.sgf-page {
   color: #9ca3af;
   font-weight: 400;
 }
+
+@media (max-width: 768px) {
+  main.sgf-page {
+    padding: 1.25rem 1rem 2.5rem;
+  }
+
+  .sgf-panel {
+    padding: 1rem 1rem;
+  }
+
+  .sgf-page-title {
+    font-size: clamp(1.2rem, 4.5vw, 1.6rem);
+  }
+}
+
+@media (max-width: 640px) {
+  main.sgf-page {
+    padding: 1rem 0.85rem 2rem;
+  }
+
+  .sgf-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sgf-toolbar-actions {
+    margin-left: 0;
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .sgf-toolbar-actions .btn {
+    flex: 1;
+    min-width: 0;
+    white-space: normal;
+    text-align: center;
+    min-height: 44px;
+  }
+
+  .sgf-field {
+    flex: 1 1 100%;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .sgf-input,
+  .sgf-select {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .sgf-kpi-row,
+  .sgf-skeleton-row {
+    grid-template-columns: 1fr;
+  }
+
+  .sgf-skeleton-chart {
+    height: 220px;
+    min-height: 200px;
+  }
+
+  .sgf-input,
+  .sgf-select {
+    font-size: 16px;
+  }
+}
