@@ -14,6 +14,8 @@ const DOC_TYPES = [
   { value: 'nota_debito', label: 'Nota débito' },
 ];
 
+const PREFILL_DOC_TYPES = new Set(['factura_venta', 'nota_credito', 'nota_debito']);
+
 const DIAN_STATUSES = [
   { value: 'borrador', label: 'Borrador' },
   { value: 'lista_para_envio', label: 'Lista para envío' },
@@ -60,18 +62,56 @@ export default function InvoiceModal({ invoice, users, onSuccess, onClose, prefi
             ? prefill.due_date.slice(0, 16)
             : '',
       assigned_user_ids: invoice?.assigned_users?.map((u) => u.id) ?? [],
-      document_type: invoice?.document_type ?? 'factura_venta',
-      issue_date: invoice?.issue_date ? invoice.issue_date.slice(0, 16) : defaultIssueLocal(),
-      currency: invoice?.currency ?? 'COP',
-      buyer_id_type: invoice?.buyer_id_type ?? '',
-      buyer_id_number: invoice?.buyer_id_number ?? '',
-      buyer_name: invoice?.buyer_name ?? '',
-      subtotal: invoice?.subtotal != null ? String(invoice.subtotal) : '',
-      taxable_base: invoice?.taxable_base != null ? String(invoice.taxable_base) : '',
-      iva_rate: invoice?.iva_rate != null ? String(invoice.iva_rate) : '0.19',
-      iva_amount: invoice?.iva_amount != null ? String(invoice.iva_amount) : '',
-      withholding_amount: invoice?.withholding_amount != null ? String(invoice.withholding_amount) : '',
-      total_document: invoice?.total_document != null ? String(invoice.total_document) : '',
+      document_type:
+        invoice?.document_type ??
+        (prefill?.document_type && PREFILL_DOC_TYPES.has(prefill.document_type)
+          ? prefill.document_type
+          : 'factura_venta'),
+      issue_date: invoice?.issue_date
+        ? invoice.issue_date.slice(0, 16)
+        : prefill?.issue_date
+          ? prefill.issue_date.slice(0, 16)
+          : defaultIssueLocal(),
+      currency: invoice?.currency ?? prefill?.currency ?? 'COP',
+      buyer_id_type: invoice?.buyer_id_type ?? prefill?.buyer_id_type ?? '',
+      buyer_id_number: invoice?.buyer_id_number ?? prefill?.buyer_id_number ?? '',
+      buyer_name: invoice?.buyer_name ?? prefill?.buyer_name ?? '',
+      subtotal:
+        invoice?.subtotal != null
+          ? String(invoice.subtotal)
+          : prefill?.subtotal != null
+            ? String(prefill.subtotal)
+            : '',
+      taxable_base:
+        invoice?.taxable_base != null
+          ? String(invoice.taxable_base)
+          : prefill?.taxable_base != null
+            ? String(prefill.taxable_base)
+            : '',
+      iva_rate:
+        invoice?.iva_rate != null
+          ? String(invoice.iva_rate)
+          : prefill?.iva_rate != null
+            ? String(prefill.iva_rate)
+            : '0.19',
+      iva_amount:
+        invoice?.iva_amount != null
+          ? String(invoice.iva_amount)
+          : prefill?.iva_amount != null
+            ? String(prefill.iva_amount)
+            : '',
+      withholding_amount:
+        invoice?.withholding_amount != null
+          ? String(invoice.withholding_amount)
+          : prefill?.withholding_amount != null
+            ? String(prefill.withholding_amount)
+            : '',
+      total_document:
+        invoice?.total_document != null
+          ? String(invoice.total_document)
+          : prefill?.total_document != null
+            ? String(prefill.total_document)
+            : '',
       dian_lifecycle_status: invoice?.dian_lifecycle_status ?? 'borrador',
     }),
     [invoice, prefill]

@@ -604,6 +604,23 @@ async def test_audit_pack_json_and_export_event(client: AsyncClient, admin_token
 
 
 @pytest.mark.asyncio
+async def test_audit_pack_xlsx(client: AsyncClient, admin_token: str):
+    r = await client.post(
+        "/api/invoices",
+        json={**SAMPLE_INVOICE, "invoice_number": "DIAN-XLSX-1"},
+        headers=auth(admin_token),
+    )
+    assert r.status_code == 201
+    iid = r.json()["id"]
+
+    ap = await client.get(f"/api/invoices/{iid}/audit-pack?format=xlsx", headers=auth(admin_token))
+    assert ap.status_code == 200
+    assert "spreadsheetml" in (ap.headers.get("content-type") or "")
+    assert len(ap.content) > 80
+    assert ap.content[:2] == b"PK"
+
+
+@pytest.mark.asyncio
 async def test_locked_invoice_rejects_fiscal_field_update(client: AsyncClient, admin_token: str):
     r = await client.post(
         "/api/invoices",

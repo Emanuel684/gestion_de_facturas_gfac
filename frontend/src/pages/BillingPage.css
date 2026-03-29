@@ -1,0 +1,160 @@
+/* Alineado con invoices-main / app shell */
+
+.billing-main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+.billing-header {
+  margin-bottom: 1.5rem;
+}
+
+.billing-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #1e1b4b;
+  margin: 0 0 0.35rem;
+}
+
+.billing-sub {
+  font-size: 0.88rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.billing-card {
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.25rem 1.35rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.billing-card h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.billing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.85rem 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.billing-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.billing-field label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #9ca3af;
+}
+
+.billing-field span {
+  font-size: 0.95rem;
+  color: #111827;
+}
+
+.billing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.billing-payments-head {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 0.75rem;
+}
+
+.billing-payment-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 0.75rem 1rem;
+  align-items: center;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 0.88rem;
+}
+
+.billing-payment-row:last-child {
+  border-bottom: none;
+}
+
+.billing-pay-id {
+  font-weight: 700;
+  color: #6b7280;
+  font-size: 0.8rem;
+}
+
+.billing-pay-meta {
+  color: #374151;
+  min-width: 0;
+}
+
+.billing-pay-amount {
+  font-weight: 700;
+  color: #0e7490;
+  white-space: nowrap;
+}
+
+.billing-pay-status {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.2rem 0.5rem;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.billing-status-paid {
+  background: #d1fae5;
+  color: #065f46;
+}
+.billing-status-failed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.billing-status-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.billing-sub-active {
+  color: #065f46;
+  font-weight: 600;
+}
+.billing-sub-past_due {
+  color: #b45309;
+  font-weight: 600;
+}
+.billing-sub-suspended {
+  color: #991b1b;
+  font-weight: 600;
+}
+.billing-sub-canceled {
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.billing-empty-payments {
+  color: #9ca3af;
+  font-size: 0.9rem;
+  margin: 0;
+  padding: 0.5rem 0;
+}

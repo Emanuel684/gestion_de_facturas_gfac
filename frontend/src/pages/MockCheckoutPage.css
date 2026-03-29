@@ -1,0 +1,106 @@
+/* Misma base visual que LoginPage / SignupPage (gradiente + tarjeta) */
+
+.checkout-mock-bg {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #ecfeff 0%, #e0f2fe 100%);
+  padding: 1rem;
+}
+
+.checkout-mock-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(14, 116, 144, 0.12);
+  padding: 2.25rem 2rem;
+  width: 100%;
+  max-width: 520px;
+}
+
+.checkout-mock-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.checkout-mock-logo h1 {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #1e1b4b;
+  margin: 0;
+}
+
+.checkout-mock-sub {
+  color: #6b7280;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0 0 1.5rem;
+}
+
+.checkout-mock-detail {
+  margin: 0 0 0.65rem;
+  font-size: 0.9rem;
+  color: #374151;
+}
+
+.checkout-mock-detail strong {
+  color: #111827;
+}
+
+.checkout-mock-detail code {
+  font-size: 0.82rem;
+  background: #f1f5f9;
+  padding: 0.15rem 0.4rem;
+  border-radius: 6px;
+  word-break: break-all;
+}
+
+.checkout-mock-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+.checkout-mock-footer {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f3f4f6;
+  font-size: 0.88rem;
+}
+
+.checkout-mock-footer a {
+  color: #0e7490;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.checkout-mock-footer a:hover {
+  text-decoration: underline;
+}
+
+.checkout-mock-msg-ok {
+  padding: 0.65rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  background: #f0fdfa;
+  border: 1px solid #99f6e4;
+  color: #115e59;
+  margin-top: 1rem;
+}
+
+.checkout-mock-msg-info {
+  padding: 0.65rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  margin-top: 1rem;
+}
+
+.checkout-mock-card .alert-error {
+  margin-top: 1rem;
+}

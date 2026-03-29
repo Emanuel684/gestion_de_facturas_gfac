@@ -18,6 +18,8 @@ from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
+from src.config import settings
+
 logger = logging.getLogger(__name__)
 
 
@@ -268,6 +270,20 @@ def extract_invoice_data(text: str) -> dict[str, Any]:
     return result
 
 
+def merge_extractions(regex_data: dict[str, Any], gemini_data: dict[str, Any]) -> dict[str, Any]:
+    """Prioriza valores no vacíos de Gemini sobre el extractor por regex."""
+    merged = dict(regex_data)
+    for key, value in gemini_data.items():
+        if value is None:
+            continue
+        if isinstance(value, str) and not value.strip():
+            continue
+        if key == "amount" and isinstance(value, (int, float)) and value <= 0:
+            continue
+        merged[key] = value
+    return merged
+
+
 # ── Main entry point ─────────────────────────────────────────────────────────
 
 SUPPORTED_IMAGE_TYPES = {
@@ -323,6 +339,20 @@ def extract_from_file(file_bytes: bytes, content_type: str, filename: str) -> di
     logger.info("Extracted %d characters from %s (%s)", len(raw_text), filename, content_type)
 
     extracted = extract_invoice_data(raw_text)
+    extraction_method = "regex"
+
+    if (settings.gemini_api_key or "").strip():
+        try:
+            from src.extraction_gemini import extract_with_gemini
+
+            gemini_data = extract_with_gemini(file_bytes, content_type, filename, raw_text)
+            if gemini_data:
+                extracted = merge_extractions(extracted, gemini_data)
+                extraction_method = "gemini"
+        except Exception as e:
+            logger.warning("Gemini extraction failed: %s", e, exc_info=True)
+
     extracted["raw_text"] = raw_text
+    extracted["extraction_method"] = extraction_method
 
     return extracted

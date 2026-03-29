@@ -51,15 +51,33 @@ export default function InvoiceTraceModal({ invoiceId, invoiceNumber, onClose })
     };
   }, [invoiceId]);
 
-  const downloadAuditPack = async () => {
+  const downloadAuditPackJson = async () => {
     setAuditLoading(true);
     try {
-      const { data } = await getInvoiceAuditPack(invoiceId);
+      const { data } = await getInvoiceAuditPack(invoiceId, { format: 'json' });
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `paquete-auditoria-${invoiceNumber || invoiceId}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(formatApiError(err));
+    } finally {
+      setAuditLoading(false);
+    }
+  };
+
+  const downloadAuditPackExcel = async () => {
+    setAuditLoading(true);
+    try {
+      const resp = await getInvoiceAuditPack(invoiceId, { format: 'xlsx' });
+      const blob = resp.data;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `paquete-auditoria-${invoiceNumber || invoiceId}.xlsx`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
@@ -85,10 +103,18 @@ export default function InvoiceTraceModal({ invoiceId, invoiceNumber, onClose })
             <button
               type="button"
               className="btn btn-secondary btn-sm"
-              onClick={downloadAuditPack}
+              onClick={downloadAuditPackJson}
               disabled={auditLoading || loading}
             >
-              {auditLoading ? 'Generando…' : 'Descargar paquete de auditoría (JSON)'}
+              {auditLoading ? 'Generando…' : 'Descargar JSON'}
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={downloadAuditPackExcel}
+              disabled={auditLoading || loading}
+            >
+              {auditLoading ? 'Generando…' : 'Descargar Excel'}
             </button>
             <button type="button" className="trace-close" onClick={onClose} aria-label="Cerrar">
               ✕

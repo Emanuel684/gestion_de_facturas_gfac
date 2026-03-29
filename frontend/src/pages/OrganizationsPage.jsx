@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { listOrganizations, createOrganization } from '../api';
+import { listOrganizations, createOrganization, deleteOrganization } from '../api';
 import Navbar from '../components/Navbar';
 import './OrganizationsPage.css';
 
@@ -14,6 +14,7 @@ export default function OrganizationsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [creating, setCreating] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [form, setForm] = useState({
     name: '',
     slug: '',
@@ -71,6 +72,24 @@ export default function OrganizationsPage() {
   };
 
   const planLabel = (k) => PLAN_OPTIONS.find((p) => p.value === k)?.label ?? k;
+
+  const handleDelete = async (o) => {
+    const msg =
+      `¿Eliminar permanentemente la organización «${o.name}» (${o.slug})?\n\n` +
+      'Se borrarán todos los datos: usuarios (activos e inactivos), facturas, eventos, suscripciones, pagos y perfiles fiscales. Esta acción no se puede deshacer.';
+    if (!window.confirm(msg)) return;
+    setError('');
+    setDeletingId(o.id);
+    try {
+      await deleteOrganization(o.id);
+      await fetchOrgs();
+    } catch (err) {
+      const d = err.response?.data?.detail;
+      setError(typeof d === 'string' ? d : 'No se pudo eliminar la organización.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   return (
     <>
@@ -142,11 +161,22 @@ export default function OrganizationsPage() {
             <ul className="orgs-list">
               {orgs.map((o) => (
                 <li key={o.id} className="orgs-card">
-                  <div>
+                  <div className="orgs-card-main">
                     <strong>{o.name}</strong>
                     <span className="orgs-slug">slug: <code>{o.slug}</code></span>
                   </div>
-                  <span className="orgs-plan">{planLabel(o.plan_tier)}</span>
+                  <div className="orgs-card-actions">
+                    <span className="orgs-plan">{planLabel(o.plan_tier)}</span>
+                    <button
+                      type="button"
+                      className="btn btn-org-delete"
+                      disabled={deletingId === o.id}
+                      title="Eliminar organización y todos sus datos"
+                      onClick={() => handleDelete(o)}
+                    >
+                      {deletingId === o.id ? 'Eliminando…' : 'Eliminar'}
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>

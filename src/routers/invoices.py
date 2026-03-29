@@ -14,10 +14,10 @@ campos fiscales salvo transiciones de estado permitidas.
 import logging
 from datetime import datetime, timezone
 from decimal import Decimal
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -25,6 +25,7 @@ from sqlalchemy.orm import selectinload
 from src.db import get_db
 from src.dependencies import require_active_tenant_user
 from src.dian.audit import build_audit_pack
+from src.dian.audit_excel import audit_pack_to_xlsx_bytes, safe_audit_filename
 from src.dian.events import record_invoice_event
 from src.dian.validation import is_document_editing_locked, totals_match
 from src.extraction import ALL_SUPPORTED_TYPES, extract_from_file
@@ -336,8 +337,16 @@ async def upload_invoice_document(
         current_user.id, filename, list(extracted.keys()),
     )
 
+    has_core = bool(extracted.get("invoice_number") or extracted.get("amount"))
+    if extracted.get("extraction_method") == "gemini" and has_core:
+        msg = "Datos extraídos con Gemini; revise y confirme los campos."
+    elif has_core:
+        msg = "Datos extraídos exitosamente."
+    else:
+        msg = "Archivo procesado; revise los datos extraídos."
+
     return {
-        "message": "Datos extraídos exitosamente" if extracted.get("invoice_number") or extracted.get("amount") else "Archivo procesado — revise los datos extraídos",
+        "message": msg,
         "extracted": extracted,
         "filename": filename,
     }
@@ -481,6 +490,7 @@ async def get_invoice_trace(
 @router.get("/{invoice_id}/audit-pack")
 async def get_invoice_audit_pack(
     invoice_id: int,
+    export_format: Annotated[Literal["json", "xlsx"], Query(alias="format")] = "json",
     current_user: User = Depends(require_active_tenant_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -517,10 +527,19 @@ async def get_invoice_audit_pack(
         invoice=invoice,
         event_type=InvoiceEventType.export_generated,
         actor=current_user,
-        payload={"format": "json"},
+        payload={"format": export_format},
     )
     await db.commit()
-    return JSONResponse(content=pack)
+    if export_format == "json":
+        return JSONResponse(content=pack)
+
+    xlsx_bytes = audit_pack_to_xlsx_bytes(pack)
+    fname = safe_audit_filename(invoice.invoice_number)
+    return Response(
+        content=xlsx_bytes,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="paquete-auditoria-{fname}.xlsx"'},
+    )
 
 
 # ── Overdue ───────────────────────────────────────────────────────────────────

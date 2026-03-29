@@ -53,6 +53,27 @@ export const getInvoicesPage = ({ page = 0, pageSize = 10, status, supplier } = 
   return api.get('/invoices', { params });
 };
 
+/** Carga todas las facturas que coincidan con filtros (paginación interna, máx. 100 por página en API). */
+export async function getInvoicesAll({ status, supplier } = {}) {
+  const pageSize = 100;
+  const items = [];
+  let page = 0;
+  let hasNext = true;
+  while (hasNext) {
+    const resp = await getInvoicesPage({
+      page,
+      pageSize,
+      status: status || undefined,
+      supplier: supplier?.trim() || undefined,
+    });
+    items.push(...resp.data.items);
+    hasNext = resp.data.has_next;
+    page += 1;
+    if (page > 500) break;
+  }
+  return items;
+}
+
 export const getInvoice = (id) => api.get(`/invoices/${id}`);
 
 export const createInvoice = (data) => api.post('/invoices', data);
@@ -87,6 +108,9 @@ export const listOrganizations = () => api.get('/organizations');
 
 export const createOrganization = (data) => api.post('/organizations', data);
 
+export const deleteOrganization = (organizationId) =>
+  api.delete(`/organizations/${organizationId}`);
+
 // ── Public signup / mock checkout ────────────────────────────────────────────
 export const publicSignup = (data) => api.post('/public/signup', data);
 export const getPublicCheckout = (token) => api.get(`/public/checkout/${token}`);
@@ -107,4 +131,12 @@ export const putFiscalProfile = (data) => api.put('/fiscal/profile', data);
 
 // ── Invoice traceability / audit ────────────────────────────────────────────
 export const getInvoiceTrace = (id) => api.get(`/invoices/${id}/trace`);
-export const getInvoiceAuditPack = (id) => api.get(`/invoices/${id}/audit-pack`);
+
+/** @param {string} [opts.format] 'json' (default) | 'xlsx' */
+export const getInvoiceAuditPack = (id, opts = {}) => {
+  const format = opts.format ?? 'json';
+  return api.get(`/invoices/${id}/audit-pack`, {
+    params: { format },
+    responseType: format === 'xlsx' ? 'blob' : undefined,
+  });
+};

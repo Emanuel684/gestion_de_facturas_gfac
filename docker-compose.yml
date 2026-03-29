@@ -25,6 +25,9 @@ services:
       SECRET_KEY: dev-secret-key-change-in-production
       ALGORITHM: HS256
       CORS_ORIGINS: http://localhost:5173
+      # Opcional: extracción estructurada desde PDF/imagen (definir GEMINI_API_KEY en .env o entorno)
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash}
     depends_on:
       db:
         condition: service_healthy

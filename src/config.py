@@ -15,6 +15,10 @@ class Settings(BaseSettings):
     # CORS
     cors_origins: str = "http://localhost:5173"
 
+    # Extracción de facturas (Google Gemini). Opcional: si está vacío se usa solo OCR + regex.
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.0-flash"
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",")]
