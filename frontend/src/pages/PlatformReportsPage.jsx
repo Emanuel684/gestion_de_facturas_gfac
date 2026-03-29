@@ -1,8 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { listOrganizations, exportPlatformReport } from '../api';
+import { listOrganizations, exportPlatformReport, getPlatformDashboard } from '../api';
+import { DashboardChartsGrid } from '../components/charts/DashboardCharts';
+import DateRangePresetBar from '../components/charts/DateRangePresetBar';
+import { getDateRangePreset } from '../utils/dateRangePresets';
 import './ReportsPage.css';
+import '../components/charts/Charts.css';
 
 const STATUSES = [
   { value: '', label: 'Todos los estados' },
@@ -26,8 +30,12 @@ export default function PlatformReportsPage() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [status, setStatus] = useState('');
+  const [presetActive, setPresetActive] = useState(null);
   const [loading, setLoading] = useState(null);
+  const [loadingCharts, setLoadingCharts] = useState(false);
+  const [stats, setStats] = useState(null);
   const [error, setError] = useState('');
+  const [chartError, setChartError] = useState('');
 
   useEffect(() => {
     listOrganizations()
@@ -35,12 +43,45 @@ export default function PlatformReportsPage() {
       .catch(() => setError('No se pudieron cargar las organizaciones.'));
   }, []);
 
-  const buildParams = () => {
+  const loadCharts = useCallback(async () => {
+    if (!orgId) {
+      setStats(null);
+      return;
+    }
+    setLoadingCharts(true);
+    setChartError('');
+    try {
+      const params = {};
+      if (dateFrom) params.date_from = dateFrom;
+      if (dateTo) params.date_to = dateTo;
+      if (status) params.status = status;
+      const r = await getPlatformDashboard(Number(orgId), params);
+      setStats(r.data);
+    } catch {
+      setChartError('No se pudieron cargar los gráficos.');
+      setStats(null);
+    } finally {
+      setLoadingCharts(false);
+    }
+  }, [orgId, dateFrom, dateTo, status]);
+
+  useEffect(() => {
+    loadCharts();
+  }, [loadCharts]);
+
+  const buildExportParams = () => {
     const params = {};
     if (dateFrom) params.date_from = dateFrom;
     if (dateTo) params.date_to = dateTo;
     if (status) params.status = status;
     return params;
+  };
+
+  const applyPreset = (key) => {
+    const { dateFrom: f, dateTo: t } = getDateRangePreset(key);
+    setDateFrom(f);
+    setDateTo(t);
+    setPresetActive(key);
   };
 
   const download = async (format) => {
@@ -51,7 +92,7 @@ export default function PlatformReportsPage() {
     setError('');
     setLoading(format);
     try {
-      const res = await exportPlatformReport(Number(orgId), format, buildParams());
+      const res = await exportPlatformReport(Number(orgId), format, buildExportParams());
       const blob = res.data;
       const cd = res.headers['content-disposition'] || '';
       const m = /filename="?([^";]+)"?/i.exec(cd);
@@ -67,37 +108,56 @@ export default function PlatformReportsPage() {
   return (
     <div className="App">
       <Navbar />
-      <main className="reports-main platform-reports">
+      <main className="reports-main reports-wide">
         <div className="reports-header">
           <h1>Reportes (plataforma)</h1>
-          <p className="reports-sub">Exporte facturas de la organización seleccionada en Excel o PDF.</p>
+          <p className="reports-sub">Exporte y visualice todas las facturas de la organización elegida.</p>
           <Link to="/app/plataforma/dashboard" className="link-reportes">← Volver al dashboard</Link>
         </div>
 
         <div className="reports-card">
+          <DateRangePresetBar activeKey={presetActive} onSelect={applyPreset} />
           <div className="reports-filters">
             <label>
               Organización
               <select value={orgId} onChange={(e) => setOrgId(e.target.value)}>
                 <option value="">— Seleccione —</option>
                 {orgs.map((o) => (
-                  <option key={o.id} value={String(o.id)}>{o.name} ({o.slug})</option>
+                  <option key={o.id} value={String(o.id)}>
+                    {o.name} ({o.slug})
+                  </option>
                 ))}
               </select>
             </label>
             <label>
               Desde
-              <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => {
+                  setDateFrom(e.target.value);
+                  setPresetActive(null);
+                }}
+              />
             </label>
             <label>
               Hasta
-              <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => {
+                  setDateTo(e.target.value);
+                  setPresetActive(null);
+                }}
+              />
             </label>
             <label>
               Estado
               <select value={status} onChange={(e) => setStatus(e.target.value)}>
                 {STATUSES.map((s) => (
-                  <option key={s.value || 'all'} value={s.value}>{s.label}</option>
+                  <option key={s.value || 'all'} value={s.value}>
+                    {s.label}
+                  </option>
                 ))}
               </select>
             </label>
@@ -109,7 +169,7 @@ export default function PlatformReportsPage() {
             <button
               type="button"
               className="btn btn-primary"
-              disabled={loading}
+              disabled={loading || !orgId}
               onClick={() => download('xlsx')}
             >
               {loading === 'xlsx' ? 'Generando…' : 'Descargar Excel'}
@@ -117,16 +177,34 @@ export default function PlatformReportsPage() {
             <button
               type="button"
               className="btn btn-secondary"
-              disabled={loading}
+              disabled={loading || !orgId}
               onClick={() => download('pdf')}
             >
               {loading === 'pdf' ? 'Generando…' : 'Descargar PDF'}
             </button>
           </div>
-          <p className="reports-hint">
-            Vista de auditoría: incluye todas las facturas de la organización seleccionada.
-          </p>
+          <p className="reports-hint">Vista de auditoría: incluye todas las facturas de la organización.</p>
         </div>
+
+        {orgId && (
+          <div className="reports-card reports-charts-card">
+            <h2 className="reports-charts-title">Vista previa (gráficos)</h2>
+            {chartError && <div className="form-error">{chartError}</div>}
+            {loadingCharts && (
+              <div className="dashboard-skeleton" aria-hidden>
+                <div className="skeleton-block" style={{ height: 280 }} />
+              </div>
+            )}
+            {!loadingCharts && stats && (
+              <>
+                <DashboardChartsGrid stats={stats} />
+                {stats.total_invoices === 0 && (
+                  <p className="muted reports-charts-empty">Sin datos para graficar con los filtros actuales.</p>
+                )}
+              </>
+            )}
+          </div>
+        )}
       </main>
     </div>
   );

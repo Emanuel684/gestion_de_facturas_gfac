@@ -26,6 +26,7 @@ router = APIRouter(prefix="/api/reports", tags=["reports"])
 async def tenant_dashboard(
     date_from: date | None = None,
     date_to: date | None = None,
+    status_filter: Annotated[InvoiceStatus | None, Query(alias="status")] = None,
     current_user: User = Depends(require_active_tenant_user),
     db: AsyncSession = Depends(get_db),
 ) -> DashboardStatsOut:
@@ -38,6 +39,7 @@ async def tenant_dashboard(
         org_name=None,
         date_from=d0,
         date_to=d1,
+        status_filter=status_filter,
     )
 
 

@@ -164,3 +164,19 @@
   color: #b91c1c;
   font-size: 0.9rem;
 }
+
+.dashboard-charts-section {
+  margin-top: 2rem;
+}
+
+.dashboard-section-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.75rem;
+}
+
+.dashboard-zero-hint {
+  margin-top: 1rem;
+  text-align: center;
+}

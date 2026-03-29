@@ -30,6 +30,7 @@ async def platform_dashboard(
     organization_id: Annotated[int, Query(ge=1)],
     date_from: date | None = None,
     date_to: date | None = None,
+    status_filter: Annotated[InvoiceStatus | None, Query(alias="status")] = None,
     _: User = Depends(require_platform_admin),
     db: AsyncSession = Depends(get_db),
 ) -> DashboardStatsOut:
@@ -45,6 +46,7 @@ async def platform_dashboard(
         org_name=org.name,
         date_from=d0,
         date_to=d1,
+        status_filter=status_filter,
     )
 
 

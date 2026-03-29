@@ -5,7 +5,7 @@ import re
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 from src.models import (
     CheckoutSessionStatus,
@@ -520,6 +520,13 @@ class MonthlySeriesPoint(BaseModel):
     total_amount: Decimal
 
 
+class AmountHistogramBin(BaseModel):
+    """Cantidad de facturas por rango de monto (COP)."""
+
+    label: str
+    invoice_count: int
+
+
 class DashboardStatsOut(BaseModel):
     organization_id: int
     organization_name: str | None = None
@@ -528,6 +535,10 @@ class DashboardStatsOut(BaseModel):
     count_by_status: StatusCounts
     amount_by_status: StatusAmounts
     monthly: list[MonthlySeriesPoint]
+    histogram_by_amount: list[AmountHistogramBin] = Field(
+        default_factory=list,
+        description="Distribución de facturas por tramo de monto (COP).",
+    )
     pending_due_within_7_days: int
     date_from: datetime | None = None
     date_to: datetime | None = None

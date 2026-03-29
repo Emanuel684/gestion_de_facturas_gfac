@@ -1,0 +1,120 @@
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 1.25rem;
+  margin-top: 0.5rem;
+}
+
+.chart-grid--single {
+  grid-template-columns: 1fr;
+}
+
+.chart-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1rem 1rem 0.5rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-card--tall {
+  min-height: 380px;
+}
+
+.chart-card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 0.25rem;
+}
+
+.chart-card-sub {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  margin: 0 0 0.75rem;
+}
+
+.chart-card-body {
+  flex: 1;
+  min-height: 260px;
+  width: 100%;
+}
+
+.chart-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+
+.chart-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.chart-presets-label {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-right: 0.25rem;
+}
+
+.preset-btn {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.82rem;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #374151;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.preset-btn:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.preset-btn.active {
+  background: #ecfdf5;
+  border-color: #5eead4;
+  color: #0f766e;
+}
+
+.dashboard-skeleton {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.skeleton-block {
+  height: 96px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #f3f4f6 0%, #e5e7eb 50%, #f3f4f6 100%);
+  background-size: 200% 100%;
+  animation: sk 1.2s ease-in-out infinite;
+}
+
+@keyframes sk {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.recharts-default-tooltip {
+  border-radius: 8px !important;
+  border: 1px solid #e5e7eb !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+}

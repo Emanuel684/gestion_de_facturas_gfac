@@ -2,12 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { getTenantDashboard } from '../api';
+import { DashboardChartsGrid, moneyFmt } from '../components/charts/DashboardCharts';
+import DateRangePresetBar from '../components/charts/DateRangePresetBar';
+import { getDateRangePreset } from '../utils/dateRangePresets';
 import './DashboardPage.css';
-
-function fmtMoney(n) {
-  if (n == null || Number.isNaN(Number(n))) return '—';
-  return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(n));
-}
+import '../components/charts/Charts.css';
 
 export default function DashboardPage() {
   const [stats, setStats] = useState(null);
@@ -15,6 +14,7 @@ export default function DashboardPage() {
   const [error, setError] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [presetActive, setPresetActive] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -37,8 +37,22 @@ export default function DashboardPage() {
     load();
   }, [load]);
 
-  const monthly = stats?.monthly ?? [];
-  const maxAmt = Math.max(...monthly.map((m) => Number(m.total_amount) || 0), 1);
+  const applyPreset = (key) => {
+    const { dateFrom: f, dateTo: t } = getDateRangePreset(key);
+    setDateFrom(f);
+    setDateTo(t);
+    setPresetActive(key);
+  };
+
+  const onDateFromChange = (e) => {
+    setDateFrom(e.target.value);
+    setPresetActive(null);
+  };
+
+  const onDateToChange = (e) => {
+    setDateTo(e.target.value);
+    setPresetActive(null);
+  };
 
   return (
     <div className="App">
@@ -52,22 +66,31 @@ export default function DashboardPage() {
           </Link>
         </div>
 
+        <DateRangePresetBar activeKey={presetActive} onSelect={applyPreset} />
+
         <div className="dashboard-filters">
           <label>
             Desde
-            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+            <input type="date" value={dateFrom} onChange={onDateFromChange} />
           </label>
           <label>
             Hasta
-            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+            <input type="date" value={dateTo} onChange={onDateToChange} />
           </label>
           <button type="button" className="btn btn-secondary btn-sm" onClick={load} disabled={loading}>
-            Actualizar
+            {loading ? 'Actualizando…' : 'Actualizar'}
           </button>
         </div>
 
         {error && <div className="form-error dashboard-error">{error}</div>}
-        {loading && !stats && <p className="muted">Cargando…</p>}
+
+        {loading && !stats && (
+          <div className="dashboard-skeleton" aria-hidden>
+            <div className="skeleton-block" />
+            <div className="skeleton-block" />
+            <div className="skeleton-block" />
+          </div>
+        )}
 
         {stats && (
           <>
@@ -78,7 +101,7 @@ export default function DashboardPage() {
               </div>
               <div className="kpi-card kpi-accent">
                 <span className="kpi-label">Monto total</span>
-                <span className="kpi-value">{fmtMoney(stats.total_amount)}</span>
+                <span className="kpi-value">{moneyFmt(stats.total_amount)}</span>
               </div>
               <div className="kpi-card">
                 <span className="kpi-label">Pendientes de pago (próx. 7 días)</span>
@@ -86,42 +109,16 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="status-grid">
-              <h2>Por estado</h2>
-              <div className="status-cards">
-                {['pendiente', 'pagada', 'vencida'].map((k) => (
-                  <div key={k} className={`status-card status-${k}`}>
-                    <div className="status-name">{k}</div>
-                    <div className="status-count">{stats.count_by_status?.[k] ?? 0}</div>
-                    <div className="status-amt">{fmtMoney(stats.amount_by_status?.[k])}</div>
-                  </div>
-                ))}
-              </div>
+            <div className="dashboard-charts-section">
+              <h2 className="dashboard-section-title">Visualización</h2>
+              <DashboardChartsGrid stats={stats} />
             </div>
 
-            <div className="chart-block">
-              <h2>Facturación por mes</h2>
-              {monthly.length === 0 ? (
-                <p className="muted">Sin datos en el rango seleccionado.</p>
-              ) : (
-                <div className="bar-chart">
-                  {monthly.map((m) => (
-                    <div key={m.month} className="bar-row">
-                      <span className="bar-label">{m.month}</span>
-                      <div className="bar-track">
-                        <div
-                          className="bar-fill"
-                          style={{ width: `${(Number(m.total_amount) / maxAmt) * 100}%` }}
-                        />
-                      </div>
-                      <span className="bar-meta">
-                        {m.invoice_count} doc. · {fmtMoney(m.total_amount)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            {stats.total_invoices === 0 && (
+              <p className="muted dashboard-zero-hint">
+                No hay facturas en el periodo seleccionado. Ajuste las fechas o cree facturas desde el listado.
+              </p>
+            )}
           </>
         )}
       </main>

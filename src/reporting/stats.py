@@ -4,12 +4,38 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models import Invoice, InvoiceStatus, Organization
 from src.reporting.scope import append_date_range, invoice_visibility_conditions
-from src.schemas import DashboardStatsOut, MonthlySeriesPoint, OrgBillingRankOut, StatusAmounts, StatusCounts
+from src.schemas import (
+    AmountHistogramBin,
+    DashboardStatsOut,
+    MonthlySeriesPoint,
+    OrgBillingRankOut,
+    StatusAmounts,
+    StatusCounts,
+)
+
+# Orden fijo para histograma de montos (COP)
+HISTOGRAM_BUCKET_ORDER: list[str] = [
+    "0–500 mil",
+    "500 mil – 1M",
+    "1M – 5M",
+    "5M – 20M",
+    "Más de 20M",
+]
+
+
+def _amount_bucket_label():
+    return case(
+        (Invoice.amount < Decimal("500000"), "0–500 mil"),
+        (Invoice.amount < Decimal("1000000"), "500 mil – 1M"),
+        (Invoice.amount < Decimal("5000000"), "1M – 5M"),
+        (Invoice.amount < Decimal("20000000"), "5M – 20M"),
+        else_="Más de 20M",
+    )
 
 
 async def compute_dashboard_stats(
@@ -21,9 +47,12 @@ async def compute_dashboard_stats(
     org_name: str | None,
     date_from: datetime | None,
     date_to: datetime | None,
+    status_filter: InvoiceStatus | None = None,
 ) -> DashboardStatsOut:
     conds = invoice_visibility_conditions(org_id, user, platform_scope=platform_scope)
     append_date_range(conds, date_from, date_to)
+    if status_filter is not None:
+        conds.append(Invoice.status == status_filter)
 
     # Por estado: conteo y suma de montos
     stmt = (
@@ -70,6 +99,20 @@ async def compute_dashboard_stats(
             MonthlySeriesPoint(month=yms, invoice_count=int(cnt), total_amount=amt)
         )
 
+    # Histograma por tramo de monto
+    bucket = _amount_bucket_label().label("bucket")
+    stmt_h = (
+        select(bucket, func.count(Invoice.id))
+        .where(and_(*conds))
+        .group_by(bucket)
+    )
+    r_h = await db.execute(stmt_h)
+    hist_map: dict[str, int] = {row[0]: int(row[1]) for row in r_h.all()}
+    histogram: list[AmountHistogramBin] = [
+        AmountHistogramBin(label=label, invoice_count=hist_map.get(label, 0))
+        for label in HISTOGRAM_BUCKET_ORDER
+    ]
+
     # Pendientes con vencimiento en los próximos 7 días
     now = datetime.now(timezone.utc)
     week_end = now + timedelta(days=7)
@@ -99,6 +142,7 @@ async def compute_dashboard_stats(
         count_by_status=counts,
         amount_by_status=amounts,
         monthly=monthly,
+        histogram_by_amount=histogram,
         pending_due_within_7_days=pending_due_7,
         date_from=date_from,
         date_to=date_to,
