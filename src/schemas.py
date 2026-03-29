@@ -499,6 +499,48 @@ class SubscriptionOut(BaseModel):
     updated_at: datetime
 
 
+# ── Reporting / dashboards ────────────────────────────────────────────────────
+
+
+class StatusCounts(BaseModel):
+    pendiente: int = 0
+    pagada: int = 0
+    vencida: int = 0
+
+
+class StatusAmounts(BaseModel):
+    pendiente: Decimal = Decimal("0")
+    pagada: Decimal = Decimal("0")
+    vencida: Decimal = Decimal("0")
+
+
+class MonthlySeriesPoint(BaseModel):
+    month: str
+    invoice_count: int
+    total_amount: Decimal
+
+
+class DashboardStatsOut(BaseModel):
+    organization_id: int
+    organization_name: str | None = None
+    total_invoices: int
+    total_amount: Decimal
+    count_by_status: StatusCounts
+    amount_by_status: StatusAmounts
+    monthly: list[MonthlySeriesPoint]
+    pending_due_within_7_days: int
+    date_from: datetime | None = None
+    date_to: datetime | None = None
+
+
+class OrgBillingRankOut(BaseModel):
+    organization_id: int
+    name: str
+    slug: str
+    invoice_count: int
+    total_amount: Decimal
+
+
 def user_to_out(user) -> UserOut:
     """Build UserOut; `user` must have `.organization` loaded."""
     return UserOut(

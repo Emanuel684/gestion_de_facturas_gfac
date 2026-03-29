@@ -29,7 +29,7 @@ export default function Navbar() {
 
   return (
     <nav className="navbar">
-      <Link to={user ? (isPlatform ? '/app/organizaciones' : '/app') : '/'} className="navbar-brand">
+      <Link to={user ? (isPlatform ? '/app/plataforma/dashboard' : '/app') : '/'} className="navbar-brand">
         <svg width="26" height="26" viewBox="0 0 40 40" fill="none">
           <rect width="40" height="40" rx="10" fill="#0e7490"/>
           <path d="M10 14h20M10 20h20M10 26h14" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
@@ -39,6 +39,8 @@ export default function Navbar() {
       {user && !isPlatform && (
         <div className="navbar-links">
           <Link to="/app" className="nav-link">Facturas</Link>
+          <Link to="/app/dashboard" className="nav-link">Dashboard</Link>
+          <Link to="/app/reportes" className="nav-link">Reportes</Link>
           <Link to="/app/users" className="nav-link">Usuarios</Link>
           <Link to="/app/billing" className="nav-link">Suscripcion</Link>
         </div>
@@ -46,6 +48,8 @@ export default function Navbar() {
       {user && isPlatform && (
         <div className="navbar-links">
           <Link to="/app/organizaciones" className="nav-link">Organizaciones</Link>
+          <Link to="/app/plataforma/dashboard" className="nav-link">Dashboard</Link>
+          <Link to="/app/plataforma/reportes" className="nav-link">Reportes</Link>
         </div>
       )}
 

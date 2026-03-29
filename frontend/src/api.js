@@ -129,6 +129,28 @@ export const completeCheckout = (token, outcome) =>
 export const getFiscalProfile = () => api.get('/fiscal/profile');
 export const putFiscalProfile = (data) => api.put('/fiscal/profile', data);
 
+// ── Dashboard & reportes (tenant) ───────────────────────────────────────────
+export const getTenantDashboard = (params = {}) => api.get('/reports/dashboard', { params });
+
+export const exportTenantReport = (format, params = {}) =>
+  api.get('/reports/export', {
+    params: { format, ...params },
+    responseType: 'blob',
+  });
+
+// ── Dashboard & reportes (plataforma) ───────────────────────────────────────
+export const getPlatformDashboard = (organizationId, params = {}) =>
+  api.get('/platform/dashboard', { params: { organization_id: organizationId, ...params } });
+
+export const getPlatformTopOrganizations = (params = {}) =>
+  api.get('/platform/analytics/top-organizations', { params });
+
+export const exportPlatformReport = (organizationId, format, params = {}) =>
+  api.get('/platform/reports/export', {
+    params: { organization_id: organizationId, format, ...params },
+    responseType: 'blob',
+  });
+
 // ── Invoice traceability / audit ────────────────────────────────────────────
 export const getInvoiceTrace = (id) => api.get(`/invoices/${id}/trace`);
 

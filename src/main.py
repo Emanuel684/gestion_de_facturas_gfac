@@ -27,7 +27,7 @@ from src.models import (
     Invoice,
     InvoiceStatus,
 )
-from src.routers import auth, billing, fiscal, invoices, organizations, public_signup, users
+from src.routers import auth, billing, fiscal, invoices, organizations, platform_insights, public_signup, reports, users
 
 logging.basicConfig(
     level=logging.INFO,
@@ -54,6 +54,8 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(organizations.router)
 app.include_router(invoices.router)
+app.include_router(reports.router)
+app.include_router(platform_insights.router)
 app.include_router(users.router)
 app.include_router(billing.router)
 app.include_router(public_signup.router)

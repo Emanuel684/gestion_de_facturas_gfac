@@ -9,6 +9,10 @@ import OrganizationsPage from './pages/OrganizationsPage';
 import SignupPage from './pages/SignupPage';
 import MockCheckoutPage from './pages/MockCheckoutPage';
 import BillingPage from './pages/BillingPage';
+import DashboardPage from './pages/DashboardPage';
+import ReportsPage from './pages/ReportsPage';
+import PlatformDashboardPage from './pages/PlatformDashboardPage';
+import PlatformReportsPage from './pages/PlatformReportsPage';
 import './App.css';
 
 export default function App() {
@@ -45,10 +49,42 @@ export default function App() {
             }
           />
           <Route
+            path="/app/dashboard"
+            element={
+              <ProtectedRoute tenantOnly>
+                <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/app/reportes"
+            element={
+              <ProtectedRoute tenantOnly>
+                <ReportsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/app/organizaciones"
             element={
               <ProtectedRoute platformOnly>
                 <OrganizationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/app/plataforma/dashboard"
+            element={
+              <ProtectedRoute platformOnly>
+                <PlatformDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/app/plataforma/reportes"
+            element={
+              <ProtectedRoute platformOnly>
+                <PlatformReportsPage />
               </ProtectedRoute>
             }
           />

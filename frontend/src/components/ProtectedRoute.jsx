@@ -12,7 +12,7 @@ export default function ProtectedRoute({ children, tenantOnly, platformOnly }) {
   if (!user) return <Navigate to="/login" replace />;
 
   if (tenantOnly && user.role === 'plataforma_admin') {
-    return <Navigate to="/app/organizaciones" replace />;
+    return <Navigate to="/app/plataforma/dashboard" replace />;
   }
   if (platformOnly && user.role !== 'plataforma_admin') {
     return <Navigate to="/app" replace />;

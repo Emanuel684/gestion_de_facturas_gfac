@@ -1,0 +1,79 @@
+.platform-insights .platform-org-row {
+  margin-bottom: 1rem;
+}
+
+.platform-org-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #374151;
+  max-width: 28rem;
+}
+
+.platform-org-label select {
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  border: 1.5px solid #d1d5db;
+  font-size: 0.95rem;
+}
+
+.platform-rank-section {
+  margin-bottom: 2.5rem;
+  padding: 1.25rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+}
+
+.platform-rank-section h2 {
+  font-size: 1.15rem;
+  margin-bottom: 0.35rem;
+}
+
+.small {
+  font-size: 0.85rem;
+}
+
+.rank-table-wrap {
+  overflow-x: auto;
+  margin-top: 1rem;
+}
+
+.rank-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.rank-table th,
+.rank-table td {
+  text-align: left;
+  padding: 0.55rem 0.65rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.rank-table th {
+  color: #6b7280;
+  font-weight: 600;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.rank-table .slug {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.platform-pick-hint {
+  margin: 1.5rem 0;
+}
+
+.platform-detail-title {
+  font-size: 1.2rem;
+  margin: 1.5rem 0 1rem;
+  color: #0e7490;
+}
