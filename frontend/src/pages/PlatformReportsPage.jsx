@@ -5,7 +5,6 @@ import { listOrganizations, exportPlatformReport, getPlatformDashboard } from '.
 import { DashboardChartsGrid } from '../components/charts/DashboardCharts';
 import DateRangePresetBar from '../components/charts/DateRangePresetBar';
 import { getDateRangePreset } from '../utils/dateRangePresets';
-import './ReportsPage.css';
 import '../components/charts/Charts.css';
 
 const STATUSES = [
@@ -108,19 +107,22 @@ export default function PlatformReportsPage() {
   return (
     <div className="App">
       <Navbar />
-      <main className="reports-main reports-wide">
-        <div className="reports-header">
-          <h1>Reportes (plataforma)</h1>
-          <p className="reports-sub">Exporte y visualice todas las facturas de la organización elegida.</p>
-          <Link to="/app/plataforma/dashboard" className="link-reportes">← Volver al dashboard</Link>
-        </div>
+      <main className="sgf-page">
+        <header className="sgf-page-header">
+          <h1 className="sgf-page-title">Reportes (plataforma)</h1>
+          <p className="sgf-page-sub">Exporte y visualice todas las facturas de la organización elegida.</p>
+          <Link to="/app/plataforma/dashboard" className="sgf-page-link">
+            ← Volver al dashboard
+          </Link>
+        </header>
 
-        <div className="reports-card">
+        <div className="sgf-panel sgf-panel--flush">
+          <h2 className="sgf-panel-title">Filtros y descarga</h2>
           <DateRangePresetBar activeKey={presetActive} onSelect={applyPreset} />
-          <div className="reports-filters">
-            <label>
-              Organización
-              <select value={orgId} onChange={(e) => setOrgId(e.target.value)}>
+          <div className="sgf-toolbar sgf-toolbar--spaced">
+            <div className="sgf-field">
+              <span className="sgf-field-label">Organización</span>
+              <select className="sgf-select" value={orgId} onChange={(e) => setOrgId(e.target.value)}>
                 <option value="">— Seleccione —</option>
                 {orgs.map((o) => (
                   <option key={o.id} value={String(o.id)}>
@@ -128,10 +130,11 @@ export default function PlatformReportsPage() {
                   </option>
                 ))}
               </select>
-            </label>
-            <label>
-              Desde
+            </div>
+            <div className="sgf-field">
+              <span className="sgf-field-label">Desde</span>
               <input
+                className="sgf-input"
                 type="date"
                 value={dateFrom}
                 onChange={(e) => {
@@ -139,10 +142,11 @@ export default function PlatformReportsPage() {
                   setPresetActive(null);
                 }}
               />
-            </label>
-            <label>
-              Hasta
+            </div>
+            <div className="sgf-field">
+              <span className="sgf-field-label">Hasta</span>
               <input
+                className="sgf-input"
                 type="date"
                 value={dateTo}
                 onChange={(e) => {
@@ -150,56 +154,53 @@ export default function PlatformReportsPage() {
                   setPresetActive(null);
                 }}
               />
-            </label>
-            <label>
-              Estado
-              <select value={status} onChange={(e) => setStatus(e.target.value)}>
+            </div>
+            <div className="sgf-field">
+              <span className="sgf-field-label">Estado</span>
+              <select className="sgf-select" value={status} onChange={(e) => setStatus(e.target.value)}>
                 {STATUSES.map((s) => (
                   <option key={s.value || 'all'} value={s.value}>
                     {s.label}
                   </option>
                 ))}
               </select>
-            </label>
+            </div>
+            <div className="sgf-toolbar-actions">
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={loading || !orgId}
+                onClick={() => download('xlsx')}
+              >
+                {loading === 'xlsx' ? 'Generando…' : 'Descargar Excel'}
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                disabled={loading || !orgId}
+                onClick={() => download('pdf')}
+              >
+                {loading === 'pdf' ? 'Generando…' : 'Descargar PDF'}
+              </button>
+            </div>
           </div>
-
-          {error && <div className="form-error">{error}</div>}
-
-          <div className="reports-actions">
-            <button
-              type="button"
-              className="btn btn-primary"
-              disabled={loading || !orgId}
-              onClick={() => download('xlsx')}
-            >
-              {loading === 'xlsx' ? 'Generando…' : 'Descargar Excel'}
-            </button>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              disabled={loading || !orgId}
-              onClick={() => download('pdf')}
-            >
-              {loading === 'pdf' ? 'Generando…' : 'Descargar PDF'}
-            </button>
-          </div>
-          <p className="reports-hint">Vista de auditoría: incluye todas las facturas de la organización.</p>
+          {error && <div className="alert alert-error">{error}</div>}
+          <p className="sgf-report-hint">Vista de auditoría: incluye todas las facturas de la organización.</p>
         </div>
 
         {orgId && (
-          <div className="reports-card reports-charts-card">
-            <h2 className="reports-charts-title">Vista previa (gráficos)</h2>
-            {chartError && <div className="form-error">{chartError}</div>}
-            {loadingCharts && (
-              <div className="dashboard-skeleton" aria-hidden>
-                <div className="skeleton-block" style={{ height: 280 }} />
-              </div>
-            )}
+          <div className="sgf-panel">
+            <div className="sgf-section-head sgf-section-head--tight">
+              <h2 className="sgf-section-title">Vista previa (gráficos)</h2>
+              <p className="sgf-section-sub">Mismos criterios que los archivos exportados</p>
+            </div>
+            {chartError && <div className="alert alert-error">{chartError}</div>}
+            {loadingCharts && <div className="sgf-skeleton-chart" aria-hidden />}
             {!loadingCharts && stats && (
               <>
                 <DashboardChartsGrid stats={stats} />
                 {stats.total_invoices === 0 && (
-                  <p className="muted reports-charts-empty">Sin datos para graficar con los filtros actuales.</p>
+                  <p className="sgf-empty-hint">Sin datos para graficar con los filtros actuales.</p>
                 )}
               </>
             )}

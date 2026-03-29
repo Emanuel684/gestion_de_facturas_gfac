@@ -1,0 +1,293 @@
+/**
+ * Layout y componentes compartidos — alineado con InvoicesPage (títulos, KPIs, paneles).
+ */
+
+main.sgf-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 3rem;
+  width: 100%;
+}
+
+.sgf-page .alert {
+  margin-bottom: 1rem;
+}
+
+.sgf-page-header {
+  margin-bottom: 1.5rem;
+}
+
+.sgf-page-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #1e1b4b;
+  letter-spacing: -0.02em;
+}
+
+.sgf-page-sub {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-top: 0.3rem;
+  max-width: 44rem;
+  line-height: 1.5;
+}
+
+.sgf-page-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.65rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #0e7490;
+  text-decoration: none;
+  transition: color 0.12s;
+}
+
+.sgf-page-link:hover {
+  color: #0c6577;
+  text-decoration: underline;
+}
+
+/* Paneles blancos (filtros, bloques) */
+.sgf-panel {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.15rem 1.25rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  margin-bottom: 1.5rem;
+}
+
+.sgf-panel--flush {
+  padding-bottom: 1rem;
+}
+
+.sgf-panel-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1e1b4b;
+  margin: 0 0 0.75rem;
+}
+
+.sgf-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.85rem 1rem;
+}
+
+.sgf-toolbar--spaced {
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+.sgf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.sgf-field-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #4b5563;
+  letter-spacing: 0.02em;
+}
+
+.sgf-input,
+.sgf-select {
+  padding: 0.45rem 0.7rem;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  background: #fff;
+  color: #111827;
+  min-width: 10rem;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.sgf-input:focus,
+.sgf-select:focus {
+  border-color: #0e7490;
+  box-shadow: 0 0 0 3px rgba(14, 116, 144, 0.1);
+}
+
+.sgf-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-left: auto;
+}
+
+/* KPIs — misma familia que .summary-row en facturas */
+.sgf-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.sgf-kpi {
+  border-radius: 12px;
+  padding: 1rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.sgf-kpi--teal {
+  background: linear-gradient(135deg, #f0fdfa 0%, #fff 100%);
+  border-color: #99f6e4;
+}
+
+.sgf-kpi--amber {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.sgf-kpi-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #6b7280;
+}
+
+.sgf-kpi-value {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #1e1b4b;
+}
+
+.sgf-section-head {
+  margin: 2rem 0 1rem;
+}
+
+.sgf-section-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #1e1b4b;
+  margin: 0 0 0.25rem;
+}
+
+.sgf-section-sub {
+  font-size: 0.82rem;
+  color: #9ca3af;
+  margin: 0;
+}
+
+.sgf-section-head--tight {
+  margin-top: 0;
+  margin-bottom: 0.85rem;
+}
+
+.sgf-report-hint {
+  margin-top: 1rem;
+  font-size: 0.82rem;
+  color: #6b7280;
+  line-height: 1.45;
+}
+
+.sgf-title-accent {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #0e7490;
+  margin: 1.5rem 0 1rem;
+}
+
+.sgf-muted {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.sgf-empty-hint {
+  text-align: center;
+  padding: 1rem 1.25rem;
+  color: #6b7280;
+  font-size: 0.9rem;
+  background: #f9fafb;
+  border-radius: 10px;
+  border: 1px dashed #e5e7eb;
+  margin-top: 1rem;
+}
+
+.sgf-skeleton-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.sgf-skeleton-block {
+  height: 96px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #f3f4f6 0%, #e5e7eb 50%, #f3f4f6 100%);
+  background-size: 200% 100%;
+  animation: sgf-sk 1.2s ease-in-out infinite;
+}
+
+@keyframes sgf-sk {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.sgf-skeleton-chart {
+  height: 280px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #f3f4f6 0%, #e5e7eb 50%, #f3f4f6 100%);
+  background-size: 200% 100%;
+  animation: sgf-sk 1.2s ease-in-out infinite;
+}
+
+/* Ranking plataforma */
+.sgf-rank-panel {
+  margin-bottom: 2rem;
+  padding: 1.25rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.sgf-rank-table-wrap {
+  overflow-x: auto;
+  margin-top: 1rem;
+}
+
+.sgf-rank-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.sgf-rank-table th,
+.sgf-rank-table td {
+  text-align: left;
+  padding: 0.55rem 0.65rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.sgf-rank-table th {
+  color: #6b7280;
+  font-weight: 600;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.sgf-rank-slug {
+  color: #9ca3af;
+  font-weight: 400;
+}

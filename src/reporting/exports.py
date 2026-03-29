@@ -8,13 +8,19 @@ from datetime import datetime
 from decimal import Decimal
 
 from openpyxl import Workbook
+from openpyxl.drawing.image import Image as XLImage
 from openpyxl.styles import Font
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.units import inch
+from reportlab.lib.utils import ImageReader
+from reportlab.platypus import Image as RLImage
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from src.models import Invoice
+from src.reporting.chart_images import dashboard_figure_png
+from src.schemas import DashboardStatsOut
 
 
 def _fmt_dt(dt: datetime | None) -> str:
@@ -33,7 +39,11 @@ def _safe_filename_part(name: str) -> str:
     return re.sub(r"[^\w\-]+", "_", name, flags=re.UNICODE)[:80] or "reporte"
 
 
-def build_invoices_xlsx_bytes(invoices: list[Invoice], sheet_title: str = "Facturas") -> bytes:
+def build_invoices_xlsx_bytes(
+    invoices: list[Invoice],
+    sheet_title: str = "Facturas",
+    dashboard_stats: DashboardStatsOut | None = None,
+) -> bytes:
     wb = Workbook()
     ws = wb.active
     ws.title = sheet_title[:31] if sheet_title else "Facturas"
@@ -62,6 +72,17 @@ def build_invoices_xlsx_bytes(invoices: list[Invoice], sheet_title: str = "Factu
         ws.cell(row=row_idx, column=7, value=_fmt_dt(inv.issue_date))
         ws.cell(row=row_idx, column=8, value=_fmt_dt(inv.due_date))
         ws.cell(row=row_idx, column=9, value=_fmt_dt(inv.created_at))
+
+    if dashboard_stats is not None:
+        png = dashboard_figure_png(dashboard_stats)
+        ws_ch = wb.create_sheet("Gráficos")
+        ws_ch["A1"] = "Dashboard (misma vista que la aplicación)"
+        ws_ch["A1"].font = Font(bold=True, size=14)
+        xl_img = XLImage(io.BytesIO(png))
+        xl_img.width = 900
+        xl_img.height = 675
+        ws_ch.add_image(xl_img, "A3")
+
     buf = io.BytesIO()
     wb.save(buf)
     return buf.getvalue()
@@ -71,6 +92,7 @@ def build_invoices_pdf_bytes(
     invoices: list[Invoice],
     title: str,
     subtitle: str | None = None,
+    dashboard_stats: DashboardStatsOut | None = None,
 ) -> bytes:
     buf = io.BytesIO()
     doc = SimpleDocTemplate(
@@ -88,6 +110,19 @@ def build_invoices_pdf_bytes(
     if subtitle:
         story.append(Paragraph(escape(subtitle), styles["Normal"]))
     story.append(Spacer(1, 14))
+
+    if dashboard_stats is not None:
+        png = dashboard_figure_png(dashboard_stats)
+        story.append(
+            RLImage(
+                ImageReader(io.BytesIO(png)),
+                width=7.2 * inch,
+                height=5.4 * inch,
+            )
+        )
+        story.append(Spacer(1, 16))
+        story.append(Paragraph(f"<b>{escape('Detalle de facturas')}</b>", styles["Normal"]))
+        story.append(Spacer(1, 8))
 
     data = [
         [

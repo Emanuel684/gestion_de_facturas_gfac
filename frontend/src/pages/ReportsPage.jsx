@@ -5,7 +5,6 @@ import { getTenantDashboard, exportTenantReport } from '../api';
 import { DashboardChartsGrid } from '../components/charts/DashboardCharts';
 import DateRangePresetBar from '../components/charts/DateRangePresetBar';
 import { getDateRangePreset } from '../utils/dateRangePresets';
-import './ReportsPage.css';
 import '../components/charts/Charts.css';
 
 const STATUSES = [
@@ -92,21 +91,25 @@ export default function ReportsPage() {
   return (
     <div className="App">
       <Navbar />
-      <main className="reports-main reports-wide">
-        <div className="reports-header">
-          <h1>Reportes</h1>
-          <p className="reports-sub">
-            Vista previa con los mismos filtros que el archivo exportado. Los gráficos respetan fechas y estado.
+      <main className="sgf-page">
+        <header className="sgf-page-header">
+          <h1 className="sgf-page-title">Reportes</h1>
+          <p className="sgf-page-sub">
+            Exporte a Excel o PDF y revise la vista previa con los mismos filtros que el archivo descargado.
           </p>
-          <Link to="/app/dashboard" className="link-reportes">← Volver al dashboard</Link>
-        </div>
+          <Link to="/app/dashboard" className="sgf-page-link">
+            ← Volver al dashboard
+          </Link>
+        </header>
 
-        <div className="reports-card">
+        <div className="sgf-panel sgf-panel--flush">
+          <h2 className="sgf-panel-title">Filtros y descarga</h2>
           <DateRangePresetBar activeKey={presetActive} onSelect={applyPreset} />
-          <div className="reports-filters">
-            <label>
-              Desde
+          <div className="sgf-toolbar sgf-toolbar--spaced">
+            <div className="sgf-field">
+              <span className="sgf-field-label">Desde</span>
               <input
+                className="sgf-input"
                 type="date"
                 value={dateFrom}
                 onChange={(e) => {
@@ -114,10 +117,11 @@ export default function ReportsPage() {
                   setPresetActive(null);
                 }}
               />
-            </label>
-            <label>
-              Hasta
+            </div>
+            <div className="sgf-field">
+              <span className="sgf-field-label">Hasta</span>
               <input
+                className="sgf-input"
                 type="date"
                 value={dateTo}
                 onChange={(e) => {
@@ -125,55 +129,60 @@ export default function ReportsPage() {
                   setPresetActive(null);
                 }}
               />
-            </label>
-            <label>
-              Estado
-              <select value={status} onChange={(e) => setStatus(e.target.value)}>
+            </div>
+            <div className="sgf-field">
+              <span className="sgf-field-label">Estado</span>
+              <select
+                className="sgf-select"
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+              >
                 {STATUSES.map((s) => (
-                  <option key={s.value || 'all'} value={s.value}>{s.label}</option>
+                  <option key={s.value || 'all'} value={s.value}>
+                    {s.label}
+                  </option>
                 ))}
               </select>
-            </label>
+            </div>
+            <div className="sgf-toolbar-actions">
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={loading}
+                onClick={() => download('xlsx')}
+              >
+                {loading === 'xlsx' ? 'Generando…' : 'Descargar Excel'}
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                disabled={loading}
+                onClick={() => download('pdf')}
+              >
+                {loading === 'pdf' ? 'Generando…' : 'Descargar PDF'}
+              </button>
+            </div>
           </div>
-
-          {error && <div className="form-error">{error}</div>}
-
-          <div className="reports-actions">
-            <button
-              type="button"
-              className="btn btn-primary"
-              disabled={loading}
-              onClick={() => download('xlsx')}
-            >
-              {loading === 'xlsx' ? 'Generando…' : 'Descargar Excel'}
-            </button>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              disabled={loading}
-              onClick={() => download('pdf')}
-            >
-              {loading === 'pdf' ? 'Generando…' : 'Descargar PDF'}
-            </button>
-          </div>
-          <p className="reports-hint">
+          {error && <div className="alert alert-error">{error}</div>}
+          <p className="sgf-report-hint">
             Los datos respetan su rol: los asistentes solo ven facturas creadas o asignadas a ellos.
           </p>
         </div>
 
-        <div className="reports-card reports-charts-card">
-          <h2 className="reports-charts-title">Vista previa (gráficos)</h2>
-          {chartError && <div className="form-error">{chartError}</div>}
+        <div className="sgf-panel">
+          <div className="sgf-section-head sgf-section-head--tight">
+            <h2 className="sgf-section-title">Vista previa (gráficos)</h2>
+            <p className="sgf-section-sub">Se actualiza al cambiar filtros</p>
+          </div>
+          {chartError && <div className="alert alert-error">{chartError}</div>}
           {loadingCharts && (
-            <div className="dashboard-skeleton" aria-hidden>
-              <div className="skeleton-block" style={{ height: 280 }} />
-            </div>
+            <div className="sgf-skeleton-chart" aria-hidden />
           )}
           {!loadingCharts && stats && (
             <>
               <DashboardChartsGrid stats={stats} />
               {stats.total_invoices === 0 && (
-                <p className="muted reports-charts-empty">Sin datos para graficar con los filtros actuales.</p>
+                <p className="sgf-empty-hint">Sin datos para graficar con los filtros actuales.</p>
               )}
             </>
           )}

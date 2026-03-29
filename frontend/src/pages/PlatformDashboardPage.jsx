@@ -10,8 +10,6 @@ import {
 } from '../components/charts/DashboardCharts';
 import DateRangePresetBar from '../components/charts/DateRangePresetBar';
 import { getDateRangePreset } from '../utils/dateRangePresets';
-import './DashboardPage.css';
-import './PlatformInsights.css';
 import '../components/charts/Charts.css';
 
 const STATUSES = [
@@ -99,89 +97,105 @@ export default function PlatformDashboardPage() {
   return (
     <div className="App">
       <Navbar />
-      <main className="dashboard-main platform-insights">
-        <div className="dashboard-header">
-          <h1>Dashboard de plataforma</h1>
-          <p className="dashboard-sub">
+      <main className="sgf-page">
+        <header className="sgf-page-header">
+          <h1 className="sgf-page-title">Dashboard de plataforma</h1>
+          <p className="sgf-page-sub">
             Elija organización para KPIs detallados. El ranking compara facturación entre clientes.
           </p>
-          <Link to="/app/plataforma/reportes" className="link-reportes">
+          <Link to="/app/plataforma/reportes" className="sgf-page-link">
             Ir a reportes (PDF / Excel) →
           </Link>
+        </header>
+
+        <div className="sgf-panel sgf-panel--flush">
+          <h2 className="sgf-panel-title">Filtros globales</h2>
+          <div className="sgf-toolbar">
+            <div className="sgf-field">
+              <span className="sgf-field-label">Organización</span>
+              <select
+                className="sgf-select"
+                value={orgId}
+                onChange={(e) => setOrgId(e.target.value)}
+                disabled={loading}
+              >
+                <option value="">— Seleccione —</option>
+                {orgs.map((o) => (
+                  <option key={o.id} value={String(o.id)}>
+                    {o.name} ({o.slug})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="sgf-field">
+              <span className="sgf-field-label">Estado (KPIs)</span>
+              <select
+                className="sgf-select"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                {STATUSES.map((s) => (
+                  <option key={s.value || 'all'} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <DateRangePresetBar activeKey={presetActive} onSelect={applyPreset} />
+          <div className="sgf-toolbar sgf-toolbar--spaced">
+            <div className="sgf-field">
+              <span className="sgf-field-label">Desde</span>
+              <input
+                className="sgf-input"
+                type="date"
+                value={dateFrom}
+                onChange={(e) => {
+                  setDateFrom(e.target.value);
+                  setPresetActive(null);
+                }}
+              />
+            </div>
+            <div className="sgf-field">
+              <span className="sgf-field-label">Hasta</span>
+              <input
+                className="sgf-input"
+                type="date"
+                value={dateTo}
+                onChange={(e) => {
+                  setDateTo(e.target.value);
+                  setPresetActive(null);
+                }}
+              />
+            </div>
+            <div className="sgf-toolbar-actions">
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => {
+                  loadTop();
+                  loadDashboard();
+                }}
+                disabled={loadingStats}
+              >
+                {loadingStats ? 'Actualizando…' : 'Actualizar'}
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div className="platform-org-row">
-          <label className="platform-org-label">
-            Organización
-            <select value={orgId} onChange={(e) => setOrgId(e.target.value)} disabled={loading}>
-              <option value="">— Seleccione —</option>
-              {orgs.map((o) => (
-                <option key={o.id} value={String(o.id)}>
-                  {o.name} ({o.slug})
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="platform-org-label platform-status-filter">
-            Estado (KPIs)
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-              {STATUSES.map((s) => (
-                <option key={s.value || 'all'} value={s.value}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
+        {error && <div className="alert alert-error">{error}</div>}
 
-        <DateRangePresetBar activeKey={presetActive} onSelect={applyPreset} />
-
-        <div className="dashboard-filters">
-          <label>
-            Desde
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => {
-                setDateFrom(e.target.value);
-                setPresetActive(null);
-              }}
-            />
-          </label>
-          <label>
-            Hasta
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(e) => {
-                setDateTo(e.target.value);
-                setPresetActive(null);
-              }}
-            />
-          </label>
-          <button
-            type="button"
-            className="btn btn-secondary btn-sm"
-            onClick={() => {
-              loadTop();
-              loadDashboard();
-            }}
-            disabled={loadingStats}
-          >
-            {loadingStats ? 'Actualizando…' : 'Actualizar'}
-          </button>
-        </div>
-
-        {error && <div className="form-error dashboard-error">{error}</div>}
-
-        <section className="platform-rank-section">
-          <h2>Organizaciones con mayor facturación</h2>
-          <p className="muted small">Suma de montos en el rango (org. plataforma excluida).</p>
+        <section className="sgf-rank-panel">
+          <div className="sgf-section-head sgf-section-head--tight">
+            <h2 className="sgf-section-title">Organizaciones con mayor facturación</h2>
+            <p className="sgf-section-sub">Suma de montos en el rango (organización plataforma excluida)</p>
+          </div>
           <ChartCard title="Ranking visual" subtitle="Top por monto total facturado" className="platform-rank-chart">
             <TopOrganizationsBarChart rows={top} maxBars={12} />
           </ChartCard>
-          <div className="rank-table-wrap platform-rank-table">
-            <table className="rank-table">
+          <div className="sgf-rank-table-wrap">
+            <table className="sgf-rank-table">
               <thead>
                 <tr>
                   <th>#</th>
@@ -193,7 +207,7 @@ export default function PlatformDashboardPage() {
               <tbody>
                 {top.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="muted">
+                    <td colSpan={4} className="sgf-muted">
                       Sin datos en el rango.
                     </td>
                   </tr>
@@ -202,7 +216,7 @@ export default function PlatformDashboardPage() {
                     <tr key={row.organization_id}>
                       <td>{i + 1}</td>
                       <td>
-                        {row.name} <span className="slug">({row.slug})</span>
+                        {row.name} <span className="sgf-rank-slug">({row.slug})</span>
                       </td>
                       <td>{row.invoice_count}</td>
                       <td>{moneyFmt(row.total_amount)}</td>
@@ -214,32 +228,37 @@ export default function PlatformDashboardPage() {
           </div>
         </section>
 
-        {!orgId && <p className="muted platform-pick-hint">Seleccione una organización para ver KPIs y gráficos detallados.</p>}
+        {!orgId && (
+          <p className="sgf-empty-hint">
+            Seleccione una organización para ver KPIs y gráficos detallados.
+          </p>
+        )}
 
-        {orgId && loadingStats && !stats && <p className="muted">Cargando…</p>}
+        {orgId && loadingStats && !stats && <p className="sgf-muted">Cargando…</p>}
 
         {stats && (
           <>
-            <h2 className="platform-detail-title">Detalle: {stats.organization_name}</h2>
-            <div className="kpi-grid">
-              <div className="kpi-card">
-                <span className="kpi-label">Total facturas</span>
-                <span className="kpi-value">{stats.total_invoices}</span>
+            <h2 className="sgf-title-accent">Detalle: {stats.organization_name}</h2>
+            <div className="sgf-kpi-row">
+              <div className="sgf-kpi">
+                <span className="sgf-kpi-label">Total facturas</span>
+                <span className="sgf-kpi-value">{stats.total_invoices}</span>
               </div>
-              <div className="kpi-card kpi-accent">
-                <span className="kpi-label">Monto total</span>
-                <span className="kpi-value">{moneyFmt(stats.total_amount)}</span>
+              <div className="sgf-kpi sgf-kpi--teal">
+                <span className="sgf-kpi-label">Monto total</span>
+                <span className="sgf-kpi-value">{moneyFmt(stats.total_amount)}</span>
               </div>
-              <div className="kpi-card">
-                <span className="kpi-label">Pendientes (vencen en 7 días)</span>
-                <span className="kpi-value">{stats.pending_due_within_7_days}</span>
+              <div className="sgf-kpi sgf-kpi--amber">
+                <span className="sgf-kpi-label">Pendientes (vencen en 7 días)</span>
+                <span className="sgf-kpi-value">{stats.pending_due_within_7_days}</span>
               </div>
             </div>
 
-            <div className="dashboard-charts-section">
-              <h2 className="dashboard-section-title">Visualización</h2>
-              <DashboardChartsGrid stats={stats} />
+            <div className="sgf-section-head">
+              <h2 className="sgf-section-title">Visualización</h2>
+              <p className="sgf-section-sub">Mismos gráficos que en la vista web</p>
             </div>
+            <DashboardChartsGrid stats={stats} />
           </>
         )}
       </main>

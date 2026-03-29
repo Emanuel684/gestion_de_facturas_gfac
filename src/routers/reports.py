@@ -64,9 +64,19 @@ async def tenant_export(
         date_to=d1,
         status_filter=status_filter,
     )
+    stats = await compute_dashboard_stats(
+        db,
+        current_user.organization_id,
+        current_user,
+        platform_scope=False,
+        org_name=None,
+        date_from=d0,
+        date_to=d1,
+        status_filter=status_filter,
+    )
     prefix = export_filename_prefix(slug)
     if export_format == "xlsx":
-        data = build_invoices_xlsx_bytes(invoices, sheet_title="Facturas")
+        data = build_invoices_xlsx_bytes(invoices, sheet_title="Facturas", dashboard_stats=stats)
         fn = f"{prefix}_facturas.xlsx"
         return Response(
             content=data,
@@ -74,8 +84,13 @@ async def tenant_export(
             headers={"Content-Disposition": f'attachment; filename="{fn}"'},
         )
     title = f"Reporte de facturas — {org.name if org else ''}"
-    sub = f"Periodo: {date_from.isoformat() if date_from else 'inicio'} → {date_to.isoformat() if date_to else 'hoy'}"
-    data = build_invoices_pdf_bytes(invoices, title=title, subtitle=sub)
+    sub_parts = [
+        f"Periodo: {date_from.isoformat() if date_from else 'inicio'} → {date_to.isoformat() if date_to else 'hoy'}",
+    ]
+    if status_filter is not None:
+        sub_parts.append(f"Estado: {status_filter.value}")
+    sub = " · ".join(sub_parts)
+    data = build_invoices_pdf_bytes(invoices, title=title, subtitle=sub, dashboard_stats=stats)
     fn = f"{prefix}_facturas.pdf"
     return Response(
         content=data,

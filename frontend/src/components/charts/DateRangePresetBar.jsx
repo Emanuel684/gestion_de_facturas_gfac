@@ -10,13 +10,13 @@ const KEYS = ['last30', 'month', 'year'];
  */
 export default function DateRangePresetBar({ activeKey, onSelect }) {
   return (
-    <div className="chart-presets">
-      <span className="chart-presets-label">Rápido:</span>
+    <div className="sgf-presets">
+      <span className="sgf-presets-label">Rápido:</span>
       {KEYS.map((k) => (
         <button
           key={k}
           type="button"
-          className={`preset-btn ${activeKey === k ? 'active' : ''}`}
+          className={`sgf-preset-btn ${activeKey === k ? 'active' : ''}`}
           onClick={() => onSelect(k)}
         >
           {PRESET_LABELS[k]}

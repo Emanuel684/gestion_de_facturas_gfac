@@ -24,10 +24,14 @@
   min-height: 380px;
 }
 
+.platform-rank-chart {
+  min-height: 0;
+}
+
 .chart-card-title {
   font-size: 1rem;
   font-weight: 600;
-  color: #374151;
+  color: #1e1b4b;
   margin: 0 0 0.25rem;
 }
 
@@ -52,65 +56,44 @@
   font-size: 0.9rem;
 }
 
-.chart-presets {
+/* Atajos de fecha — alineado con .filter-btn (InvoicesPage) */
+.sgf-presets {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
-.chart-presets-label {
-  font-size: 0.8rem;
+.sgf-presets-label {
+  font-size: 0.78rem;
+  font-weight: 600;
   color: #6b7280;
-  margin-right: 0.25rem;
+  margin-right: 0.15rem;
 }
 
-.preset-btn {
-  padding: 0.35rem 0.75rem;
-  font-size: 0.82rem;
-  border-radius: 999px;
-  border: 1px solid #e5e7eb;
+.sgf-preset-btn {
+  padding: 0.35rem 0.85rem;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 20px;
   background: #fff;
-  color: #374151;
+  font-size: 0.82rem;
   cursor: pointer;
+  color: #374151;
   font-weight: 500;
-  transition: background 0.15s, border-color 0.15s;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
 }
 
-.preset-btn:hover {
-  background: #f9fafb;
-  border-color: #d1d5db;
+.sgf-preset-btn:hover {
+  border-color: #0e7490;
+  color: #0e7490;
+  background: #f0fdfa;
 }
 
-.preset-btn.active {
-  background: #ecfdf5;
-  border-color: #5eead4;
-  color: #0f766e;
-}
-
-.dashboard-skeleton {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.skeleton-block {
-  height: 96px;
-  border-radius: 12px;
-  background: linear-gradient(90deg, #f3f4f6 0%, #e5e7eb 50%, #f3f4f6 100%);
-  background-size: 200% 100%;
-  animation: sk 1.2s ease-in-out infinite;
-}
-
-@keyframes sk {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
+.sgf-preset-btn.active {
+  background: #0e7490;
+  color: #fff;
+  border-color: #0e7490;
 }
 
 .recharts-default-tooltip {
