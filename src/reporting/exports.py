@@ -14,7 +14,6 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import inch
-from reportlab.lib.utils import ImageReader
 from reportlab.platypus import Image as RLImage
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
@@ -113,9 +112,10 @@ def build_invoices_pdf_bytes(
 
     if dashboard_stats is not None:
         png = dashboard_figure_png(dashboard_stats)
+        # BytesIO tiene .read(); ImageReader no, y RL Image trata eso como ruta (splitext falla).
         story.append(
             RLImage(
-                ImageReader(io.BytesIO(png)),
+                io.BytesIO(png),
                 width=7.2 * inch,
                 height=5.4 * inch,
             )

@@ -15,6 +15,9 @@ main.sgf-page {
 
 .sgf-page-header {
   margin-bottom: 1.5rem;
+  background: transparent;
+  padding: 0;
+  color: inherit;
 }
 
 .sgf-page-title {
