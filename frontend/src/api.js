@@ -1,11 +1,14 @@
 /**
  * Axios instance pre-configured for the SGF (Sistema de Gestión de Facturas) API.
- * The Vite dev proxy forwards /api/* → http://localhost:8000,
- * so we use a relative base URL (works in both dev and production builds).
+ * - Desarrollo: Vite proxy → `/api` (vite.config.js).
+ * - Producción: define `VITE_API_BASE_URL` (p. ej. https://tu-api.onrender.com/api) al hacer `npm run build`.
  */
 import axios from 'axios';
 
-const api = axios.create({ baseURL: '/api' });
+const raw = import.meta.env.VITE_API_BASE_URL?.trim();
+const baseURL = raw || '/api';
+
+const api = axios.create({ baseURL });
 
 // Attach JWT token from localStorage to every request
 api.interceptors.request.use((config) => {
