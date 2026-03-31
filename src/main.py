@@ -1,14 +1,18 @@
 """
 FastAPI application entry point — Sistema de Gestión de Facturas (SGF).
 
-On startup: seeds organizations and users if missing. Schema is applied with
-`alembic upgrade head` (see docker-compose) before the process starts.
+On startup: runs `alembic upgrade head` (subprocess) unless SKIP_ALEMBIC_ON_STARTUP is set,
+then seeds organizations and users if missing. Docker Compose also runs Alembic before uvicorn.
 
   - Plataforma: super / super123 (plataforma_admin)
   - Demo: admin, maria, carlos (roles tenant)
 """
 import asyncio
 import logging
+import os
+import subprocess
+import sys
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -34,6 +38,24 @@ logging.basicConfig(
     format="%(asctime)s  %(levelname)-8s  %(name)s — %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+
+def _run_alembic_upgrade() -> None:
+    """Aplica migraciones en un subproceso (Alembic usa asyncio.run en env.py; no mezclar con el loop de uvicorn)."""
+    root = Path(__file__).resolve().parent.parent
+    r = subprocess.run(
+        [sys.executable, "-m", "alembic", "upgrade", "head"],
+        cwd=str(root),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if r.returncode != 0:
+        logger.error("alembic stdout:\n%s", r.stdout)
+        logger.error("alembic stderr:\n%s", r.stderr)
+        r.check_returncode()
+    logger.info("Alembic: schema al día (upgrade head).")
+
 
 app = FastAPI(
     title="Sistema de Gestión de Facturas (SGF)",
@@ -65,6 +87,9 @@ app.include_router(fiscal.router)
 # ── Startup ───────────────────────────────────────────────────────────────────
 @app.on_event("startup")
 async def on_startup() -> None:
+    if os.getenv("SKIP_ALEMBIC_ON_STARTUP", "").lower() not in ("1", "true", "yes"):
+        await asyncio.to_thread(_run_alembic_upgrade)
+
     from src.db import AsyncSessionLocal
 
     async with AsyncSessionLocal() as db:

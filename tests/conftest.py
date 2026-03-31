@@ -4,6 +4,11 @@ Test fixtures — Sistema de Gestión de Facturas (SGF).
 Uses an in-memory SQLite database (via aiosqlite). Each test gets a fresh DB.
 Login uses organization_slug + username + password.
 """
+import os
+
+# Evitar `alembic upgrade head` en el arranque de la app (usa DATABASE_URL real).
+os.environ.setdefault("SKIP_ALEMBIC_ON_STARTUP", "true")
+
 from datetime import timedelta
 
 import pytest
