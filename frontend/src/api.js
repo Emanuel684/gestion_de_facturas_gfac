@@ -111,8 +111,25 @@ export const listOrganizations = () => api.get('/organizations');
 
 export const createOrganization = (data) => api.post('/organizations', data);
 
+export const getOrganization = (organizationId) => api.get(`/organizations/${organizationId}`);
+
+export const updateOrganization = (organizationId, data) =>
+  api.patch(`/organizations/${organizationId}`, data);
+
 export const deleteOrganization = (organizationId) =>
   api.delete(`/organizations/${organizationId}`);
+
+export const getOrganizationUsers = (organizationId, includeInactive = false) =>
+  api.get(`/organizations/${organizationId}/users`, { params: { include_inactive: includeInactive } });
+
+export const updateOrganizationUser = (organizationId, userId, data) =>
+  api.put(`/organizations/${organizationId}/users/${userId}`, data);
+
+export const deleteOrganizationUser = (organizationId, userId) =>
+  api.delete(`/organizations/${organizationId}/users/${userId}`);
+
+export const getOrganizationInvoices = (organizationId, params = {}) =>
+  api.get(`/organizations/${organizationId}/invoices`, { params });
 
 // ── Public signup / mock checkout ────────────────────────────────────────────
 export const publicSignup = (data) => api.post('/public/signup', data);

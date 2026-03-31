@@ -13,6 +13,7 @@ import DashboardPage from './pages/DashboardPage';
 import ReportsPage from './pages/ReportsPage';
 import PlatformDashboardPage from './pages/PlatformDashboardPage';
 import PlatformReportsPage from './pages/PlatformReportsPage';
+import OrganizationDetailPage from './pages/OrganizationDetailPage';
 import './App.css';
 
 export default function App() {
@@ -69,6 +70,14 @@ export default function App() {
             element={
               <ProtectedRoute platformOnly>
                 <OrganizationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/app/organizaciones/:organizationId"
+            element={
+              <ProtectedRoute platformOnly>
+                <OrganizationDetailPage />
               </ProtectedRoute>
             }
           />

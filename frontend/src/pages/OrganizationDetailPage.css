@@ -1,0 +1,166 @@
+.org-detail-main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.25rem 1rem 2rem;
+}
+
+.org-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.org-detail-header h1 {
+  font-size: 1.35rem;
+  color: #1e1b4b;
+}
+
+.org-detail-header p {
+  color: #6b7280;
+  margin-top: 0.2rem;
+}
+
+.org-detail-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.org-detail-card h2 {
+  font-size: 1.02rem;
+  margin-bottom: 0.75rem;
+}
+
+.org-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
+.org-detail-form .btn {
+  min-height: 44px;
+}
+
+.org-detail-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.4rem;
+}
+
+.org-detail-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.86rem;
+}
+
+.org-detail-muted {
+  color: #6b7280;
+  font-size: 0.88rem;
+}
+
+.org-users-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+}
+
+.org-user-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0.65rem;
+}
+
+.org-user-item strong {
+  color: #111827;
+}
+
+.org-user-item span {
+  color: #6b7280;
+  font-size: 0.85rem;
+}
+
+.org-user-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.org-user-status {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.45rem;
+  border-radius: 8px;
+}
+
+.org-user-status.active {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.org-user-status.inactive {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.org-user-role {
+  font-size: 0.75rem;
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 0.2rem 0.45rem;
+  border-radius: 8px;
+}
+
+.org-invoices-table-wrap {
+  overflow-x: auto;
+}
+
+.org-invoices-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.75rem;
+  font-size: 0.88rem;
+}
+
+.org-invoices-table th,
+.org-invoices-table td {
+  text-align: left;
+  border-bottom: 1px solid #f3f4f6;
+  padding: 0.5rem;
+}
+
+.org-invoices-table th {
+  font-size: 0.78rem;
+  color: #6b7280;
+  text-transform: uppercase;
+}
+
+@media (max-width: 640px) {
+  .org-detail-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .org-user-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .org-user-actions > .btn {
+    flex: 1;
+    min-height: 40px;
+  }
+}

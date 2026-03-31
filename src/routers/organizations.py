@@ -4,9 +4,10 @@ Organizations router — administradores de plataforma crean tenants (organizaci
 import logging
 from datetime import timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import delete, select
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from src.auth import hash_password
 from src.billing import now_utc
@@ -25,7 +26,15 @@ from src.models import (
     User,
     UserRole,
 )
-from src.schemas import OrganizationCreate, OrganizationOut
+from src.schemas import (
+    OrganizationCreate,
+    OrganizationOut,
+    OrganizationUpdate,
+    PlatformInvoiceSummaryOut,
+    UserOut,
+    UserUpdate,
+    user_to_out,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/organizations", tags=["organizations"])
@@ -122,6 +131,232 @@ async def create_organization(
         admin.username,
     )
     return OrganizationOut.model_validate(org)
+
+
+@router.get("/{organization_id}", response_model=OrganizationOut)
+async def get_organization(
+    organization_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_platform_admin),
+) -> OrganizationOut:
+    result = await db.execute(select(Organization).where(Organization.id == organization_id))
+    org = result.scalar_one_or_none()
+    if not org or org.slug == PLATFORM_SLUG:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organización no encontrada")
+    return OrganizationOut.model_validate(org)
+
+
+@router.patch("/{organization_id}", response_model=OrganizationOut)
+async def update_organization(
+    organization_id: int,
+    payload: OrganizationUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_platform_admin),
+) -> OrganizationOut:
+    result = await db.execute(select(Organization).where(Organization.id == organization_id))
+    org = result.scalar_one_or_none()
+    if not org or org.slug == PLATFORM_SLUG:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organización no encontrada")
+
+    if payload.slug is not None and payload.slug != org.slug:
+        dup = await db.execute(
+            select(Organization.id).where(
+                Organization.slug == payload.slug,
+                Organization.id != org.id,
+            )
+        )
+        if dup.scalar_one_or_none() is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Ya existe una organización con slug '{payload.slug}'",
+            )
+
+    if payload.name is not None:
+        org.name = payload.name
+    if payload.slug is not None:
+        org.slug = payload.slug
+    if payload.plan_tier is not None:
+        org.plan_tier = payload.plan_tier
+
+    await db.commit()
+    await db.refresh(org)
+
+    logger.info(
+        "Organization id=%d updated by platform_admin id=%d",
+        org.id,
+        current_user.id,
+    )
+    return OrganizationOut.model_validate(org)
+
+
+@router.get("/{organization_id}/users", response_model=list[UserOut])
+async def list_organization_users(
+    organization_id: int,
+    include_inactive: bool = Query(default=False),
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_platform_admin),
+) -> list[UserOut]:
+    org_res = await db.execute(select(Organization).where(Organization.id == organization_id))
+    org = org_res.scalar_one_or_none()
+    if not org or org.slug == PLATFORM_SLUG:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organización no encontrada")
+
+    stmt = (
+        select(User)
+        .options(selectinload(User.organization))
+        .where(User.organization_id == organization_id)
+        .order_by(User.is_active.desc(), User.username)
+    )
+    if not include_inactive:
+        stmt = stmt.where(User.is_active == True)  # noqa: E712
+    users = (await db.execute(stmt)).scalars().all()
+    return [user_to_out(u) for u in users]
+
+
+@router.put("/{organization_id}/users/{user_id}", response_model=UserOut)
+async def update_organization_user(
+    organization_id: int,
+    user_id: int,
+    payload: UserUpdate,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_platform_admin),
+) -> UserOut:
+    result = await db.execute(
+        select(User)
+        .options(selectinload(User.organization))
+        .where(
+            User.id == user_id,
+            User.organization_id == organization_id,
+        )
+    )
+    target = result.scalar_one_or_none()
+    if target is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+
+    new_role = payload.role if payload.role is not None else target.role
+    new_is_active = payload.is_active if payload.is_active is not None else target.is_active
+    if target.role == UserRole.administrador and (new_role != UserRole.administrador or new_is_active is False):
+        n_admins = await db.execute(
+            select(func.count()).select_from(User).where(
+                User.role == UserRole.administrador,
+                User.organization_id == target.organization_id,
+                User.is_active == True,  # noqa: E712
+                User.id != target.id,
+            )
+        )
+        if n_admins.scalar_one() <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No puede deshabilitar o cambiar el último administrador de la organización",
+            )
+
+    if payload.username is not None and payload.username != target.username:
+        r = await db.execute(
+            select(User.id).where(
+                User.organization_id == organization_id,
+                User.username == payload.username,
+                User.id != target.id,
+            )
+        )
+        if r.scalar_one_or_none() is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"El nombre de usuario '{payload.username}' ya está en uso en esta organización",
+            )
+
+    if payload.email is not None and payload.email != target.email:
+        r = await db.execute(
+            select(User.id).where(
+                User.organization_id == organization_id,
+                User.email == payload.email,
+                User.id != target.id,
+            )
+        )
+        if r.scalar_one_or_none() is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"El email '{payload.email}' ya está en uso en esta organización",
+            )
+
+    if payload.username is not None:
+        target.username = payload.username
+    if payload.email is not None:
+        target.email = payload.email
+    if payload.password is not None:
+        target.hashed_password = hash_password(payload.password)
+    if payload.role is not None:
+        target.role = payload.role
+    if payload.is_active is not None:
+        target.is_active = payload.is_active
+
+    await db.commit()
+    await db.refresh(target)
+    r2 = await db.execute(
+        select(User).options(selectinload(User.organization)).where(User.id == target.id)
+    )
+    target = r2.scalar_one()
+    return user_to_out(target)
+
+
+@router.delete("/{organization_id}/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_organization_user(
+    organization_id: int,
+    user_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_platform_admin),
+) -> None:
+    result = await db.execute(
+        select(User).where(
+            User.id == user_id,
+            User.organization_id == organization_id,
+        )
+    )
+    target = result.scalar_one_or_none()
+    if target is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+    if not target.is_active:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Usuario ya deshabilitado")
+    if target.role == UserRole.administrador:
+        n_admins = await db.execute(
+            select(func.count()).select_from(User).where(
+                User.role == UserRole.administrador,
+                User.organization_id == target.organization_id,
+                User.is_active == True,  # noqa: E712
+                User.id != target.id,
+            )
+        )
+        if n_admins.scalar_one() <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No puede eliminar el último administrador de la organización",
+            )
+    target.is_active = False
+    await db.commit()
+
+
+@router.get("/{organization_id}/invoices", response_model=list[PlatformInvoiceSummaryOut])
+async def list_organization_invoices(
+    organization_id: int,
+    status_filter: str | None = Query(default=None, alias="status"),
+    supplier: str | None = Query(default=None),
+    limit: int = Query(default=200, ge=1, le=500),
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_platform_admin),
+) -> list[PlatformInvoiceSummaryOut]:
+    org_res = await db.execute(select(Organization).where(Organization.id == organization_id))
+    org = org_res.scalar_one_or_none()
+    if not org or org.slug == PLATFORM_SLUG:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organización no encontrada")
+
+    stmt = select(Invoice).where(Invoice.organization_id == organization_id)
+    if status_filter:
+        stmt = stmt.where(Invoice.status == status_filter)
+    if supplier:
+        stmt = stmt.where(Invoice.supplier.ilike(f"%{supplier.strip()}%"))
+    stmt = stmt.order_by(Invoice.created_at.desc()).limit(limit)
+
+    invoices = (await db.execute(stmt)).scalars().all()
+    return [PlatformInvoiceSummaryOut.model_validate(i) for i in invoices]
 
 
 async def _delete_organization_cascade(org_id: int, db: AsyncSession) -> None:

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { listOrganizations, createOrganization, deleteOrganization } from '../api';
 import Navbar from '../components/Navbar';
 import './OrganizationsPage.css';
@@ -167,6 +168,13 @@ export default function OrganizationsPage() {
                   </div>
                   <div className="orgs-card-actions">
                     <span className="orgs-plan">{planLabel(o.plan_tier)}</span>
+                    <Link
+                      className="btn btn-secondary btn-sm"
+                      to={`/app/organizaciones/${o.id}`}
+                      title="Editar organización y administrar sus usuarios/facturas"
+                    >
+                      Gestionar
+                    </Link>
                     <button
                       type="button"
                       className="btn btn-org-delete"

@@ -111,6 +111,36 @@ class OrganizationCreate(BaseModel):
         return v
 
 
+class OrganizationUpdate(BaseModel):
+    name: str | None = None
+    slug: str | None = None
+    plan_tier: PlanTier | None = None
+
+    @field_validator("name")
+    @classmethod
+    def name_strip(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        v = v.strip()
+        if not v:
+            raise ValueError("name must not be empty")
+        return v
+
+    @field_validator("slug")
+    @classmethod
+    def slug_normalize(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        v = v.strip().lower()
+        if not v or len(v) > 80:
+            raise ValueError("invalid slug")
+        if not _SLUG_RE.match(v):
+            raise ValueError("slug: solo minúsculas, números y guiones")
+        if v == "plataforma":
+            raise ValueError("slug reservado")
+        return v
+
+
 class PublicSignupIn(BaseModel):
     name: str
     slug: str
@@ -385,6 +415,19 @@ class InvoicePage(BaseModel):
     has_next: bool
     page: int
     page_size: int
+
+
+class PlatformInvoiceSummaryOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    organization_id: int
+    invoice_number: str
+    supplier: str
+    amount: Decimal
+    status: InvoiceStatus
+    due_date: datetime | None
+    created_at: datetime
 
 
 class InvoiceEventOut(BaseModel):
