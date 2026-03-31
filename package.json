@@ -1,0 +1,8 @@
+{
+  "name": "gestion-de-facturas-gfac",
+  "private": true,
+  "description": "Script de build para Static Site en Render (Vite vive en /frontend).",
+  "scripts": {
+    "build": "npm ci --prefix frontend && npm run build --prefix frontend"
+  }
+}
