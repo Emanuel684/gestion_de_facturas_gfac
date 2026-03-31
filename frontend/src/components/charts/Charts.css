@@ -73,7 +73,7 @@
 }
 
 .sgf-preset-btn {
-  padding: 0.35rem 0.85rem;
+  padding: 0.45rem 0.9rem;
   border: 1.5px solid #e5e7eb;
   border-radius: 20px;
   background: #fff;
@@ -81,6 +81,7 @@
   cursor: pointer;
   color: #374151;
   font-weight: 500;
+  min-height: 40px;
   transition: border-color 0.15s, background 0.15s, color 0.15s;
 }
 
@@ -123,6 +124,15 @@
 
   .chart-card-title {
     font-size: 0.95rem;
+  }
+
+  .sgf-presets {
+    gap: 0.45rem;
+  }
+
+  .sgf-preset-btn {
+    flex: 1 1 calc(50% - 0.45rem);
+    text-align: center;
   }
 }
 

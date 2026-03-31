@@ -169,7 +169,7 @@
   display: none;
 }
 
-@media (max-width: 899px) {
+@media (max-width: 900px) {
   .navbar {
     padding: 0 0.75rem;
   }
@@ -265,7 +265,7 @@
   }
 }
 
-@media (min-width: 900px) {
+@media (min-width: 901px) {
   .navbar {
     padding: 0 1.5rem;
   }

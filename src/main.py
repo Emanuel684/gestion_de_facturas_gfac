@@ -12,11 +12,13 @@ import logging
 import os
 import subprocess
 import sys
+from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, func
 
 from src.auth import hash_password
 from src.billing import grace_end_from, now_utc, period_end_from, recompute_subscription_status
@@ -166,6 +168,70 @@ async def on_startup() -> None:
                     )
                 )
                 logger.info("Seeded user: %s (%s) in org demo", data["username"], data["role"].value)
+
+        await db.flush()
+
+        target_demo_invoices = 100
+        r_count = await db.execute(
+            select(func.count())
+            .select_from(Invoice)
+            .where(Invoice.organization_id == demo.id)
+        )
+        current_demo_invoices = r_count.scalar_one()
+
+        if current_demo_invoices < target_demo_invoices:
+            r_admin = await db.execute(
+                select(User).where(
+                    User.organization_id == demo.id,
+                    User.username == "admin",
+                )
+            )
+            admin_user = r_admin.scalar_one_or_none()
+            if admin_user:
+                r_numbers = await db.execute(
+                    select(Invoice.invoice_number).where(Invoice.organization_id == demo.id)
+                )
+                existing_numbers = set(r_numbers.scalars().all())
+                to_create = target_demo_invoices - current_demo_invoices
+                created = 0
+                seq = 1
+                now = datetime.now(timezone.utc)
+                statuses = [InvoiceStatus.pendiente, InvoiceStatus.pagada, InvoiceStatus.vencida]
+
+                while created < to_create:
+                    invoice_number = f"FAC-DEMO-{seq:04d}"
+                    seq += 1
+                    if invoice_number in existing_numbers:
+                        continue
+
+                    status = statuses[created % len(statuses)]
+                    issue_date = now - timedelta(days=(created % 60))
+                    due_date = issue_date + timedelta(days=30)
+                    amount = Decimal("50000.00") + (Decimal(created % 25) * Decimal("12500.00"))
+
+                    db.add(
+                        Invoice(
+                            organization_id=demo.id,
+                            invoice_number=invoice_number,
+                            supplier=f"Proveedor {((created % 12) + 1):02d}",
+                            description=f"Factura de prueba #{created + 1}",
+                            amount=amount,
+                            status=status,
+                            due_date=due_date,
+                            creator_id=admin_user.id,
+                            issue_date=issue_date,
+                        )
+                    )
+                    existing_numbers.add(invoice_number)
+                    created += 1
+
+                logger.info(
+                    "Seeded %d demo invoices (total target=%d)",
+                    created,
+                    target_demo_invoices,
+                )
+            else:
+                logger.warning("No se pudieron sembrar facturas demo: usuario admin no encontrado")
 
         await db.commit()
 

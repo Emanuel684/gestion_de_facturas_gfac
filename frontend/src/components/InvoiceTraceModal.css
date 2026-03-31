@@ -148,7 +148,7 @@
 
 .trace-payload {
   margin: 0.5rem 0 0;
-  font-size: 0.72rem;
+  font-size: 0.8rem;
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
@@ -157,10 +157,10 @@
   max-height: 120px;
 }
 
-@media (max-width: 560px) {
+@media (max-width: 768px) {
   .trace-overlay {
     align-items: flex-start;
-    padding: 0.5rem;
+    padding: 0.65rem;
   }
 
   .trace-box {
@@ -181,30 +181,8 @@
   .trace-body {
     padding: 0.85rem 1rem 1.25rem;
   }
-}
 
-@media (max-width: 560px) {
-  .trace-overlay {
-    align-items: flex-start;
-    padding: 0.5rem;
-  }
-
-  .trace-box {
-    max-height: none;
-    margin: 0.25rem 0 1rem;
-  }
-
-  .trace-header {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 1rem 1rem 0;
-  }
-
-  .trace-header-actions {
-    justify-content: flex-start;
-  }
-
-  .trace-body {
-    padding: 0.85rem 1rem 1.25rem;
+  .trace-header-actions .btn {
+    min-height: 40px;
   }
 }

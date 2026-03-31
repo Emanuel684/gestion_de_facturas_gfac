@@ -60,11 +60,11 @@ select:focus { border-color: #0e7490; }
 
 .user-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .chip-btn {
-  padding: 0.3rem 0.75rem;
+  padding: 0.45rem 0.8rem;
   border: 1.5px solid #e5e7eb;
   border-radius: 20px;
   background: #fff;
-  font-size: 0.82rem;
+  font-size: 0.86rem;
   cursor: pointer;
   color: #374151;
   transition: all 0.12s;
@@ -77,7 +77,7 @@ select:focus { border-color: #0e7490; }
 }
 
 .modal-box-wide {
-  max-width: 640px;
+  max-width: 720px;
   max-height: min(92vh, 900px);
   display: flex;
   flex-direction: column;
@@ -141,10 +141,10 @@ select:focus { border-color: #0e7490; }
   border-radius: 4px;
 }
 
-@media (max-width: 560px) {
+@media (max-width: 768px) {
   .modal-overlay {
     align-items: flex-start;
-    padding: 0.5rem;
+    padding: 0.65rem;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
@@ -156,7 +156,7 @@ select:focus { border-color: #0e7490; }
   }
 
   .modal-header {
-    padding: 1rem 1rem 0;
+    padding: 1rem 1rem 0.25rem;
   }
 
   .modal-form {
@@ -179,5 +179,19 @@ select:focus { border-color: #0e7490; }
 
   .modal-banner {
     margin: 0 1rem;
+  }
+
+  .chip-btn {
+    min-height: 40px;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-overlay {
+    padding: 0.45rem;
+  }
+
+  .modal-header h2 {
+    font-size: 1.05rem;
   }
 }

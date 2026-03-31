@@ -89,7 +89,7 @@
   padding: 0.6rem 0.85rem;
   border: 1.5px solid #d1d5db;
   border-radius: 8px;
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-family: inherit;
   width: 100%;
   outline: none;
@@ -149,5 +149,22 @@
 
   .signup-logo h1 {
     font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .signup-bg {
+    align-items: flex-start;
+  }
+
+  .signup-card {
+    margin-top: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .signup-form .btn {
+    width: 100%;
+    min-height: 44px;
   }
 }

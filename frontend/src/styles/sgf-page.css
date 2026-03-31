@@ -93,7 +93,7 @@ main.sgf-page {
 }
 
 .sgf-field-label {
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   font-weight: 600;
   color: #4b5563;
   letter-spacing: 0.02em;
@@ -101,10 +101,10 @@ main.sgf-page {
 
 .sgf-input,
 .sgf-select {
-  padding: 0.45rem 0.7rem;
+  padding: 0.55rem 0.75rem;
   border: 1.5px solid #d1d5db;
   border-radius: 8px;
-  font-size: 0.88rem;
+  font-size: 0.94rem;
   background: #fff;
   color: #111827;
   min-width: 10rem;
@@ -356,8 +356,69 @@ main.sgf-page {
     min-height: 200px;
   }
 
-  .sgf-input,
-  .sgf-select {
-    font-size: 16px;
+  .sgf-rank-table {
+    min-width: 540px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sgf-panel {
+    padding: 0.9rem;
+  }
+
+  .sgf-page-sub {
+    font-size: 0.82rem;
+  }
+
+  .sgf-rank-table-wrap {
+    overflow-x: visible;
+  }
+
+  .sgf-rank-table,
+  .sgf-rank-table thead,
+  .sgf-rank-table tbody,
+  .sgf-rank-table tr,
+  .sgf-rank-table th,
+  .sgf-rank-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .sgf-rank-table {
+    min-width: 0;
+    font-size: 0.84rem;
+  }
+
+  .sgf-rank-table thead {
+    position: absolute;
+    left: -9999px;
+  }
+
+  .sgf-rank-table tr {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 0.4rem 0.6rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .sgf-rank-table td {
+    border-bottom: 1px solid #f3f4f6;
+    padding: 0.42rem 0;
+  }
+
+  .sgf-rank-table td:last-child {
+    border-bottom: none;
+  }
+
+  .sgf-rank-table td::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.72rem;
+    color: #6b7280;
+    margin-bottom: 0.2rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-weight: 700;
   }
 }

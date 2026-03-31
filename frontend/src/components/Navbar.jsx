@@ -46,7 +46,7 @@ export default function Navbar() {
   useEffect(() => {
     if (!menuOpen) return undefined;
     const onResize = () => {
-      if (window.innerWidth >= 900) setMenuOpen(false);
+      if (window.matchMedia('(min-width: 901px)').matches) setMenuOpen(false);
     };
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);

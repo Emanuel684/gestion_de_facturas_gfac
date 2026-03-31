@@ -214,12 +214,12 @@ export default function PlatformDashboardPage() {
                 ) : (
                   top.map((row, i) => (
                     <tr key={row.organization_id}>
-                      <td>{i + 1}</td>
-                      <td>
+                      <td data-label="Posición">{i + 1}</td>
+                      <td data-label="Organización">
                         {row.name} <span className="sgf-rank-slug">({row.slug})</span>
                       </td>
-                      <td>{row.invoice_count}</td>
-                      <td>{moneyFmt(row.total_amount)}</td>
+                      <td data-label="Facturas">{row.invoice_count}</td>
+                      <td data-label="Total facturado">{moneyFmt(row.total_amount)}</td>
                     </tr>
                   ))
                 )}

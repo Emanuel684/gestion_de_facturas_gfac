@@ -170,6 +170,12 @@
 
   .billing-actions .btn {
     min-height: 44px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .billing-card {
+    padding: 1rem;
   }
 }
 
