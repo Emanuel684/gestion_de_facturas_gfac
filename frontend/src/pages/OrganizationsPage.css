@@ -67,6 +67,35 @@
   font-size: 0.95rem;
 }
 
+.orgs-list-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.orgs-search {
+  width: min(420px, 100%);
+  padding: 0.55rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.orgs-search:focus {
+  outline: none;
+  border-color: #0e7490;
+  box-shadow: 0 0 0 3px rgba(14, 116, 144, 0.1);
+}
+
+.orgs-count {
+  color: #6b7280;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
 .orgs-list {
   list-style: none;
   padding: 0;
@@ -151,6 +180,21 @@
   border-radius: 999px;
 }
 
+.orgs-pagination {
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.orgs-page-info {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+
 @media (max-width: 640px) {
   .orgs-main {
     padding: 1rem 0.85rem;
@@ -182,5 +226,9 @@
   .orgs-form .btn,
   .btn-org-delete {
     min-height: 44px;
+  }
+
+  .orgs-search {
+    width: 100%;
   }
 }

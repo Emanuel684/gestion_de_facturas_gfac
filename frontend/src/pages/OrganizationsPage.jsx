@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { listOrganizations, createOrganization, deleteOrganization } from '../api';
 import Navbar from '../components/Navbar';
@@ -11,9 +11,12 @@ const PLAN_OPTIONS = [
 ];
 
 export default function OrganizationsPage() {
+  const PAGE_SIZE = 6;
   const [orgs, setOrgs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [searchName, setSearchName] = useState('');
+  const [page, setPage] = useState(0);
   const [creating, setCreating] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [form, setForm] = useState({
@@ -73,6 +76,27 @@ export default function OrganizationsPage() {
   };
 
   const planLabel = (k) => PLAN_OPTIONS.find((p) => p.value === k)?.label ?? k;
+
+  const filteredOrgs = useMemo(() => {
+    const term = searchName.trim().toLowerCase();
+    return orgs
+      .filter((o) => o.is_active)
+      .filter((o) => (term ? o.name.toLowerCase().includes(term) : true));
+  }, [orgs, searchName]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredOrgs.length / PAGE_SIZE));
+  const paginatedOrgs = useMemo(
+    () => filteredOrgs.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE),
+    [filteredOrgs, page]
+  );
+
+  useEffect(() => {
+    setPage(0);
+  }, [searchName, orgs.length]);
+
+  useEffect(() => {
+    if (page > totalPages - 1) setPage(Math.max(0, totalPages - 1));
+  }, [page, totalPages]);
 
   const handleDelete = async (o) => {
     const msg =
@@ -154,13 +178,28 @@ export default function OrganizationsPage() {
 
         <section className="orgs-list-section">
           <h2>Organizaciones registradas</h2>
+          <div className="orgs-list-toolbar">
+            <input
+              className="orgs-search"
+              type="text"
+              placeholder="Buscar por nombre de organización..."
+              value={searchName}
+              onChange={(e) => setSearchName(e.target.value)}
+            />
+            <span className="orgs-count">
+              {filteredOrgs.length} resultado{filteredOrgs.length !== 1 ? 's' : ''}
+            </span>
+          </div>
           {loading ? (
             <div className="spinner-center"><div className="spinner" /></div>
-          ) : orgs.length === 0 ? (
-            <p className="orgs-empty">Aún no hay organizaciones cliente.</p>
+          ) : filteredOrgs.length === 0 ? (
+            <p className="orgs-empty">
+              {searchName.trim() ? 'No se encontraron organizaciones con ese nombre.' : 'Aún no hay organizaciones activas.'}
+            </p>
           ) : (
-            <ul className="orgs-list">
-              {orgs.map((o) => (
+            <>
+              <ul className="orgs-list">
+                {paginatedOrgs.map((o) => (
                 <li key={o.id} className="orgs-card">
                   <div className="orgs-card-main">
                     <strong>{o.name}</strong>
@@ -186,8 +225,30 @@ export default function OrganizationsPage() {
                     </button>
                   </div>
                 </li>
-              ))}
-            </ul>
+                ))}
+              </ul>
+              <div className="orgs-pagination">
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  disabled={page === 0}
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                >
+                  Anterior
+                </button>
+                <span className="orgs-page-info">
+                  Página {page + 1} de {totalPages}
+                </span>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  disabled={page >= totalPages - 1}
+                  onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                >
+                  Siguiente
+                </button>
+              </div>
+            </>
           )}
         </section>
       </main>
