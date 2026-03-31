@@ -1,0 +1,19 @@
+# Blueprint opcional: Static Site para el frontend (Vite).
+# En el Dashboard también puedes crear un "Static Site" manual: Root = frontend,
+# Build = npm ci && npm run build, Publish = dist, y la misma variable VITE_API_BASE_URL.
+#
+# Tras el primer deploy del frontend, añade su URL a CORS_ORIGINS en el Web Service del backend.
+services:
+  - type: web
+    name: sgf-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://gestion-de-facturas-gfac.onrender.com/api
