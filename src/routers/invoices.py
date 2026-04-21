@@ -12,7 +12,7 @@ DIAN traceability: `dian_lifecycle_status` + `invoice_events`; `document_locked`
 campos fiscales salvo transiciones de estado permitidas.
 """
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Annotated, Literal
 
@@ -559,6 +559,41 @@ async def list_overdue_invoices(
             Invoice.status == InvoiceStatus.pendiente,
             Invoice.due_date.is_not(None),
             Invoice.due_date < now,
+        )
+        .order_by(Invoice.due_date.asc())
+    )
+
+    if current_user.role == UserRole.asistente:
+        assigned_subq = select(InvoiceAssignee.invoice_id).where(
+            InvoiceAssignee.user_id == current_user.id
+        )
+        query = query.where(
+            or_(Invoice.creator_id == current_user.id, Invoice.id.in_(assigned_subq))
+        )
+
+    result = await db.execute(query)
+    invoices = result.scalars().unique().all()
+    return [_invoice_to_out(inv) for inv in invoices]
+
+
+@router.get("/due-soon", response_model=list[InvoiceOut])
+async def list_due_soon_invoices(
+    days: Annotated[int, Query(ge=1, le=30)] = 7,
+    current_user: User = Depends(require_active_tenant_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[InvoiceOut]:
+    now = datetime.now(timezone.utc)
+    due_until = now + timedelta(days=days)
+    org_id = current_user.organization_id
+    query = (
+        select(Invoice)
+        .options(selectinload(Invoice.assignees).selectinload(InvoiceAssignee.user))
+        .where(
+            Invoice.organization_id == org_id,
+            Invoice.status == InvoiceStatus.pendiente,
+            Invoice.due_date.is_not(None),
+            Invoice.due_date >= now,
+            Invoice.due_date <= due_until,
         )
         .order_by(Invoice.due_date.asc())
     )

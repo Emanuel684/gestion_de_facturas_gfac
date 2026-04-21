@@ -1,6 +1,8 @@
 """
 Tests for /api/invoices — CRUD and permission rules for SGF.
 """
+from datetime import datetime, timedelta, timezone
+
 import pytest
 from httpx import AsyncClient
 
@@ -561,6 +563,93 @@ async def test_overdue_ordered_by_due_date_asc(client: AsyncClient, admin_token:
     assert resp.status_code == 200
     numbers = [inv["invoice_number"] for inv in resp.json()]
     assert numbers.index("OVD-301") < numbers.index("OVD-300")
+
+
+# ── Due soon (next N days) ───────────────────────────────────────────────────
+
+
+def _iso_in_days(days: int) -> str:
+    return (datetime.now(timezone.utc) + timedelta(days=days)).isoformat()
+
+
+@pytest.mark.asyncio
+async def test_due_soon_returns_only_pending_within_7_days(client: AsyncClient, admin_token: str):
+    """Only pendiente invoices due between now and +7 days should appear by default."""
+    await client.post(
+        "/api/invoices",
+        json={**SAMPLE_INVOICE, "invoice_number": "DUE-001", "status": "pendiente", "due_date": _iso_in_days(2)},
+        headers=auth(admin_token),
+    )
+    await client.post(
+        "/api/invoices",
+        json={**SAMPLE_INVOICE, "invoice_number": "DUE-002", "status": "pendiente", "due_date": _iso_in_days(12)},
+        headers=auth(admin_token),
+    )
+    await client.post(
+        "/api/invoices",
+        json={**SAMPLE_INVOICE, "invoice_number": "DUE-003", "status": "pagada", "due_date": _iso_in_days(3)},
+        headers=auth(admin_token),
+    )
+    await client.post(
+        "/api/invoices",
+        json={**SAMPLE_INVOICE, "invoice_number": "DUE-004", "status": "pendiente", "due_date": PAST_DATE},
+        headers=auth(admin_token),
+    )
+
+    resp = await client.get("/api/invoices/due-soon", headers=auth(admin_token))
+    assert resp.status_code == 200
+    numbers = [inv["invoice_number"] for inv in resp.json()]
+    assert "DUE-001" in numbers
+    assert "DUE-002" not in numbers
+    assert "DUE-003" not in numbers
+    assert "DUE-004" not in numbers
+
+
+@pytest.mark.asyncio
+async def test_due_soon_days_query_expands_window(client: AsyncClient, admin_token: str):
+    """A custom days window should include invoices due later than 7 days."""
+    await client.post(
+        "/api/invoices",
+        json={**SAMPLE_INVOICE, "invoice_number": "DUE-100", "status": "pendiente", "due_date": _iso_in_days(10)},
+        headers=auth(admin_token),
+    )
+
+    resp_default = await client.get("/api/invoices/due-soon", headers=auth(admin_token))
+    assert resp_default.status_code == 200
+    assert "DUE-100" not in [inv["invoice_number"] for inv in resp_default.json()]
+
+    resp_15 = await client.get("/api/invoices/due-soon?days=15", headers=auth(admin_token))
+    assert resp_15.status_code == 200
+    assert "DUE-100" in [inv["invoice_number"] for inv in resp_15.json()]
+
+
+@pytest.mark.asyncio
+async def test_due_soon_requires_auth(client: AsyncClient):
+    resp = await client.get("/api/invoices/due-soon")
+    assert resp.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_due_soon_asistente_sees_only_own(
+    client: AsyncClient, admin_token: str, asistente_token: str
+):
+    """Asistente only sees due-soon invoices they created or are assigned to."""
+    await client.post(
+        "/api/invoices",
+        json={**SAMPLE_INVOICE, "invoice_number": "DUE-200", "status": "pendiente", "due_date": _iso_in_days(3)},
+        headers=auth(admin_token),
+    )
+    await client.post(
+        "/api/invoices",
+        json={**SAMPLE_INVOICE, "invoice_number": "DUE-201", "status": "pendiente", "due_date": _iso_in_days(3)},
+        headers=auth(asistente_token),
+    )
+
+    resp = await client.get("/api/invoices/due-soon", headers=auth(asistente_token))
+    assert resp.status_code == 200
+    numbers = [inv["invoice_number"] for inv in resp.json()]
+    assert "DUE-201" in numbers
+    assert "DUE-200" not in numbers
 
 
 # ── DIAN traceability / fiscal ────────────────────────────────────────────────

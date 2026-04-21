@@ -510,6 +510,79 @@
   background: #fed7aa;
 }
 
+/* Due soon alert banner */
+.due-soon-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background: #ecfeff;
+  border: 1.5px solid #a5f3fc;
+  border-left: 4px solid #06b6d4;
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1.25rem;
+  animation: fadeIn 0.2s ease;
+}
+
+.due-soon-banner-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  margin-top: 0.05rem;
+}
+
+.due-soon-banner-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.88rem;
+  color: #155e75;
+}
+
+.due-soon-banner-body strong {
+  font-size: 0.92rem;
+  color: #0f766e;
+}
+
+.due-soon-banner-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.due-soon-chip {
+  background: #cffafe;
+  border: 1px solid #67e8f9;
+  color: #155e75;
+  border-radius: 20px;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.76rem;
+  font-weight: 500;
+}
+
+.due-soon-chip-more {
+  background: #ccfbf1;
+  border-color: #5eead4;
+  color: #0f766e;
+}
+
+.due-soon-banner-dismiss {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #0e7490;
+  font-size: 0.85rem;
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+  flex-shrink: 0;
+  line-height: 1;
+  transition: background 0.12s;
+}
+
+.due-soon-banner-dismiss:hover {
+  background: #a5f3fc;
+}
+
 /* Pagination */
 .pagination-bar {
   display: flex;

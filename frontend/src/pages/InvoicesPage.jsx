@@ -5,6 +5,7 @@ import {
   deleteInvoice,
   getUsers,
   getOverdueInvoices,
+  getDueSoonInvoices,
   updateInvoice,
 } from '../api';
 import { useAuth } from '../context/AuthContext';
@@ -47,6 +48,17 @@ function formatCurrency(amount) {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(amount);
+}
+
+function formatDate(value) {
+  if (!value) return 'Sin fecha';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return 'Sin fecha';
+  return new Intl.DateTimeFormat('es-CO', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(d);
 }
 
 function readStoredView() {
@@ -92,6 +104,8 @@ export default function InvoicesPage() {
   const [prefillData, setPrefillData] = useState(null);
   const [overdueInvoices, setOverdueInvoices] = useState([]);
   const [overdueDismissed, setOverdueDismissed] = useState(false);
+  const [dueSoonInvoices, setDueSoonInvoices] = useState([]);
+  const [dueSoonDismissed, setDueSoonDismissed] = useState(false);
   const [traceInvoice, setTraceInvoice] = useState(null);
   const [dragInvoiceId, setDragInvoiceId] = useState(null);
   const [statusUpdatingId, setStatusUpdatingId] = useState(null);
@@ -157,6 +171,16 @@ export default function InvoicesPage() {
     }
   }, []);
 
+  const fetchDueSoon = useCallback(async () => {
+    try {
+      const resp = await getDueSoonInvoices(7);
+      setDueSoonInvoices(resp.data);
+      if (resp.data.length > 0) setDueSoonDismissed(false);
+    } catch {
+      /* non-critical */
+    }
+  }, []);
+
   useEffect(() => {
     if (isGridView) fetchInvoices();
   }, [isGridView, fetchInvoices]);
@@ -167,7 +191,8 @@ export default function InvoicesPage() {
 
   useEffect(() => {
     fetchOverdue();
-  }, [fetchOverdue, invoices, allInvoices]);
+    fetchDueSoon();
+  }, [fetchOverdue, fetchDueSoon, invoices, allInvoices]);
 
   useEffect(() => {
     setPage(0);
@@ -188,6 +213,7 @@ export default function InvoicesPage() {
       if (isGridView) await fetchInvoices();
       else await fetchAllForBoard();
       await fetchOverdue();
+      await fetchDueSoon();
     } catch (err) {
       alert(err.response?.data?.detail || 'Error al eliminar factura.');
     } finally {
@@ -238,12 +264,13 @@ export default function InvoicesPage() {
         setAllInvoices(items);
       }
       await fetchOverdue();
+      await fetchDueSoon();
     } catch {
       setError('Error al cargar facturas. Intente de nuevo.');
     } finally {
       setLoading(false);
     }
-  }, [isGridView, statusFilter, supplierSearch, fetchOverdue]);
+  }, [isGridView, statusFilter, supplierSearch, fetchOverdue, fetchDueSoon]);
 
   const getUserName = (id) => users.find((u) => u.id === id)?.username ?? `#${id}`;
 
@@ -268,6 +295,7 @@ export default function InvoicesPage() {
       await updateInvoice(id, { status: targetStatus });
       setAllInvoices((prev) => prev.map((i) => (i.id === id ? { ...i, status: targetStatus } : i)));
       await fetchOverdue();
+      await fetchDueSoon();
     } catch (err) {
       alert(err.response?.data?.detail || 'No se pudo actualizar el estado.');
     } finally {
@@ -385,6 +413,32 @@ export default function InvoicesPage() {
               </span>
             </div>
             <button type="button" className="overdue-banner-dismiss" title="Descartar" onClick={() => setOverdueDismissed(true)}>
+              ✕
+            </button>
+          </div>
+        )}
+
+        {dueSoonInvoices.length > 0 && !dueSoonDismissed && (
+          <div className="due-soon-banner">
+            <span className="due-soon-banner-icon">🗓️</span>
+            <div className="due-soon-banner-body">
+              <strong>
+                {dueSoonInvoices.length === 1
+                  ? '1 factura vence en los próximos 7 días'
+                  : `${dueSoonInvoices.length} facturas vencen en los próximos 7 días`}
+              </strong>
+              <span className="due-soon-banner-list">
+                {dueSoonInvoices.slice(0, 5).map((inv) => (
+                  <span key={inv.id} className="due-soon-chip">
+                    {inv.invoice_number} — {inv.supplier} ({formatDate(inv.due_date)})
+                  </span>
+                ))}
+                {dueSoonInvoices.length > 5 && (
+                  <span className="due-soon-chip due-soon-chip-more">+{dueSoonInvoices.length - 5} más</span>
+                )}
+              </span>
+            </div>
+            <button type="button" className="due-soon-banner-dismiss" title="Descartar" onClick={() => setDueSoonDismissed(true)}>
               ✕
             </button>
           </div>
