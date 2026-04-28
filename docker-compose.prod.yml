@@ -17,7 +17,7 @@ services:
       ENABLE_MOCK_CHECKOUT: "false"
       SEED_DEMO_DATA: "false"
       AUTO_MIGRATE_ON_STARTUP: "false"
-      TRUSTED_HOSTS: ${TRUSTED_HOSTS}
+      TRUSTED_HOSTS: "*"
       REQUIRE_HTTPS_REDIRECT: "true"
       RETURN_RAW_TEXT_IN_UPLOAD: "false"
     restart: unless-stopped

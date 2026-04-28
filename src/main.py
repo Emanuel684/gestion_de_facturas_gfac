@@ -100,7 +100,8 @@ app.add_middleware(
     allow_methods=settings.cors_allow_methods_list,
     allow_headers=settings.cors_allow_headers_list,
 )
-app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.trusted_hosts_list)
+if not settings.trusted_hosts_allow_any:
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.trusted_hosts_list)
 if settings.require_https_redirect:
     app.add_middleware(HTTPSRedirectMiddleware)
 

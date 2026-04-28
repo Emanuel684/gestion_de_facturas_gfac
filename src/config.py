@@ -58,7 +58,7 @@ class Settings(BaseSettings):
     enable_mock_checkout: bool = True
     auto_migrate_on_startup: bool = True
     enable_openapi: bool = True
-    trusted_hosts: str = "localhost,127.0.0.1,test,api"
+    trusted_hosts: str = "*"
     require_https_redirect: bool = False
     login_rate_limit_window_seconds: int = 300
     login_rate_limit_max_attempts: int = 8
@@ -87,6 +87,10 @@ class Settings(BaseSettings):
     @property
     def cors_allow_any(self) -> bool:
         return "*" in self.cors_origins_list
+
+    @property
+    def trusted_hosts_allow_any(self) -> bool:
+        return "*" in self.trusted_hosts_list
 
     @field_validator("app_env", mode="before")
     @classmethod
