@@ -17,8 +17,11 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     setLoading(true);
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
     try {
       const { data } = await login(organizationSlug.trim(), username, password);
+      sessionStorage.setItem('token', data.access_token);
       const me = await getMe();
       signIn(data.access_token, me.data);
       if (me.data.role === 'plataforma_admin') {
@@ -27,6 +30,8 @@ export default function LoginPage() {
         navigate('/app', { replace: true });
       }
     } catch (err) {
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user');
       const d = err.response?.data?.detail;
       setError(typeof d === 'string' ? d : 'Error al iniciar sesión. Verifique organización y credenciales.');
     } finally {
