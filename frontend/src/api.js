@@ -10,6 +10,16 @@ const baseURL = raw || '/api';
 
 const api = axios.create({ baseURL, withCredentials: true });
 
+// Hybrid auth: prefer secure cookie; fallback to bearer token in sessionStorage.
+api.interceptors.request.use((config) => {
+  const token = sessionStorage.getItem('token');
+  if (token) {
+    config.headers = config.headers || {};
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 // On 401, clear session and go to login — except failed /auth/login (wrong credentials),
 // where a full redirect would reload the page and wipe the form before the user reads the error.
 api.interceptors.response.use(
@@ -19,6 +29,7 @@ api.interceptors.response.use(
       const url = err.config?.url ?? '';
       const isLoginFailure = url.includes('/auth/login');
       if (!isLoginFailure) {
+        sessionStorage.removeItem('token');
         sessionStorage.removeItem('user');
         if (window.location.pathname !== '/login') {
           window.location.href = '/login';

@@ -16,13 +16,17 @@ export function AuthProvider({ children }) {
         sessionStorage.setItem('user', JSON.stringify(r.data));
       })
       .catch(() => {
+        sessionStorage.removeItem('token');
         sessionStorage.removeItem('user');
         setUser(null);
       })
       .finally(() => setLoading(false));
   }, []);
 
-  const signIn = (_token, userData) => {
+  const signIn = (token, userData) => {
+    if (token) {
+      sessionStorage.setItem('token', token);
+    }
     sessionStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
   };
@@ -33,6 +37,7 @@ export function AuthProvider({ children }) {
     } catch {
       /* ignore */
     }
+    sessionStorage.removeItem('token');
     sessionStorage.removeItem('user');
     setUser(null);
   };
