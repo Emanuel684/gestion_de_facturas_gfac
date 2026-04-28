@@ -28,10 +28,12 @@ api.interceptors.response.use(
     if (err.response?.status === 401) {
       const url = err.config?.url ?? '';
       const isLoginFailure = url.includes('/auth/login');
+      const isInPrivateArea = window.location.pathname.startsWith('/app');
       if (!isLoginFailure) {
         sessionStorage.removeItem('token');
         sessionStorage.removeItem('user');
-        if (window.location.pathname !== '/login') {
+        // Avoid hard-refresh loops on public routes (landing/login/signup).
+        if (isInPrivateArea && window.location.pathname !== '/login') {
           window.location.href = '/login';
         }
       }
