@@ -19,7 +19,7 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, status
 from fastapi.responses import JSONResponse, Response
-from sqlalchemy import or_, select
+from sqlalchemy import or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -38,6 +38,7 @@ from src.models import (
     InvoiceEventType,
     InvoiceStatus,
     NotificationType,
+    Notification,
     OrganizationFiscalProfile,
     User,
     UserRole,
@@ -895,6 +896,14 @@ async def delete_invoice(
 ) -> None:
     invoice = await _get_invoice_or_404(invoice_id, current_user.organization_id, db)
     _check_invoice_delete(invoice, current_user)
+    await db.execute(
+        update(Notification)
+        .where(
+            Notification.organization_id == current_user.organization_id,
+            Notification.invoice_id == invoice_id,
+        )
+        .values(invoice_id=None)
+    )
     await db.delete(invoice)
     await db.commit()
     logger.info("Invoice id=%d deleted by user id=%d", invoice_id, current_user.id)
