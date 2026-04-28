@@ -14,7 +14,26 @@ import ReportsPage from './pages/ReportsPage';
 import PlatformDashboardPage from './pages/PlatformDashboardPage';
 import PlatformReportsPage from './pages/PlatformReportsPage';
 import OrganizationDetailPage from './pages/OrganizationDetailPage';
+import { useAuth } from './context/AuthContext';
 import './App.css';
+
+function FallbackRedirect() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <div className="spinner-center"><div className="spinner" /></div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (user.role === 'plataforma_admin') {
+    return <Navigate to="/app/plataforma/dashboard" replace />;
+  }
+
+  return <Navigate to="/app" replace />;
+}
 
 export default function App() {
   return (
@@ -97,7 +116,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<FallbackRedirect />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
