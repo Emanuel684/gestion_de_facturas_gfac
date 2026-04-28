@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     jwt_cookie_name: str = "sgf_access_token"
 
     # CORS
-    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173,https://gestion-de-facturas-gfac-frontend.onrender.com"
     cors_allow_methods: str = "GET,POST,PUT,PATCH,DELETE,OPTIONS"
     cors_allow_headers: str = "Authorization,Content-Type,Accept,Origin,X-Requested-With"
 
@@ -83,6 +83,10 @@ class Settings(BaseSettings):
     def is_production(self) -> bool:
         return self.app_env.lower() in {"production", "prod"}
 
+    @property
+    def cors_allow_any(self) -> bool:
+        return "*" in self.cors_origins_list
+
     @field_validator("app_env", mode="before")
     @classmethod
     def normalize_env(cls, v: object) -> object:
@@ -113,9 +117,6 @@ class Settings(BaseSettings):
             raise ValueError("SEED_DEMO_DATA debe estar en false en producción.")
         if self.is_production and self.enable_openapi:
             raise ValueError("ENABLE_OPENAPI debe estar en false en producción.")
-        if "*" in self.cors_origins_list:
-            if self.is_production or not self.allow_insecure_defaults:
-                raise ValueError("CORS_ORIGINS no puede contener '*' por seguridad.")
         return self
 
 
