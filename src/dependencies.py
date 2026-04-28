@@ -3,24 +3,22 @@ FastAPI dependencies shared across routers.
 """
 import logging
 
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import Depends, HTTPException, Request, status
 from jose import JWTError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.billing import recompute_subscription_status
-from src.auth import decode_access_token
+from src.auth import decode_access_token, is_token_revoked
+from src.config import settings
 from src.db import get_db
 from src.models import Subscription, SubscriptionStatus, User, UserRole
 
 logger = logging.getLogger(__name__)
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
-
 
 async def get_current_user(
-    token: str = Depends(oauth2_scheme),
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ) -> User:
     """Validate JWT and return the authenticated User."""
@@ -29,8 +27,19 @@ async def get_current_user(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    auth_header = request.headers.get("Authorization", "")
+    token = ""
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:].strip()
+    if not token:
+        token = request.cookies.get(settings.jwt_cookie_name, "")
+    if not token:
+        raise credentials_exc
+
     try:
         payload = decode_access_token(token)
+        if is_token_revoked(payload):
+            raise credentials_exc
         user_id: str = payload.get("sub")
         if user_id is None:
             raise credentials_exc

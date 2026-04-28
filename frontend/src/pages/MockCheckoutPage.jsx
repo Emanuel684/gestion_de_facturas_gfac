@@ -131,10 +131,6 @@ export default function MockCheckoutPage() {
         <p className="checkout-mock-detail">
           <strong>Estado:</strong> {STATUS_LABELS[session.status] || session.status}
         </p>
-        <p className="checkout-mock-detail">
-          <strong>Referencia:</strong> <code>{session.session_token}</code>
-        </p>
-
         {isExpired && (
           <div className="alert alert-error">Esta sesión expiró. Genere un nuevo pago desde facturación o registro.</div>
         )}

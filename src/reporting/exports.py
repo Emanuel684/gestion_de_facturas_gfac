@@ -38,6 +38,13 @@ def _safe_filename_part(name: str) -> str:
     return re.sub(r"[^\w\-]+", "_", name, flags=re.UNICODE)[:80] or "reporte"
 
 
+def _safe_xlsx_text(value: str | None) -> str:
+    txt = (value or "").strip()
+    if txt.startswith(("=", "+", "-", "@")):
+        return f"'{txt}"
+    return txt
+
+
 def build_invoices_xlsx_bytes(
     invoices: list[Invoice],
     sheet_title: str = "Facturas",
@@ -63,8 +70,8 @@ def build_invoices_xlsx_bytes(
         c.font = bold
     for row_idx, inv in enumerate(invoices, 2):
         ws.cell(row=row_idx, column=1, value=inv.id)
-        ws.cell(row=row_idx, column=2, value=inv.invoice_number)
-        ws.cell(row=row_idx, column=3, value=inv.supplier)
+        ws.cell(row=row_idx, column=2, value=_safe_xlsx_text(inv.invoice_number))
+        ws.cell(row=row_idx, column=3, value=_safe_xlsx_text(inv.supplier))
         ws.cell(row=row_idx, column=4, value=float(inv.amount))
         ws.cell(row=row_idx, column=5, value=inv.status.value)
         ws.cell(row=row_idx, column=6, value=inv.currency)

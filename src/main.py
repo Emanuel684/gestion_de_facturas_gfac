@@ -18,6 +18,8 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from sqlalchemy import select, and_, func
 
 from src.auth import hash_password
@@ -54,6 +56,14 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+    "X-XSS-Protection": "0",
+}
+
 
 def _run_alembic_upgrade() -> None:
     """Aplica migraciones en un subproceso (Alembic usa asyncio.run en env.py; no mezclar con el loop de uvicorn)."""
@@ -76,6 +86,9 @@ app = FastAPI(
     title="Sistema de Gestión de Facturas (SGF)",
     description="API multi-organización para gestión de facturas en PYMES.",
     version="1.1.0",
+    docs_url="/docs" if settings.enable_openapi else None,
+    redoc_url="/redoc" if settings.enable_openapi else None,
+    openapi_url="/openapi.json" if settings.enable_openapi else None,
 )
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
@@ -83,9 +96,27 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=settings.cors_allow_methods_list,
+    allow_headers=settings.cors_allow_headers_list,
 )
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.trusted_hosts_list)
+if settings.require_https_redirect:
+    app.add_middleware(HTTPSRedirectMiddleware)
+
+
+@app.middleware("http")
+async def add_security_headers(request, call_next):
+    response = await call_next(request)
+    for key, value in SECURITY_HEADERS.items():
+        response.headers.setdefault(key, value)
+    response.headers.setdefault(
+        "Content-Security-Policy",
+        "default-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self';"
+        " img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self';",
+    )
+    if settings.is_production:
+        response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+    return response
 
 # ── Routers ───────────────────────────────────────────────────────────────────
 app.include_router(auth.router)
@@ -103,8 +134,13 @@ app.include_router(notifications.router)
 # ── Startup ───────────────────────────────────────────────────────────────────
 @app.on_event("startup")
 async def on_startup() -> None:
-    if os.getenv("SKIP_ALEMBIC_ON_STARTUP", "").lower() not in ("1", "true", "yes"):
+    if settings.auto_migrate_on_startup and os.getenv("SKIP_ALEMBIC_ON_STARTUP", "").lower() not in ("1", "true", "yes"):
         await asyncio.to_thread(_run_alembic_upgrade)
+
+    if not settings.seed_demo_data:
+        asyncio.create_task(_expire_overdue_invoices_loop())
+        asyncio.create_task(_reconcile_subscriptions_loop())
+        return
 
     from src.db import AsyncSessionLocal
 
@@ -337,4 +373,7 @@ async def health() -> dict:
 
 @app.get("/", tags=["health"])
 async def root() -> dict:
-    return {"message": "Sistema de Gestión de Facturas (SGF)", "docs": "/docs"}
+    payload = {"message": "Sistema de Gestión de Facturas (SGF)"}
+    if settings.enable_openapi:
+        payload["docs"] = "/docs"
+    return payload

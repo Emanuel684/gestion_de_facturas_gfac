@@ -7,6 +7,22 @@ services:
     buildCommand: npm run build
     staticPublishPath: frontend/dist
     routes:
+      - type: header
+        source: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - type: header
+        source: /*
+        name: X-Frame-Options
+        value: DENY
+      - type: header
+        source: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - type: header
+        source: /*
+        name: Permissions-Policy
+        value: camera=(), microphone=(), geolocation=()
       - type: rewrite
         source: /*
         destination: /index.html

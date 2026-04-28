@@ -15,6 +15,7 @@ from src.billing import (
     period_end_from,
     recompute_subscription_status,
 )
+from src.config import settings
 from src.db import get_db
 from src.models import (
     CheckoutSession,
@@ -34,6 +35,11 @@ router = APIRouter(prefix="/api/public", tags=["public"])
 
 @router.post("/signup", response_model=PublicSignupOut, status_code=status.HTTP_201_CREATED)
 async def public_signup(payload: PublicSignupIn, db: AsyncSession = Depends(get_db)) -> PublicSignupOut:
+    if not settings.enable_mock_checkout:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Registro público temporalmente deshabilitado.",
+        )
     existing = await db.execute(select(Organization).where(Organization.slug == payload.slug))
     if existing.scalar_one_or_none():
         raise HTTPException(
@@ -87,6 +93,8 @@ async def public_signup(payload: PublicSignupIn, db: AsyncSession = Depends(get_
 
 @router.get("/checkout/{session_token}", response_model=CheckoutSessionOut)
 async def get_public_checkout(session_token: str, db: AsyncSession = Depends(get_db)) -> CheckoutSessionOut:
+    if not settings.enable_mock_checkout:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Checkout no disponible")
     result = await db.execute(select(CheckoutSession).where(CheckoutSession.session_token == session_token))
     session = result.scalar_one_or_none()
     if not session:
@@ -103,6 +111,8 @@ async def complete_public_checkout(
     payload: CheckoutActionIn,
     db: AsyncSession = Depends(get_db),
 ) -> SubscriptionOut:
+    if not settings.enable_mock_checkout:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Checkout no disponible")
     result = await db.execute(select(CheckoutSession).where(CheckoutSession.session_token == session_token))
     session = result.scalar_one_or_none()
     if not session:

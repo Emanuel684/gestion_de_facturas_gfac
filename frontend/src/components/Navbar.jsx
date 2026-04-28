@@ -31,9 +31,9 @@ export default function Navbar() {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setMenuOpen(false);
-    signOut();
+    await signOut();
     navigate('/login', { replace: true });
   };
 

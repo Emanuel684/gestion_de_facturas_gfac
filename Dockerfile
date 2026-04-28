@@ -10,8 +10,8 @@ RUN apt-get update && apt-get install -y \
     tesseract-ocr-spa \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+# Install uv (pinned tag; avoid latest drift)
+COPY --from=ghcr.io/astral-sh/uv:0.7.2 /uv /usr/local/bin/uv
 
 # Copy dependency files
 COPY pyproject.toml ./
@@ -21,6 +21,10 @@ RUN uv pip install --system --no-cache -e .
 
 # Copy application code
 COPY . .
+
+# Run as non-root in container
+RUN useradd --create-home --shell /usr/sbin/nologin appuser && chown -R appuser:appuser /app
+USER appuser
 
 # Render (y otros PaaS) inyectan PORT; localmente usar 8000 si PORT no está definido.
 EXPOSE 8000

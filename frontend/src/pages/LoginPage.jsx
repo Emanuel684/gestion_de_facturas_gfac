@@ -19,7 +19,6 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const { data } = await login(organizationSlug.trim(), username, password);
-      localStorage.setItem('token', data.access_token);
       const me = await getMe();
       signIn(data.access_token, me.data);
       if (me.data.role === 'plataforma_admin') {
@@ -28,7 +27,6 @@ export default function LoginPage() {
         navigate('/app', { replace: true });
       }
     } catch (err) {
-      localStorage.removeItem('token');
       const d = err.response?.data?.detail;
       setError(typeof d === 'string' ? d : 'Error al iniciar sesión. Verifique organización y credenciales.');
     } finally {
@@ -91,11 +89,13 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="login-hint">
-          <strong>Demo cliente:</strong> organización <code>demo</code> — admin / admin123 · maria / maria123 · carlos / carlos123
-          <br />
-          <strong>Plataforma:</strong> organización <code>plataforma</code> — super / super123
-        </div>
+        {import.meta.env.DEV && (
+          <div className="login-hint">
+            <strong>Demo cliente:</strong> organización <code>demo</code> — admin / admin123 · maria / maria123 · carlos / carlos123
+            <br />
+            <strong>Plataforma:</strong> organización <code>plataforma</code> — super / super123
+          </div>
+        )}
 
         <p className="login-back">
           <Link to="/">← Volver al inicio</Link>

@@ -8,14 +8,7 @@ import axios from 'axios';
 const raw = import.meta.env.VITE_API_BASE_URL?.trim();
 const baseURL = raw || '/api';
 
-const api = axios.create({ baseURL });
-
-// Attach JWT token from localStorage to every request
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
+const api = axios.create({ baseURL, withCredentials: true });
 
 // On 401, clear session and go to login — except failed /auth/login (wrong credentials),
 // where a full redirect would reload the page and wipe the form before the user reads the error.
@@ -26,8 +19,7 @@ api.interceptors.response.use(
       const url = err.config?.url ?? '';
       const isLoginFailure = url.includes('/auth/login');
       if (!isLoginFailure) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        sessionStorage.removeItem('user');
         if (window.location.pathname !== '/login') {
           window.location.href = '/login';
         }
@@ -44,6 +36,8 @@ export const login = (organizationSlug, username, password) =>
     username,
     password,
   });
+
+export const logout = () => api.post('/auth/logout');
 
 // ── Invoices ─────────────────────────────────────────────────────────────────
 export const getInvoices = (params = {}) =>

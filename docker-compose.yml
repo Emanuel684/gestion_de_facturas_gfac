@@ -25,6 +25,13 @@ services:
       SECRET_KEY: dev-secret-key-change-in-production
       ALGORITHM: HS256
       CORS_ORIGINS: http://localhost:5173
+      APP_ENV: development
+      ALLOW_INSECURE_DEFAULTS: "true"
+      ENABLE_OPENAPI: "true"
+      ENABLE_MOCK_CHECKOUT: "true"
+      SEED_DEMO_DATA: "true"
+      AUTO_MIGRATE_ON_STARTUP: "true"
+      TRUSTED_HOSTS: localhost,127.0.0.1,api
       # Opcional: extracción estructurada desde PDF/imagen (definir GEMINI_API_KEY en .env o entorno)
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash}
@@ -43,7 +50,7 @@ services:
     build: ./frontend
     container_name: sgf_frontend
     ports:
-      - "5173:80"
+      - "5173:8080"
     depends_on:
       - api
 

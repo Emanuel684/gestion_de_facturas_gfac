@@ -11,6 +11,7 @@ Permission rules:
 DIAN traceability: `dian_lifecycle_status` + `invoice_events`; `document_locked` bloquea
 campos fiscales salvo transiciones de estado permitidas.
 """
+import io
 import logging
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
@@ -286,6 +287,29 @@ async def list_invoices(
 MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 MB
 
 
+def _detect_mime(file_bytes: bytes, filename: str, declared: str) -> str:
+    if file_bytes.startswith(b"%PDF"):
+        return "application/pdf"
+    if file_bytes[:2] == b"PK" and filename.lower().endswith(".docx"):
+        return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    try:
+        from PIL import Image
+
+        with Image.open(io.BytesIO(file_bytes)) as img:
+            img_map = {
+                "JPEG": "image/jpeg",
+                "PNG": "image/png",
+                "WEBP": "image/webp",
+                "BMP": "image/bmp",
+                "TIFF": "image/tiff",
+            }
+            if img.format in img_map:
+                return img_map[img.format]
+    except Exception:
+        pass
+    return declared
+
+
 @router.post("/upload", status_code=status.HTTP_200_OK)
 async def upload_invoice_document(
     file: UploadFile = File(...),
@@ -293,17 +317,6 @@ async def upload_invoice_document(
 ) -> dict:
     content_type = file.content_type or ""
     filename = file.filename or "unknown"
-
-    if content_type not in ALL_SUPPORTED_TYPES:
-        ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
-        if ext not in {"jpg", "jpeg", "png", "webp", "bmp", "tiff", "tif", "pdf", "docx"}:
-            raise HTTPException(
-                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-                detail=(
-                    f"Tipo de archivo no soportado: {content_type}. "
-                    "Formatos aceptados: imágenes (JPEG, PNG), PDF, DOCX."
-                ),
-            )
 
     file_bytes = await file.read()
     if len(file_bytes) > MAX_UPLOAD_SIZE:
@@ -316,6 +329,16 @@ async def upload_invoice_document(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="El archivo está vacío.",
+        )
+
+    content_type = _detect_mime(file_bytes, filename, content_type)
+    if content_type not in ALL_SUPPORTED_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail=(
+                f"Tipo de archivo no soportado: {content_type}. "
+                "Formatos aceptados: imágenes (JPEG, PNG), PDF, DOCX."
+            ),
         )
 
     try:

@@ -1,0 +1,31 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      APP_ENV: production
+      ALLOW_INSECURE_DEFAULTS: "false"
+      DATABASE_URL: ${DATABASE_URL}
+      SECRET_KEY: ${SECRET_KEY}
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 15
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      CORS_ALLOW_METHODS: GET,POST,PUT,PATCH,DELETE,OPTIONS
+      CORS_ALLOW_HEADERS: Authorization,Content-Type,Accept,Origin,X-Requested-With
+      ENABLE_OPENAPI: "false"
+      ENABLE_MOCK_CHECKOUT: "false"
+      SEED_DEMO_DATA: "false"
+      AUTO_MIGRATE_ON_STARTUP: "false"
+      TRUSTED_HOSTS: ${TRUSTED_HOSTS}
+      REQUIRE_HTTPS_REDIRECT: "true"
+      RETURN_RAW_TEXT_IN_UPLOAD: "false"
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:8080"
+    depends_on:
+      - api
+    restart: unless-stopped

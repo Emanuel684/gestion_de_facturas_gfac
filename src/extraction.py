@@ -37,6 +37,9 @@ def extract_text_from_image(file_bytes: bytes) -> str:
         ) from e
 
     image = Image.open(io.BytesIO(file_bytes))
+    width, height = image.size
+    if width * height > settings.max_upload_pixels:
+        raise ValueError("La imagen excede el tamaño máximo permitido para OCR.")
     text = pytesseract.image_to_string(image, lang="spa+eng")
     return text
 
@@ -53,6 +56,9 @@ def extract_text_from_pdf(file_bytes: bytes) -> str:
 
     text_parts: list[str] = []
     with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+        total_pages = len(pdf.pages)
+        if total_pages > settings.max_upload_pages:
+            raise ValueError(f"El PDF excede el límite de {settings.max_upload_pages} páginas.")
         for page in pdf.pages:
             page_text = page.extract_text()
             if page_text:
@@ -82,8 +88,14 @@ def _ocr_pdf_pages(file_bytes: bytes) -> str:
 
     text_parts: list[str] = []
     with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+        total_pages = len(pdf.pages)
+        if total_pages > settings.max_upload_pages:
+            raise ValueError(f"El PDF excede el límite de {settings.max_upload_pages} páginas.")
         for page in pdf.pages:
             img = page.to_image(resolution=300).original
+            width, height = img.size
+            if width * height > settings.max_upload_pixels:
+                raise ValueError("Una página del PDF excede el tamaño máximo permitido para OCR.")
             page_text = pytesseract.image_to_string(img, lang="spa+eng")
             if page_text:
                 text_parts.append(page_text)
@@ -101,6 +113,8 @@ def extract_text_from_docx(file_bytes: bytes) -> str:
         ) from e
 
     doc = Document(io.BytesIO(file_bytes))
+    if len(doc.paragraphs) > 5000:
+        raise ValueError("El DOCX excede el tamaño de contenido permitido.")
     paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]
 
     # Also extract text from tables
@@ -352,7 +366,8 @@ def extract_from_file(file_bytes: bytes, content_type: str, filename: str) -> di
         except Exception as e:
             logger.warning("Gemini extraction failed: %s", e, exc_info=True)
 
-    extracted["raw_text"] = raw_text
+    if settings.return_raw_text_in_upload:
+        extracted["raw_text"] = raw_text
     extracted["extraction_method"] = extraction_method
 
     return extracted
