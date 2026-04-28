@@ -77,7 +77,8 @@ class Settings(BaseSettings):
 
     @property
     def trusted_hosts_list(self) -> list[str]:
-        return [h.strip() for h in self.trusted_hosts.split(",") if h.strip()]
+        hosts = [h.strip() for h in self.trusted_hosts.split(",") if h.strip()]
+        return hosts or ["*"]
 
     @property
     def is_production(self) -> bool:

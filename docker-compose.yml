@@ -31,7 +31,7 @@ services:
       ENABLE_MOCK_CHECKOUT: "true"
       SEED_DEMO_DATA: "true"
       AUTO_MIGRATE_ON_STARTUP: "true"
-      TRUSTED_HOSTS: localhost,127.0.0.1,api
+      TRUSTED_HOSTS: "*"
       # Opcional: extracción estructurada desde PDF/imagen (definir GEMINI_API_KEY en .env o entorno)
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash}
