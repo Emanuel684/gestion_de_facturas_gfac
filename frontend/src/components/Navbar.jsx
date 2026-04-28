@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import {
+  getNotificationsPage,
+  getNotificationsUnreadCount,
+  markAllNotificationsAsRead,
+  markNotificationAsRead,
+} from '../api';
 import './Navbar.css';
 
 const ROLE_COLORS = {
@@ -21,6 +27,9 @@ export default function Navbar() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const handleLogout = () => {
     setMenuOpen(false);
@@ -29,6 +38,27 @@ export default function Navbar() {
   };
 
   const closeMenu = () => setMenuOpen(false);
+  const isPlatform = user?.role === 'plataforma_admin';
+
+  const refreshUnread = async () => {
+    if (!user || isPlatform) return;
+    try {
+      const resp = await getNotificationsUnreadCount();
+      setUnreadCount(resp.data.unread || 0);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const refreshNotifications = async () => {
+    if (!user || isPlatform) return;
+    try {
+      const resp = await getNotificationsPage({ page: 0, pageSize: 12 });
+      setNotifications(resp.data.items || []);
+    } catch {
+      /* ignore */
+    }
+  };
 
   useEffect(() => {
     if (!menuOpen) return undefined;
@@ -52,7 +82,51 @@ export default function Navbar() {
     return () => window.removeEventListener('resize', onResize);
   }, [menuOpen]);
 
-  const isPlatform = user?.role === 'plataforma_admin';
+  useEffect(() => {
+    if (!user || isPlatform) return undefined;
+    refreshUnread();
+    const id = window.setInterval(refreshUnread, 30000);
+    return () => window.clearInterval(id);
+  }, [user, isPlatform]);
+
+  useEffect(() => {
+    if (!notifOpen) return;
+    refreshNotifications();
+    refreshUnread();
+  }, [notifOpen]);
+
+  useEffect(() => {
+    if (!notifOpen) return undefined;
+    const onDocClick = (e) => {
+      if (!e.target.closest('.notifications-wrap')) {
+        setNotifOpen(false);
+      }
+    };
+    document.addEventListener('click', onDocClick);
+    return () => document.removeEventListener('click', onDocClick);
+  }, [notifOpen]);
+
+  const handleMarkRead = async (id) => {
+    try {
+      await markNotificationAsRead(id);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, is_read: true, read_at: new Date().toISOString() } : n))
+      );
+      await refreshUnread();
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await markAllNotificationsAsRead();
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true, read_at: new Date().toISOString() })));
+      setUnreadCount(0);
+    } catch {
+      /* ignore */
+    }
+  };
 
   return (
     <nav className="navbar">
@@ -123,6 +197,57 @@ export default function Navbar() {
             )}
 
             <div className="navbar-right">
+              {!isPlatform && (
+                <div className="notifications-wrap">
+                  <button
+                    type="button"
+                    className="notifications-btn"
+                    aria-label="Notificaciones"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setNotifOpen((v) => !v);
+                    }}
+                  >
+                    <span className="notifications-icon" aria-hidden>🔔</span>
+                    {unreadCount > 0 && (
+                      <span className="notifications-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
+                    )}
+                  </button>
+                  {notifOpen && (
+                    <div className="notifications-panel">
+                      <div className="notifications-header">
+                        <strong>Novedades</strong>
+                        <button type="button" className="notifications-mark-all" onClick={handleMarkAllRead}>
+                          Marcar todas
+                        </button>
+                      </div>
+                      {notifications.length === 0 ? (
+                        <p className="notifications-empty">No hay notificaciones.</p>
+                      ) : (
+                        <ul className="notifications-list">
+                          {notifications.map((n) => (
+                            <li key={n.id} className={`notifications-item ${n.is_read ? '' : 'is-unread'}`}>
+                              <div className="notifications-item-top">
+                                <strong>{n.title}</strong>
+                                {!n.is_read && (
+                                  <button
+                                    type="button"
+                                    className="notifications-read-one"
+                                    onClick={() => handleMarkRead(n.id)}
+                                  >
+                                    Marcar leída
+                                  </button>
+                                )}
+                              </div>
+                              <p>{n.message}</p>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
               <span className="navbar-user">
                 <span
                   className="role-badge"

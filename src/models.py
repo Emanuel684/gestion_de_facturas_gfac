@@ -81,6 +81,15 @@ class InvoiceEventType(str, enum.Enum):
     external_note = "external_note"
 
 
+class NotificationType(str, enum.Enum):
+    invoice_created = "invoice_created"
+    invoice_updated = "invoice_updated"
+    invoice_status_changed = "invoice_status_changed"
+    invoice_assigned = "invoice_assigned"
+    invoice_unassigned = "invoice_unassigned"
+    invoice_overdue_auto = "invoice_overdue_auto"
+
+
 class SubscriptionStatus(str, enum.Enum):
     active = "active"
     past_due = "past_due"
@@ -309,6 +318,36 @@ class InvoiceAssignee(Base):
 
     def __repr__(self) -> str:
         return f"<InvoiceAssignee invoice_id={self.invoice_id} user_id={self.user_id}>"
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+    __table_args__ = (
+        Index("ix_notifications_user_is_read_created", "user_id", "is_read", "created_at"),
+        Index("ix_notifications_org_created", "organization_id", "created_at"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    organization_id: Mapped[int] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    type: Mapped[NotificationType] = mapped_column(
+        Enum(NotificationType, name="notificationtype"), nullable=False
+    )
+    title: Mapped[str] = mapped_column(String(160), nullable=False)
+    message: Mapped[str] = mapped_column(Text, nullable=False)
+    invoice_id: Mapped[int | None] = mapped_column(ForeignKey("invoices.id"), nullable=True, index=True)
+    payload: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    is_read: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, nullable=False
+    )
+
+    organization: Mapped["Organization"] = relationship("Organization")
+    user: Mapped["User"] = relationship("User")
+    invoice: Mapped["Invoice | None"] = relationship("Invoice")
 
 
 class Subscription(Base):

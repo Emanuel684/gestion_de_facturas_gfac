@@ -32,8 +32,21 @@ from src.models import (
     UserRole,
     Invoice,
     InvoiceStatus,
+    NotificationType,
 )
-from src.routers import auth, billing, fiscal, invoices, organizations, platform_insights, public_signup, reports, users
+from src.notifications import create_notification_for_org
+from src.routers import (
+    auth,
+    billing,
+    fiscal,
+    invoices,
+    notifications,
+    organizations,
+    platform_insights,
+    public_signup,
+    reports,
+    users,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -84,6 +97,7 @@ app.include_router(users.router)
 app.include_router(billing.router)
 app.include_router(public_signup.router)
 app.include_router(fiscal.router)
+app.include_router(notifications.router)
 
 
 # ── Startup ───────────────────────────────────────────────────────────────────
@@ -254,19 +268,37 @@ async def _expire_overdue_invoices_loop() -> None:
         try:
             now = datetime.now(timezone.utc)
             async with AsyncSessionLocal() as db:
-                result = await db.execute(
-                    update(Invoice)
-                    .where(
+                pending_rows = await db.execute(
+                    select(Invoice.id, Invoice.organization_id, Invoice.invoice_number).where(
                         and_(
                             Invoice.status == InvoiceStatus.pendiente,
                             Invoice.due_date != None,  # noqa: E711
                             Invoice.due_date < now,
                         )
                     )
-                    .values(status=InvoiceStatus.vencida)
-                    .returning(Invoice.id)
                 )
-                expired_ids = result.scalars().all()
+                overdue_items = pending_rows.all()
+                expired_ids = [row.id for row in overdue_items]
+                if expired_ids:
+                    await db.execute(
+                        update(Invoice)
+                        .where(Invoice.id.in_(expired_ids))
+                        .values(status=InvoiceStatus.vencida)
+                    )
+                    for item in overdue_items:
+                        await create_notification_for_org(
+                            db,
+                            organization_id=item.organization_id,
+                            exclude_user_id=None,
+                            notification_type=NotificationType.invoice_overdue_auto,
+                            title="Factura marcada como vencida",
+                            message=(
+                                f"La factura {item.invoice_number} cambió automáticamente a vencida "
+                                "por fecha de pago expirada."
+                            ),
+                            invoice_id=item.id,
+                            payload={"invoice_number": item.invoice_number},
+                        )
                 await db.commit()
 
             if expired_ids:

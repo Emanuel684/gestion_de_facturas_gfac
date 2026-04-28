@@ -36,10 +36,12 @@ from src.models import (
     InvoiceAssignee,
     InvoiceEventType,
     InvoiceStatus,
+    NotificationType,
     OrganizationFiscalProfile,
     User,
     UserRole,
 )
+from src.notifications import create_notification_for_org, create_notification_for_users
 from src.schemas import (
     AssignedUser,
     InvoiceCreate,
@@ -57,6 +59,10 @@ router = APIRouter(prefix="/api/invoices", tags=["invoices"])
 def _sync_document_lock(invoice: Invoice) -> None:
     unlocked = {DianLifecycleStatus.borrador, DianLifecycleStatus.rechazada_dian}
     invoice.document_locked = invoice.dian_lifecycle_status not in unlocked
+
+
+def _actor_label(user: User) -> str:
+    return user.username if user.username else f"usuario {user.id}"
 
 
 def _invoice_to_out(invoice: Invoice) -> InvoiceOut:
@@ -446,6 +452,31 @@ async def create_invoice(
             )
         db.add(InvoiceAssignee(invoice_id=invoice.id, user_id=uid))
 
+    await create_notification_for_org(
+        db,
+        organization_id=org_id,
+        exclude_user_id=current_user.id,
+        notification_type=NotificationType.invoice_created,
+        title="Nueva factura registrada",
+        message=f"{_actor_label(current_user)} creó la factura {invoice.invoice_number}.",
+        invoice_id=invoice.id,
+        payload={"invoice_number": invoice.invoice_number},
+    )
+    assigned_user_ids = {
+        uid for uid in set(payload.assigned_user_ids) if uid != current_user.id
+    }
+    if assigned_user_ids:
+        await create_notification_for_users(
+            db,
+            organization_id=org_id,
+            user_ids=assigned_user_ids,
+            notification_type=NotificationType.invoice_assigned,
+            title="Factura asignada",
+            message=f"Se le asignó la factura {invoice.invoice_number}.",
+            invoice_id=invoice.id,
+            payload={"invoice_number": invoice.invoice_number},
+        )
+
     await record_invoice_event(
         db,
         invoice=invoice,
@@ -645,6 +676,8 @@ async def update_invoice(
         )
 
     old_dian = invoice.dian_lifecycle_status
+    old_status = invoice.status
+    old_assigned_user_ids = {a.user_id for a in invoice.assignees}
 
     if payload.invoice_number is not None:
         existing = await db.execute(
@@ -730,7 +763,7 @@ async def update_invoice(
             )
 
     if payload.assigned_user_ids is not None:
-        existing_user_ids = {a.user_id for a in invoice.assignees}
+        existing_user_ids = old_assigned_user_ids
         new_user_ids = set(payload.assigned_user_ids)
 
         to_remove = existing_user_ids - new_user_ids
@@ -753,12 +786,75 @@ async def update_invoice(
                 )
             db.add(InvoiceAssignee(invoice_id=invoice.id, user_id=uid))
 
+    changed_fields = [k for k, v in payload.model_dump(exclude_unset=True).items() if v is not None]
+    status_changed = payload.status is not None and old_status != invoice.status
+    if status_changed:
+        await create_notification_for_org(
+            db,
+            organization_id=org_id,
+            exclude_user_id=current_user.id,
+            notification_type=NotificationType.invoice_status_changed,
+            title="Estado de factura actualizado",
+            message=(
+                f"{_actor_label(current_user)} cambió la factura {invoice.invoice_number} "
+                f"de {old_status.value} a {invoice.status.value}."
+            ),
+            invoice_id=invoice.id,
+            payload={
+                "invoice_number": invoice.invoice_number,
+                "from_status": old_status.value,
+                "to_status": invoice.status.value,
+            },
+        )
+
+    if payload.assigned_user_ids is not None:
+        new_assigned_user_ids = set(payload.assigned_user_ids)
+        added_user_ids = new_assigned_user_ids - old_assigned_user_ids
+        removed_user_ids = old_assigned_user_ids - new_assigned_user_ids
+        if added_user_ids:
+            await create_notification_for_users(
+                db,
+                organization_id=org_id,
+                user_ids=added_user_ids,
+                notification_type=NotificationType.invoice_assigned,
+                title="Factura asignada",
+                message=f"{_actor_label(current_user)} le asignó la factura {invoice.invoice_number}.",
+                invoice_id=invoice.id,
+                payload={"invoice_number": invoice.invoice_number},
+            )
+        if removed_user_ids:
+            await create_notification_for_users(
+                db,
+                organization_id=org_id,
+                user_ids=removed_user_ids,
+                notification_type=NotificationType.invoice_unassigned,
+                title="Factura desasignada",
+                message=f"{_actor_label(current_user)} le quitó la factura {invoice.invoice_number}.",
+                invoice_id=invoice.id,
+                payload={"invoice_number": invoice.invoice_number},
+            )
+
+    non_assignment_or_status_update = any(
+        field not in {"status", "assigned_user_ids"} for field in changed_fields
+    )
+    if non_assignment_or_status_update:
+        await create_notification_for_org(
+            db,
+            organization_id=org_id,
+            exclude_user_id=current_user.id,
+            notification_type=NotificationType.invoice_updated,
+            title="Factura actualizada",
+            message=f"{_actor_label(current_user)} actualizó la factura {invoice.invoice_number}.",
+            invoice_id=invoice.id,
+            payload={"invoice_number": invoice.invoice_number, "fields": changed_fields},
+        )
+
     await record_invoice_event(
         db,
         invoice=invoice,
         event_type=InvoiceEventType.updated,
         actor=current_user,
-        payload={"fields": [k for k, v in payload.model_dump(exclude_unset=True).items() if v is not None]},
+        payload={"fields": changed_fields},
     )
     await db.commit()
     invoice = await _get_invoice_or_404(invoice_id, org_id, db)

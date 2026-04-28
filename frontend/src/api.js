@@ -184,3 +184,15 @@ export const getInvoiceAuditPack = (id, opts = {}) => {
     responseType: format === 'xlsx' ? 'blob' : undefined,
   });
 };
+
+// ── Notifications (tenant) ───────────────────────────────────────────────────
+export const getNotificationsPage = ({ page = 0, pageSize = 20, unreadOnly = false } = {}) =>
+  api.get('/notifications', {
+    params: { page, page_size: pageSize, unread_only: unreadOnly || undefined },
+  });
+
+export const getNotificationsUnreadCount = () => api.get('/notifications/unread-count');
+
+export const markNotificationAsRead = (id) => api.post(`/notifications/${id}/read`);
+
+export const markAllNotificationsAsRead = () => api.post('/notifications/read-all');

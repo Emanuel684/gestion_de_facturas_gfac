@@ -69,6 +69,106 @@
   flex-shrink: 0;
 }
 
+.notifications-wrap {
+  position: relative;
+}
+
+.notifications-btn {
+  position: relative;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  border-radius: 10px;
+  padding: 0.3rem 0.55rem;
+  cursor: pointer;
+}
+
+.notifications-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.notifications-badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  background: #dc2626;
+  color: #fff;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  min-width: 18px;
+  padding: 0.1rem 0.3rem;
+  text-align: center;
+}
+
+.notifications-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.45rem);
+  width: min(380px, calc(100vw - 2rem));
+  max-height: 420px;
+  overflow: auto;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.15);
+  padding: 0.6rem;
+  z-index: 130;
+}
+
+.notifications-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.45rem;
+}
+
+.notifications-mark-all,
+.notifications-read-one {
+  border: none;
+  background: transparent;
+  color: #0e7490;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.notifications-empty {
+  margin: 0.6rem 0.3rem;
+  color: #6b7280;
+  font-size: 0.85rem;
+}
+
+.notifications-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.notifications-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0.55rem;
+}
+
+.notifications-item.is-unread {
+  border-color: #67e8f9;
+  background: #ecfeff;
+}
+
+.notifications-item-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.notifications-item p {
+  margin: 0.3rem 0 0;
+  font-size: 0.82rem;
+  color: #374151;
+}
+
 .navbar-user {
   display: flex;
   align-items: center;
@@ -223,6 +323,22 @@
     margin-top: 1.25rem;
     padding-top: 1.25rem;
     border-top: 1px solid #e5e7eb;
+  }
+
+  .notifications-wrap {
+    width: 100%;
+  }
+
+  .notifications-btn {
+    width: 100%;
+    min-height: 42px;
+  }
+
+  .notifications-panel {
+    position: static;
+    width: 100%;
+    max-height: 280px;
+    margin-top: 0.5rem;
   }
 
   .navbar-user {

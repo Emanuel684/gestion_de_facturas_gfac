@@ -13,6 +13,7 @@ from src.models import (
     DianLifecycleStatus,
     InvoiceEventType,
     InvoiceStatus,
+    NotificationType,
     PaymentStatus,
     PlanTier,
     SubscriptionStatus,
@@ -443,6 +444,31 @@ class InvoiceEventOut(BaseModel):
 class InvoiceTraceResponse(BaseModel):
     invoice: InvoiceOut
     events: list[InvoiceEventOut]
+
+
+class NotificationOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    type: NotificationType
+    title: str
+    message: str
+    invoice_id: int | None
+    payload: dict | None
+    is_read: bool
+    read_at: datetime | None
+    created_at: datetime
+
+
+class NotificationPage(BaseModel):
+    items: list[NotificationOut]
+    has_next: bool
+    page: int
+    page_size: int
+
+
+class NotificationUnreadCount(BaseModel):
+    unread: int
 
 
 class FiscalProfileOut(BaseModel):
