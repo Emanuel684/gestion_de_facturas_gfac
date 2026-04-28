@@ -114,7 +114,8 @@ class Settings(BaseSettings):
         if self.is_production and self.enable_openapi:
             raise ValueError("ENABLE_OPENAPI debe estar en false en producción.")
         if "*" in self.cors_origins_list:
-            raise ValueError("CORS_ORIGINS no puede contener '*' por seguridad.")
+            if self.is_production or not self.allow_insecure_defaults:
+                raise ValueError("CORS_ORIGINS no puede contener '*' por seguridad.")
         return self
 
 
