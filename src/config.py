@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     jwt_cookie_name: str = "sgf_access_token"
 
     # CORS
-    cors_origins: str = "http://localhost:5173"
+    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
     cors_allow_methods: str = "GET,POST,PUT,PATCH,DELETE,OPTIONS"
     cors_allow_headers: str = "Authorization,Content-Type,Accept,Origin,X-Requested-With"
 
