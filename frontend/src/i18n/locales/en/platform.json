@@ -1,0 +1,17 @@
+{
+  "dashboardTitle": "Platform dashboard",
+  "reportsTitle": "Platform reports",
+  "orgLabel": "Organization",
+  "globalFilters": "Global filters",
+  "filtersDownload": "Filters and download",
+  "selectOrg": "Select an organization.",
+  "loadOrgError": "Could not load organizations.",
+  "loadDashboardError": "Could not load organization dashboard.",
+  "loadChartsError": "Could not load charts.",
+  "downloadError": "Could not generate file. Please try again.",
+  "downloadExcel": "Download Excel",
+  "downloadPdf": "Download PDF",
+  "generating": "Generating...",
+  "previewCharts": "Preview (charts)",
+  "noGraphData": "No data to chart with current filters."
+}

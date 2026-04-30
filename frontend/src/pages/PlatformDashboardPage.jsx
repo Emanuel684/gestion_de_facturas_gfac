@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Navbar from '../components/Navbar';
 import { listOrganizations, getPlatformDashboard, getPlatformTopOrganizations } from '../api';
 import {
@@ -20,6 +21,7 @@ const STATUSES = [
 ];
 
 export default function PlatformDashboardPage() {
+  const { t } = useTranslation(['platform', 'common']);
   const [orgs, setOrgs] = useState([]);
   const [orgId, setOrgId] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -39,7 +41,7 @@ export default function PlatformDashboardPage() {
         const r = await listOrganizations();
         if (!cancelled) setOrgs(r.data || []);
       } catch {
-        if (!cancelled) setError('No se pudieron cargar las organizaciones.');
+        if (!cancelled) setError(t('platform:loadOrgError'));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -72,7 +74,7 @@ export default function PlatformDashboardPage() {
       const r = await getPlatformDashboard(Number(orgId), params);
       setStats(r.data);
     } catch {
-      setError('No se pudo cargar el dashboard de la organización.');
+      setError(t('platform:loadDashboardError'));
       setStats(null);
     } finally {
       setLoadingStats(false);
@@ -99,7 +101,7 @@ export default function PlatformDashboardPage() {
       <Navbar />
       <main className="sgf-page">
         <header className="sgf-page-header">
-          <h1 className="sgf-page-title">Dashboard de plataforma</h1>
+          <h1 className="sgf-page-title">{t('platform:dashboardTitle')}</h1>
           <p className="sgf-page-sub">
             Elija organización para KPIs detallados. El ranking compara facturación entre clientes.
           </p>
@@ -109,10 +111,10 @@ export default function PlatformDashboardPage() {
         </header>
 
         <div className="sgf-panel sgf-panel--flush">
-          <h2 className="sgf-panel-title">Filtros globales</h2>
+          <h2 className="sgf-panel-title">{t('platform:globalFilters')}</h2>
           <div className="sgf-toolbar">
             <div className="sgf-field">
-              <span className="sgf-field-label">Organización</span>
+              <span className="sgf-field-label">{t('platform:orgLabel')}</span>
               <select
                 className="sgf-select"
                 value={orgId}
@@ -145,7 +147,7 @@ export default function PlatformDashboardPage() {
           <DateRangePresetBar activeKey={presetActive} onSelect={applyPreset} />
           <div className="sgf-toolbar sgf-toolbar--spaced">
             <div className="sgf-field">
-              <span className="sgf-field-label">Desde</span>
+              <span className="sgf-field-label">{t('common:from')}</span>
               <input
                 className="sgf-input"
                 type="date"
@@ -157,7 +159,7 @@ export default function PlatformDashboardPage() {
               />
             </div>
             <div className="sgf-field">
-              <span className="sgf-field-label">Hasta</span>
+              <span className="sgf-field-label">{t('common:to')}</span>
               <input
                 className="sgf-input"
                 type="date"
@@ -178,7 +180,7 @@ export default function PlatformDashboardPage() {
                 }}
                 disabled={loadingStats}
               >
-                {loadingStats ? 'Actualizando…' : 'Actualizar'}
+                {loadingStats ? t('common:loading') : t('common:update')}
               </button>
             </div>
           </div>
@@ -229,12 +231,10 @@ export default function PlatformDashboardPage() {
         </section>
 
         {!orgId && (
-          <p className="sgf-empty-hint">
-            Seleccione una organización para ver KPIs y gráficos detallados.
-          </p>
+          <p className="sgf-empty-hint">{t('platform:selectOrg')}</p>
         )}
 
-        {orgId && loadingStats && !stats && <p className="sgf-muted">Cargando…</p>}
+        {orgId && loadingStats && !stats && <p className="sgf-muted">{t('common:loading')}</p>}
 
         {stats && (
           <>

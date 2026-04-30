@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { createUser, updateUser } from '../api';
 import './InvoiceModal.css';
 import './UserModal.css';
@@ -25,6 +26,7 @@ const emptyForm = () => ({
 });
 
 export default function UserModal({ user = null, onSuccess, onClose }) {
+  const { t } = useTranslation(['modals']);
   const isEdit = Boolean(user);
 
   const [form, setForm] = useState(() => (isEdit ? null : emptyForm()));
@@ -123,8 +125,8 @@ export default function UserModal({ user = null, onSuccess, onClose }) {
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal-box">
         <div className="modal-header">
-          <h2>{isEdit ? 'Editar usuario' : 'Nuevo usuario'}</h2>
-          <button type="button" className="modal-close" onClick={onClose} aria-label="Cerrar">
+          <h2>{isEdit ? t('modals:editUser') : t('modals:newUser')}</h2>
+          <button type="button" className="modal-close" onClick={onClose} aria-label={t('modals:close')}>
             ✕
           </button>
         </div>
@@ -192,10 +194,10 @@ export default function UserModal({ user = null, onSuccess, onClose }) {
 
           <div className="modal-footer">
             <button type="button" className="btn btn-secondary" onClick={onClose}>
-              Cancelar
+              {t('modals:cancel')}
             </button>
             <button type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Crear usuario'}
+              {loading ? t('modals:saving') : isEdit ? t('modals:saveChanges') : t('modals:createUser')}
             </button>
           </div>
         </form>

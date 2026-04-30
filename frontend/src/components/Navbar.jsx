@@ -19,10 +19,10 @@ const ROLE_COLORS = {
 };
 
 const ROLE_LABELS = {
-  plataforma_admin: 'Plataforma',
-  administrador: 'Admin',
-  contador: 'Contador',
-  asistente: 'Asistente',
+  plataforma_admin: 'rolePlatform',
+  administrador: 'roleAdmin',
+  contador: 'roleAccountant',
+  asistente: 'roleAssistant',
 };
 
 export default function Navbar() {
@@ -275,7 +275,7 @@ export default function Navbar() {
                   className="role-badge"
                   style={{ background: ROLE_COLORS[user.role] || '#6b7280' }}
                 >
-                  {ROLE_LABELS[user.role] || user.role}
+                  {ROLE_LABELS[user.role] ? t(`navbar:${ROLE_LABELS[user.role]}`) : user.role}
                 </span>
                 <span className="navbar-user-text">
                   {user.username}

@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getInvoiceTrace, getInvoiceAuditPack } from '../api';
+import { localeFromLanguage } from '../utils/locale';
 import './InvoiceTraceModal.css';
 
 const EVENT_LABELS = {
@@ -11,14 +13,16 @@ const EVENT_LABELS = {
   external_note: 'Nota externa',
 };
 
-function formatApiError(err) {
+function formatApiError(err, t) {
   const d = err.response?.data?.detail;
   if (typeof d === 'string') return d;
   if (Array.isArray(d)) return d.map((x) => x.msg || JSON.stringify(x)).join('; ');
-  return 'Ocurrió un error.';
+  return t('traceability:genericError');
 }
 
 export default function InvoiceTraceModal({ invoiceId, invoiceNumber, onClose }) {
+  const { t, i18n } = useTranslation(['traceability', 'modals']);
+  const locale = localeFromLanguage(i18n.resolvedLanguage);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [trace, setTrace] = useState(null);
@@ -41,7 +45,7 @@ export default function InvoiceTraceModal({ invoiceId, invoiceNumber, onClose })
         const resp = await getInvoiceTrace(invoiceId);
         if (!cancelled) setTrace(resp.data);
       } catch (err) {
-        if (!cancelled) setError(formatApiError(err));
+        if (!cancelled) setError(formatApiError(err, t));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -59,11 +63,11 @@ export default function InvoiceTraceModal({ invoiceId, invoiceNumber, onClose })
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `paquete-auditoria-${invoiceNumber || invoiceId}.json`;
+      a.download = `audit-pack-${invoiceNumber || invoiceId}.json`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      alert(formatApiError(err));
+      alert(formatApiError(err, t));
     } finally {
       setAuditLoading(false);
     }
@@ -77,11 +81,11 @@ export default function InvoiceTraceModal({ invoiceId, invoiceNumber, onClose })
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `paquete-auditoria-${invoiceNumber || invoiceId}.xlsx`;
+      a.download = `audit-pack-${invoiceNumber || invoiceId}.xlsx`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      alert(formatApiError(err));
+      alert(formatApiError(err, t));
     } finally {
       setAuditLoading(false);
     }
@@ -94,9 +98,9 @@ export default function InvoiceTraceModal({ invoiceId, invoiceNumber, onClose })
       <div className="trace-box">
         <div className="trace-header">
           <div>
-            <h2>Trazabilidad</h2>
+            <h2>{t('traceability:title')}</h2>
             <p className="trace-sub">
-              {invoiceNumber ? `Factura ${invoiceNumber}` : `ID ${invoiceId}`}
+              {invoiceNumber ? t('traceability:invoice', { number: invoiceNumber }) : t('traceability:id', { id: invoiceId })}
             </p>
           </div>
           <div className="trace-header-actions">
@@ -106,7 +110,7 @@ export default function InvoiceTraceModal({ invoiceId, invoiceNumber, onClose })
               onClick={downloadAuditPackJson}
               disabled={auditLoading || loading}
             >
-              {auditLoading ? 'Generando…' : 'Descargar JSON'}
+              {auditLoading ? t('traceability:generating') : t('traceability:downloadJson')}
             </button>
             <button
               type="button"
@@ -114,19 +118,19 @@ export default function InvoiceTraceModal({ invoiceId, invoiceNumber, onClose })
               onClick={downloadAuditPackExcel}
               disabled={auditLoading || loading}
             >
-              {auditLoading ? 'Generando…' : 'Descargar Excel'}
+              {auditLoading ? t('traceability:generating') : t('traceability:downloadExcel')}
             </button>
-            <button type="button" className="trace-close" onClick={onClose} aria-label="Cerrar">
+            <button type="button" className="trace-close" onClick={onClose} aria-label={t('modals:close')}>
               ✕
             </button>
           </div>
         </div>
 
         <div className="trace-body">
-          {loading && <div className="trace-loading">Cargando eventos…</div>}
+          {loading && <div className="trace-loading">{t('traceability:loading')}</div>}
           {error && <div className="alert alert-error">{error}</div>}
           {!loading && !error && events.length === 0 && (
-            <p className="trace-empty">No hay eventos registrados.</p>
+            <p className="trace-empty">{t('traceability:empty')}</p>
           )}
           {!loading && !error && events.length > 0 && (
             <ul className="trace-timeline">
@@ -137,11 +141,11 @@ export default function InvoiceTraceModal({ invoiceId, invoiceNumber, onClose })
                     <div className="trace-card-head">
                       <strong>{EVENT_LABELS[ev.event_type] || ev.event_type}</strong>
                       <time dateTime={ev.created_at}>
-                        {new Date(ev.created_at).toLocaleString('es-CO')}
+                        {new Date(ev.created_at).toLocaleString(locale)}
                       </time>
                     </div>
                     {ev.actor_user_id != null && (
-                      <span className="trace-actor">Usuario #{ev.actor_user_id}</span>
+                      <span className="trace-actor">{t('traceability:userActor', { id: ev.actor_user_id })}</span>
                     )}
                     {ev.payload && Object.keys(ev.payload).length > 0 && (
                       <pre className="trace-payload">{JSON.stringify(ev.payload, null, 2)}</pre>

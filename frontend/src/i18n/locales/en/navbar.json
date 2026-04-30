@@ -12,5 +12,9 @@
   "updates": "Updates",
   "markAll": "Mark all",
   "markRead": "Mark as read",
-  "emptyNotifications": "No notifications yet."
+  "emptyNotifications": "No notifications yet.",
+  "rolePlatform": "Platform",
+  "roleAdmin": "Admin",
+  "roleAccountant": "Accountant",
+  "roleAssistant": "Assistant"
 }

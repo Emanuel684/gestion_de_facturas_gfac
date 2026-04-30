@@ -18,6 +18,16 @@ import esDashboard from './locales/es/dashboard.json';
 import enDashboard from './locales/en/dashboard.json';
 import esReports from './locales/es/reports.json';
 import enReports from './locales/en/reports.json';
+import esInvoices from './locales/es/invoices.json';
+import enInvoices from './locales/en/invoices.json';
+import esPlatform from './locales/es/platform.json';
+import enPlatform from './locales/en/platform.json';
+import esOrganizations from './locales/es/organizations.json';
+import enOrganizations from './locales/en/organizations.json';
+import esModals from './locales/es/modals.json';
+import enModals from './locales/en/modals.json';
+import esTraceability from './locales/es/traceability.json';
+import enTraceability from './locales/en/traceability.json';
 
 const resources = {
   es: {
@@ -29,6 +39,11 @@ const resources = {
     billing: esBilling,
     dashboard: esDashboard,
     reports: esReports,
+    invoices: esInvoices,
+    platform: esPlatform,
+    organizations: esOrganizations,
+    modals: esModals,
+    traceability: esTraceability,
   },
   en: {
     common: enCommon,
@@ -39,6 +54,11 @@ const resources = {
     billing: enBilling,
     dashboard: enDashboard,
     reports: enReports,
+    invoices: enInvoices,
+    platform: enPlatform,
+    organizations: enOrganizations,
+    modals: enModals,
+    traceability: enTraceability,
   },
 };
 

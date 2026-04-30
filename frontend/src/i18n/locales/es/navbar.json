@@ -12,5 +12,9 @@
   "updates": "Novedades",
   "markAll": "Marcar todas",
   "markRead": "Marcar leída",
-  "emptyNotifications": "No hay notificaciones."
+  "emptyNotifications": "No hay notificaciones.",
+  "rolePlatform": "Plataforma",
+  "roleAdmin": "Admin",
+  "roleAccountant": "Contador",
+  "roleAssistant": "Asistente"
 }

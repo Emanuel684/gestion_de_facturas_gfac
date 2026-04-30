@@ -1,0 +1,17 @@
+{
+  "dashboardTitle": "Dashboard de plataforma",
+  "reportsTitle": "Reportes (plataforma)",
+  "orgLabel": "Organización",
+  "globalFilters": "Filtros globales",
+  "filtersDownload": "Filtros y descarga",
+  "selectOrg": "Seleccione una organización.",
+  "loadOrgError": "No se pudieron cargar las organizaciones.",
+  "loadDashboardError": "No se pudo cargar el dashboard de la organización.",
+  "loadChartsError": "No se pudieron cargar los gráficos.",
+  "downloadError": "No se pudo generar el archivo. Intente de nuevo.",
+  "downloadExcel": "Descargar Excel",
+  "downloadPdf": "Descargar PDF",
+  "generating": "Generando...",
+  "previewCharts": "Vista previa (gráficos)",
+  "noGraphData": "Sin datos para graficar con los filtros actuales."
+}

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   getInvoicesPage,
   getInvoicesAll,
@@ -13,13 +14,10 @@ import InvoiceModal from '../components/InvoiceModal';
 import InvoiceTraceModal from '../components/InvoiceTraceModal';
 import UploadModal from '../components/UploadModal';
 import Navbar from '../components/Navbar';
+import { localeFromLanguage } from '../utils/locale';
 import './InvoicesPage.css';
 
-const STATUS_LABELS = {
-  pendiente: 'Pendiente',
-  pagada: 'Pagada',
-  vencida: 'Vencida',
-};
+const STATUS_LABELS = { pendiente: 'pending', pagada: 'paid', vencida: 'overdue' };
 
 const STATUS_COLORS = {
   pendiente: 'badge-pendiente',
@@ -41,8 +39,8 @@ const DIAN_LABELS = {
 
 const VIEW_STORAGE_KEY = 'sgf-invoices-view';
 
-function formatCurrency(amount) {
-  return new Intl.NumberFormat('es-CO', {
+function formatCurrency(amount, locale) {
+  return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: 'COP',
     minimumFractionDigits: 0,
@@ -50,11 +48,11 @@ function formatCurrency(amount) {
   }).format(amount);
 }
 
-function formatDate(value) {
-  if (!value) return 'Sin fecha';
+function formatDate(value, locale, t) {
+  if (!value) return t('invoices:noDate');
   const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return 'Sin fecha';
-  return new Intl.DateTimeFormat('es-CO', {
+  if (Number.isNaN(d.getTime())) return t('invoices:noDate');
+  return new Intl.DateTimeFormat(locale, {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -84,6 +82,8 @@ function canModifyInvoice(user, inv) {
 }
 
 export default function InvoicesPage() {
+  const { t, i18n } = useTranslation(['invoices']);
+  const locale = localeFromLanguage(i18n.resolvedLanguage);
   const { user } = useAuth();
   const [viewMode, setViewMode] = useState(readStoredView);
 
@@ -137,7 +137,7 @@ export default function InvoicesPage() {
       setInvoices(resp.data.items);
       setHasNext(resp.data.has_next);
     } catch {
-      setError('Error al cargar facturas. Intente de nuevo.');
+      setError(t('invoices:loadingError'));
     } finally {
       setLoading(false);
     }
@@ -155,7 +155,7 @@ export default function InvoicesPage() {
       });
       setAllInvoices(items);
     } catch {
-      setError('Error al cargar facturas. Intente de nuevo.');
+      setError(t('invoices:loadingError'));
     } finally {
       setLoading(false);
     }
@@ -206,7 +206,7 @@ export default function InvoicesPage() {
   const canEdit = user?.role !== 'asistente';
 
   const handleDelete = async (id) => {
-    if (!window.confirm('¿Eliminar esta factura?')) return;
+    if (!window.confirm(t('invoices:deleteConfirm'))) return;
     setDeletingId(id);
     try {
       await deleteInvoice(id);
@@ -215,7 +215,7 @@ export default function InvoicesPage() {
       await fetchOverdue();
       await fetchDueSoon();
     } catch (err) {
-      alert(err.response?.data?.detail || 'Error al eliminar factura.');
+      alert(err.response?.data?.detail || t('invoices:deleteError'));
     } finally {
       setDeletingId(null);
     }
@@ -266,7 +266,7 @@ export default function InvoicesPage() {
       await fetchOverdue();
       await fetchDueSoon();
     } catch {
-      setError('Error al cargar facturas. Intente de nuevo.');
+      setError(t('invoices:loadingError'));
     } finally {
       setLoading(false);
     }
@@ -286,7 +286,7 @@ export default function InvoicesPage() {
       return;
     }
     if (!canModifyInvoice(user, inv)) {
-      alert('No tiene permiso para cambiar el estado de esta factura.');
+      alert(t('invoices:updateStatusDenied'));
       setDragInvoiceId(null);
       return;
     }
@@ -297,7 +297,7 @@ export default function InvoicesPage() {
       await fetchOverdue();
       await fetchDueSoon();
     } catch (err) {
-      alert(err.response?.data?.detail || 'No se pudo actualizar el estado.');
+      alert(err.response?.data?.detail || t('invoices:updateStatusError'));
     } finally {
       setStatusUpdatingId(null);
       setDragInvoiceId(null);
@@ -346,13 +346,13 @@ export default function InvoicesPage() {
       <button
         type="button"
         className="icon-btn trace"
-        title="Trazabilidad y auditoría"
+        title={t('invoices:traceTitle')}
         onClick={() => setTraceInvoice({ id: inv.id, invoice_number: inv.invoice_number })}
       >
         📜
       </button>
       {canEdit && (
-        <button type="button" className="icon-btn edit" title="Editar" onClick={() => openEdit(inv)}>
+        <button type="button" className="icon-btn edit" title={t('invoices:edit')} onClick={() => openEdit(inv)}>
           ✎
         </button>
       )}
@@ -360,7 +360,7 @@ export default function InvoicesPage() {
         <button
           type="button"
           className="icon-btn delete"
-          title="Eliminar"
+          title={t('invoices:delete')}
           disabled={deletingId === inv.id}
           onClick={() => handleDelete(inv.id)}
         >
@@ -376,18 +376,18 @@ export default function InvoicesPage() {
       <main className="invoices-main">
         <div className="invoices-header">
           <div>
-            <h2 className="invoices-title">📋 Facturas</h2>
+            <h2 className="invoices-title">📋 {t('invoices:title')}</h2>
             <p className="invoices-sub">
               {user?.organization?.name && <span className="invoices-org">{user.organization.name} · </span>}
-              {user?.role === 'asistente' ? 'Mostrando sus facturas' : 'Mostrando todas las facturas de la organización'}
+              {user?.role === 'asistente' ? t('invoices:showingMine') : t('invoices:showingAllOrg')}
             </p>
           </div>
           <div className="header-actions">
             <button type="button" className="btn btn-secondary" onClick={() => setUploadOpen(true)}>
-              📤 Cargar Documento
+              📤 {t('invoices:uploadDocument')}
             </button>
             <button type="button" className="btn btn-primary" onClick={openCreate}>
-              ＋ Nueva Factura
+              ＋ {t('invoices:newInvoice')}
             </button>
           </div>
         </div>
@@ -430,7 +430,7 @@ export default function InvoicesPage() {
               <span className="due-soon-banner-list">
                 {dueSoonInvoices.slice(0, 5).map((inv) => (
                   <span key={inv.id} className="due-soon-chip">
-                    {inv.invoice_number} — {inv.supplier} ({formatDate(inv.due_date)})
+                    {inv.invoice_number} — {inv.supplier} ({formatDate(inv.due_date, locale, t)})
                   </span>
                 ))}
                 {dueSoonInvoices.length > 5 && (
@@ -446,22 +446,22 @@ export default function InvoicesPage() {
 
         <div className="summary-row">
           <div className="summary-card summary-pendiente">
-            <span className="summary-label">Pendiente</span>
-            <span className="summary-value">{formatCurrency(totalPendiente)}</span>
+            <span className="summary-label">{t('invoices:pending')}</span>
+            <span className="summary-value">{formatCurrency(totalPendiente, locale)}</span>
           </div>
           <div className="summary-card summary-vencida">
-            <span className="summary-label">Vencida</span>
-            <span className="summary-value">{formatCurrency(totalVencida)}</span>
+            <span className="summary-label">{t('invoices:overdue')}</span>
+            <span className="summary-value">{formatCurrency(totalVencida, locale)}</span>
           </div>
           <div className="summary-card summary-pagada">
-            <span className="summary-label">Pagada</span>
-            <span className="summary-value">{formatCurrency(totalPagada)}</span>
+            <span className="summary-label">{t('invoices:paid')}</span>
+            <span className="summary-value">{formatCurrency(totalPagada, locale)}</span>
           </div>
         </div>
 
         <div className="filter-bar filter-bar-with-view">
           <div className="filter-bar-left">
-            <span className="filter-label">Filtrar:</span>
+            <span className="filter-label">{t('invoices:filter')}</span>
             {['', 'pendiente', 'pagada', 'vencida'].map((s) => (
               <button
                 key={s}
@@ -469,42 +469,42 @@ export default function InvoicesPage() {
                 className={`filter-btn ${statusFilter === s ? 'active' : ''}`}
                 onClick={() => setStatusFilter(s)}
               >
-                {s === '' ? 'Todas' : STATUS_LABELS[s]}
+                {s === '' ? t('invoices:all') : t(`invoices:${STATUS_LABELS[s]}`)}
               </button>
             ))}
             <input
               type="text"
               className="supplier-search"
-              placeholder="🔍 Buscar proveedor…"
+              placeholder={`🔍 ${t('invoices:searchSupplier')}`}
               value={supplierSearch}
               onChange={(e) => setSupplierSearch(e.target.value)}
             />
           </div>
-          <div className="view-mode-toggle" role="group" aria-label="Forma de ver facturas">
-            <span className="view-mode-label">Vista:</span>
+          <div className="view-mode-toggle" role="group" aria-label={t('invoices:view')}>
+            <span className="view-mode-label">{t('invoices:view')}</span>
             <button
               type="button"
               className={`view-mode-btn ${viewMode === 'grid' ? 'active' : ''}`}
               onClick={() => persistView('grid')}
-              title="Tarjetas (actual)"
+              title={t('invoices:cards')}
             >
-              Tarjetas
+              {t('invoices:cards')}
             </button>
             <button
               type="button"
               className={`view-mode-btn ${viewMode === 'kanban' ? 'active' : ''}`}
               onClick={() => persistView('kanban')}
-              title="Tablero Kanban"
+              title={t('invoices:kanban')}
             >
-              Kanban
+              {t('invoices:kanban')}
             </button>
             <button
               type="button"
               className={`view-mode-btn ${viewMode === 'compact' ? 'active' : ''}`}
               onClick={() => persistView('compact')}
-              title="Lista compacta"
+              title={t('invoices:list')}
             >
-              Lista
+              {t('invoices:list')}
             </button>
           </div>
         </div>
@@ -528,7 +528,7 @@ export default function InvoicesPage() {
               <rect x="3" y="3" width="18" height="18" rx="3" />
               <path d="M7 8h10M7 12h10M7 16h6" />
             </svg>
-            <p>No se encontraron facturas. ¡Cree una!</p>
+            <p>{t('invoices:empty')}</p>
           </div>
         ) : viewMode === 'grid' ? (
           <div className="invoices-grid">
@@ -538,7 +538,7 @@ export default function InvoicesPage() {
                 className={`invoice-card${inv.status === 'vencida' ? ' invoice-card-overdue' : ''}`}
               >
                 <div className="invoice-card-header">
-                  <span className={`badge ${STATUS_COLORS[inv.status]}`}>{STATUS_LABELS[inv.status]}</span>
+                <span className={`badge ${STATUS_COLORS[inv.status]}`}>{t(`invoices:${STATUS_LABELS[inv.status]}`)}</span>
                   {renderInvoiceActions(inv)}
                 </div>
 
@@ -549,14 +549,14 @@ export default function InvoicesPage() {
                   </p>
                 )}
                 <p className="invoice-supplier">🏢 {inv.supplier}</p>
-                <p className="invoice-amount">{formatCurrency(inv.amount)}</p>
+                <p className="invoice-amount">{formatCurrency(inv.amount, locale)}</p>
 
                 {inv.description && <p className="invoice-desc">{inv.description}</p>}
 
                 <div className="invoice-meta">
                   <span title="Registrado por">👤 {getUserName(inv.creator_id)}</span>
                   {inv.due_date && (
-                    <span title="Fecha de vencimiento">📅 {new Date(inv.due_date).toLocaleDateString('es-CO')}</span>
+                    <span title="Fecha de vencimiento">📅 {new Date(inv.due_date).toLocaleDateString(locale)}</span>
                   )}
                 </div>
 
@@ -585,7 +585,7 @@ export default function InvoicesPage() {
                 onDrop={(e) => handleDropOnColumn(st, e)}
               >
                 <div className="kanban-column-header">
-                  <span className={`badge ${STATUS_COLORS[st]}`}>{STATUS_LABELS[st]}</span>
+                  <span className={`badge ${STATUS_COLORS[st]}`}>{t(`invoices:${STATUS_LABELS[st]}`)}</span>
                   <span className="kanban-count">{allInvoices.filter((i) => i.status === st).length}</span>
                 </div>
                 <div className="kanban-column-body">
@@ -606,9 +606,9 @@ export default function InvoicesPage() {
                           {renderInvoiceActions(inv, { compact: true })}
                         </div>
                         <p className="kanban-card-supplier">{inv.supplier}</p>
-                        <p className="kanban-card-amount">{formatCurrency(inv.amount)}</p>
+                        <p className="kanban-card-amount">{formatCurrency(inv.amount, locale)}</p>
                         {inv.due_date && (
-                          <p className="kanban-card-due">📅 {new Date(inv.due_date).toLocaleDateString('es-CO')}</p>
+                          <p className="kanban-card-due">📅 {new Date(inv.due_date).toLocaleDateString(locale)}</p>
                         )}
                       </div>
                     ))}
@@ -617,21 +617,21 @@ export default function InvoicesPage() {
             ))}
           </div>
         ) : (
-          <ul className="invoice-compact-list" aria-label="Lista compacta de facturas">
+          <ul className="invoice-compact-list" aria-label={t('invoices:list')}>
             {sortedCompact.map((inv) => (
               <li
                 key={inv.id}
                 className={`invoice-compact-row${inv.status === 'vencida' ? ' invoice-compact-row-overdue' : ''}`}
               >
-                <span className={`invoice-compact-dot invoice-compact-dot-${inv.status}`} title={STATUS_LABELS[inv.status]} />
+                <span className={`invoice-compact-dot invoice-compact-dot-${inv.status}`} title={t(`invoices:${STATUS_LABELS[inv.status]}`)} />
                 <div className="invoice-compact-main">
                   <span className="invoice-compact-num">{inv.invoice_number}</span>
                   <span className="invoice-compact-sep">·</span>
                   <span className="invoice-compact-supplier">{inv.supplier}</span>
                 </div>
-                <span className="invoice-compact-amount">{formatCurrency(inv.amount)}</span>
+                <span className="invoice-compact-amount">{formatCurrency(inv.amount, locale)}</span>
                 {inv.due_date && (
-                  <span className="invoice-compact-date">{new Date(inv.due_date).toLocaleDateString('es-CO')}</span>
+                  <span className="invoice-compact-date">{new Date(inv.due_date).toLocaleDateString(locale)}</span>
                 )}
                 {renderInvoiceActions(inv, { compact: true })}
               </li>
@@ -642,18 +642,18 @@ export default function InvoicesPage() {
         {!loading && isGridView && (invoices.length > 0 || page > 0) && (
           <div className="pagination-bar">
             <button type="button" className="pagination-btn" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
-              ← Anterior
+              ← {t('invoices:previous')}
             </button>
-            <span className="pagination-info">Página {page + 1}</span>
+            <span className="pagination-info">{t('invoices:page')} {page + 1}</span>
             <button type="button" className="pagination-btn" disabled={!hasNext} onClick={() => setPage((p) => p + 1)}>
-              Siguiente →
+              {t('invoices:next')} →
             </button>
           </div>
         )}
 
         {!loading && !isGridView && allInvoices.length > 0 && (
           <p className="list-footnote">
-            Mostrando {allInvoices.length} factura{allInvoices.length !== 1 ? 's' : ''} (filtros actuales).
+            {t('invoices:listSummary', { count: allInvoices.length })}
           </p>
         )}
       </main>

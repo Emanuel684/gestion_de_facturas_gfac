@@ -1,0 +1,12 @@
+{
+  "title": "Traceability",
+  "invoice": "Invoice {{number}}",
+  "id": "ID {{id}}",
+  "downloadJson": "Download JSON",
+  "downloadExcel": "Download Excel",
+  "generating": "Generating...",
+  "loading": "Loading events...",
+  "empty": "No events found.",
+  "userActor": "User #{{id}}",
+  "genericError": "Something went wrong."
+}

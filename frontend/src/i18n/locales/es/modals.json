@@ -1,0 +1,12 @@
+{
+  "cancel": "Cancelar",
+  "close": "Cerrar",
+  "saving": "Guardando...",
+  "saveChanges": "Guardar cambios",
+  "processing": "Procesando...",
+  "createUser": "Crear usuario",
+  "editUser": "Editar usuario",
+  "newUser": "Nuevo usuario",
+  "extractData": "Extraer datos",
+  "uploadInvoiceDoc": "Cargar documento de factura"
+}

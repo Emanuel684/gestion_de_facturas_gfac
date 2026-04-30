@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Navbar from '../components/Navbar';
 import { listOrganizations, exportPlatformReport, getPlatformDashboard } from '../api';
 import { DashboardChartsGrid } from '../components/charts/DashboardCharts';
@@ -24,6 +25,7 @@ function triggerDownload(blob, fallbackName) {
 }
 
 export default function PlatformReportsPage() {
+  const { t } = useTranslation(['platform', 'common', 'reports']);
   const [orgs, setOrgs] = useState([]);
   const [orgId, setOrgId] = useState('');
   const [dateFrom, setDateFrom] = useState('');
@@ -39,7 +41,7 @@ export default function PlatformReportsPage() {
   useEffect(() => {
     listOrganizations()
       .then((r) => setOrgs(r.data || []))
-      .catch(() => setError('No se pudieron cargar las organizaciones.'));
+      .catch(() => setError(t('platform:loadOrgError')));
   }, []);
 
   const loadCharts = useCallback(async () => {
@@ -57,7 +59,7 @@ export default function PlatformReportsPage() {
       const r = await getPlatformDashboard(Number(orgId), params);
       setStats(r.data);
     } catch {
-      setChartError('No se pudieron cargar los gráficos.');
+      setChartError(t('platform:loadChartsError'));
       setStats(null);
     } finally {
       setLoadingCharts(false);
@@ -85,7 +87,7 @@ export default function PlatformReportsPage() {
 
   const download = async (format) => {
     if (!orgId) {
-      setError('Seleccione una organización.');
+      setError(t('platform:selectOrg'));
       return;
     }
     setError('');
@@ -98,7 +100,7 @@ export default function PlatformReportsPage() {
       const name = m ? m[1].trim() : `facturas.${format === 'xlsx' ? 'xlsx' : 'pdf'}`;
       triggerDownload(blob, name);
     } catch {
-      setError('No se pudo generar el archivo. Intente de nuevo.');
+      setError(t('platform:downloadError'));
     } finally {
       setLoading(null);
     }
@@ -109,7 +111,7 @@ export default function PlatformReportsPage() {
       <Navbar />
       <main className="sgf-page">
         <header className="sgf-page-header">
-          <h1 className="sgf-page-title">Reportes (plataforma)</h1>
+          <h1 className="sgf-page-title">{t('platform:reportsTitle')}</h1>
           <p className="sgf-page-sub">Exporte y visualice todas las facturas de la organización elegida.</p>
           <Link to="/app/plataforma/dashboard" className="sgf-page-link">
             ← Volver al dashboard
@@ -117,11 +119,11 @@ export default function PlatformReportsPage() {
         </header>
 
         <div className="sgf-panel sgf-panel--flush">
-          <h2 className="sgf-panel-title">Filtros y descarga</h2>
+          <h2 className="sgf-panel-title">{t('platform:filtersDownload')}</h2>
           <DateRangePresetBar activeKey={presetActive} onSelect={applyPreset} />
           <div className="sgf-toolbar sgf-toolbar--spaced">
             <div className="sgf-field">
-              <span className="sgf-field-label">Organización</span>
+              <span className="sgf-field-label">{t('platform:orgLabel')}</span>
               <select className="sgf-select" value={orgId} onChange={(e) => setOrgId(e.target.value)}>
                 <option value="">— Seleccione —</option>
                 {orgs.map((o) => (
@@ -132,7 +134,7 @@ export default function PlatformReportsPage() {
               </select>
             </div>
             <div className="sgf-field">
-              <span className="sgf-field-label">Desde</span>
+              <span className="sgf-field-label">{t('common:from')}</span>
               <input
                 className="sgf-input"
                 type="date"
@@ -144,7 +146,7 @@ export default function PlatformReportsPage() {
               />
             </div>
             <div className="sgf-field">
-              <span className="sgf-field-label">Hasta</span>
+              <span className="sgf-field-label">{t('common:to')}</span>
               <input
                 className="sgf-input"
                 type="date"
@@ -156,7 +158,7 @@ export default function PlatformReportsPage() {
               />
             </div>
             <div className="sgf-field">
-              <span className="sgf-field-label">Estado</span>
+              <span className="sgf-field-label">{t('reports:status')}</span>
               <select className="sgf-select" value={status} onChange={(e) => setStatus(e.target.value)}>
                 {STATUSES.map((s) => (
                   <option key={s.value || 'all'} value={s.value}>
@@ -172,7 +174,7 @@ export default function PlatformReportsPage() {
                 disabled={loading || !orgId}
                 onClick={() => download('xlsx')}
               >
-                {loading === 'xlsx' ? 'Generando…' : 'Descargar Excel'}
+                {loading === 'xlsx' ? t('platform:generating') : t('platform:downloadExcel')}
               </button>
               <button
                 type="button"
@@ -180,7 +182,7 @@ export default function PlatformReportsPage() {
                 disabled={loading || !orgId}
                 onClick={() => download('pdf')}
               >
-                {loading === 'pdf' ? 'Generando…' : 'Descargar PDF'}
+                {loading === 'pdf' ? t('platform:generating') : t('platform:downloadPdf')}
               </button>
             </div>
           </div>
@@ -191,7 +193,7 @@ export default function PlatformReportsPage() {
         {orgId && (
           <div className="sgf-panel">
             <div className="sgf-section-head sgf-section-head--tight">
-              <h2 className="sgf-section-title">Vista previa (gráficos)</h2>
+              <h2 className="sgf-section-title">{t('platform:previewCharts')}</h2>
               <p className="sgf-section-sub">Mismos criterios que los archivos exportados</p>
             </div>
             {chartError && <div className="alert alert-error">{chartError}</div>}
@@ -200,7 +202,7 @@ export default function PlatformReportsPage() {
               <>
                 <DashboardChartsGrid stats={stats} />
                 {stats.total_invoices === 0 && (
-                  <p className="sgf-empty-hint">Sin datos para graficar con los filtros actuales.</p>
+                  <p className="sgf-empty-hint">{t('platform:noGraphData')}</p>
                 )}
               </>
             )}

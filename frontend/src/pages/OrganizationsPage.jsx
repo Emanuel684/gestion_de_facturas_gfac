@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { listOrganizations, createOrganization, deleteOrganization } from '../api';
 import Navbar from '../components/Navbar';
 import './OrganizationsPage.css';
@@ -11,6 +12,7 @@ const PLAN_OPTIONS = [
 ];
 
 export default function OrganizationsPage() {
+  const { t } = useTranslation(['organizations']);
   const PAGE_SIZE = 6;
   const [orgs, setOrgs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,7 +37,7 @@ export default function OrganizationsPage() {
       const r = await listOrganizations();
       setOrgs(r.data);
     } catch {
-      setError('No se pudieron cargar las organizaciones.');
+      setError(t('organizations:loadError'));
     } finally {
       setLoading(false);
     }
@@ -69,7 +71,7 @@ export default function OrganizationsPage() {
       await fetchOrgs();
     } catch (err) {
       const d = err.response?.data?.detail;
-      setError(typeof d === 'string' ? d : 'Error al crear la organización.');
+      setError(typeof d === 'string' ? d : t('organizations:createError'));
     } finally {
       setCreating(false);
     }
@@ -110,7 +112,7 @@ export default function OrganizationsPage() {
       await fetchOrgs();
     } catch (err) {
       const d = err.response?.data?.detail;
-      setError(typeof d === 'string' ? d : 'No se pudo eliminar la organización.');
+      setError(typeof d === 'string' ? d : t('organizations:deleteError'));
     } finally {
       setDeletingId(null);
     }
@@ -121,22 +123,22 @@ export default function OrganizationsPage() {
       <Navbar />
       <main className="orgs-main">
         <div className="orgs-header">
-          <h1>Organizaciones</h1>
-          <p className="orgs-sub">Cree espacios aislados para cada cliente. Cada uno tendrá sus usuarios y facturas.</p>
+          <h1>{t('organizations:title')}</h1>
+          <p className="orgs-sub">{t('organizations:subtitle')}</p>
         </div>
 
         {error && <div className="alert alert-error">{error}</div>}
 
         <section className="orgs-form-section">
-          <h2>Nueva organización</h2>
+          <h2>{t('organizations:newOrg')}</h2>
           <form className="orgs-form" onSubmit={handleCreate}>
             <div className="orgs-form-row">
               <div className="form-group">
-                <label>Nombre de la empresa</label>
-                <input value={form.name} onChange={set('name')} required placeholder="Ej. Acme SAS" />
+                <label>{t('organizations:orgName')}</label>
+                <input value={form.name} onChange={set('name')} required placeholder="Acme SAS" />
               </div>
               <div className="form-group">
-                <label>Slug (URL / login)</label>
+                <label>{t('organizations:slug')}</label>
                 <input
                   value={form.slug}
                   onChange={set('slug')}
@@ -147,7 +149,7 @@ export default function OrganizationsPage() {
                 />
               </div>
               <div className="form-group">
-                <label>Plan</label>
+                <label>{t('organizations:plan')}</label>
                 <select value={form.plan_tier} onChange={set('plan_tier')}>
                   {PLAN_OPTIONS.map((p) => (
                     <option key={p.value} value={p.value}>{p.label}</option>
@@ -155,39 +157,39 @@ export default function OrganizationsPage() {
                 </select>
               </div>
             </div>
-            <p className="orgs-admin-hint">Primer administrador de la organización (acceso a facturas y usuarios de ese cliente):</p>
+            <p className="orgs-admin-hint">{t('organizations:adminHint')}</p>
             <div className="orgs-form-row">
               <div className="form-group">
-                <label>Usuario admin</label>
+                <label>{t('organizations:adminUser')}</label>
                 <input value={form.admin_username} onChange={set('admin_username')} required minLength={3} />
               </div>
               <div className="form-group">
-                <label>Email</label>
+                <label>{t('organizations:email')}</label>
                 <input type="email" value={form.admin_email} onChange={set('admin_email')} required />
               </div>
               <div className="form-group">
-                <label>Contraseña</label>
+                <label>{t('organizations:password')}</label>
                 <input type="password" value={form.admin_password} onChange={set('admin_password')} required minLength={6} />
               </div>
             </div>
             <button type="submit" className="btn btn-primary" disabled={creating}>
-              {creating ? 'Creando…' : 'Crear organización'}
+              {creating ? t('organizations:creating') : t('organizations:create')}
             </button>
           </form>
         </section>
 
         <section className="orgs-list-section">
-          <h2>Organizaciones registradas</h2>
+          <h2>{t('organizations:registered')}</h2>
           <div className="orgs-list-toolbar">
             <input
               className="orgs-search"
               type="text"
-              placeholder="Buscar por nombre de organización..."
+              placeholder={t('organizations:search')}
               value={searchName}
               onChange={(e) => setSearchName(e.target.value)}
             />
             <span className="orgs-count">
-              {filteredOrgs.length} resultado{filteredOrgs.length !== 1 ? 's' : ''}
+              {t('organizations:resultCount', { count: filteredOrgs.length })}
             </span>
           </div>
           {loading ? (
@@ -212,7 +214,7 @@ export default function OrganizationsPage() {
                       to={`/app/organizaciones/${o.id}`}
                       title="Editar organización y administrar sus usuarios/facturas"
                     >
-                      Gestionar
+                      {t('organizations:manage')}
                     </Link>
                     <button
                       type="button"
@@ -221,7 +223,7 @@ export default function OrganizationsPage() {
                       title="Eliminar organización y todos sus datos"
                       onClick={() => handleDelete(o)}
                     >
-                      {deletingId === o.id ? 'Eliminando…' : 'Eliminar'}
+                      {deletingId === o.id ? t('organizations:deleting') : t('organizations:delete')}
                     </button>
                   </div>
                 </li>
@@ -234,10 +236,10 @@ export default function OrganizationsPage() {
                   disabled={page === 0}
                   onClick={() => setPage((p) => Math.max(0, p - 1))}
                 >
-                  Anterior
+                  {t('organizations:previous')}
                 </button>
                 <span className="orgs-page-info">
-                  Página {page + 1} de {totalPages}
+                  {t('organizations:pageOf', { page: page + 1, total: totalPages })}
                 </span>
                 <button
                   type="button"
@@ -245,7 +247,7 @@ export default function OrganizationsPage() {
                   disabled={page >= totalPages - 1}
                   onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                 >
-                  Siguiente
+                  {t('organizations:next')}
                 </button>
               </div>
             </>

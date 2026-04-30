@@ -1,0 +1,12 @@
+{
+  "cancel": "Cancel",
+  "close": "Close",
+  "saving": "Saving...",
+  "saveChanges": "Save changes",
+  "processing": "Processing...",
+  "createUser": "Create user",
+  "editUser": "Edit user",
+  "newUser": "New user",
+  "extractData": "Extract data",
+  "uploadInvoiceDoc": "Upload invoice document"
+}

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { uploadInvoiceFile } from '../api';
 import './UploadModal.css';
 
@@ -12,6 +13,7 @@ function formatFileSize(bytes) {
 }
 
 export default function UploadModal({ onExtracted, onClose }) {
+  const { t } = useTranslation(['modals']);
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -39,13 +41,13 @@ export default function UploadModal({ onExtracted, onClose }) {
 
   const validateFile = (f) => {
     if (f.size > MAX_SIZE_MB * 1024 * 1024) {
-      setError(`El archivo excede el límite de ${MAX_SIZE_MB} MB.`);
+      setError(`Max ${MAX_SIZE_MB} MB.`);
       return false;
     }
     const ext = f.name.split('.').pop()?.toLowerCase();
     const validExts = ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'tiff', 'tif', 'pdf', 'docx'];
     if (!validExts.includes(ext)) {
-      setError('Formato no soportado. Use: imágenes, PDF o DOCX.');
+      setError('Unsupported format. Use image, PDF or DOCX.');
       return false;
     }
     return true;
@@ -77,7 +79,7 @@ export default function UploadModal({ onExtracted, onClose }) {
       onExtracted(resp.data);
     } catch (err) {
       const detail = err.response?.data?.detail;
-      setError(typeof detail === 'string' ? detail : 'Error al procesar el archivo.');
+      setError(typeof detail === 'string' ? detail : 'Error processing file.');
     } finally {
       setLoading(false);
     }
@@ -96,8 +98,8 @@ export default function UploadModal({ onExtracted, onClose }) {
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal-box upload-modal-box">
         <div className="modal-header">
-          <h2>📤 Cargar Documento de Factura</h2>
-          <button className="modal-close" onClick={onClose} aria-label="Cerrar">✕</button>
+          <h2>📤 {t('modals:uploadInvoiceDoc')}</h2>
+          <button className="modal-close" onClick={onClose} aria-label={t('modals:close')}>✕</button>
         </div>
 
         <div className="upload-body">
@@ -162,7 +164,7 @@ export default function UploadModal({ onExtracted, onClose }) {
 
           <div className="modal-footer">
             <button type="button" className="btn btn-secondary" onClick={onClose} disabled={loading}>
-              Cancelar
+              {t('modals:cancel')}
             </button>
             <button
               className="btn btn-primary"
@@ -172,10 +174,10 @@ export default function UploadModal({ onExtracted, onClose }) {
               {loading ? (
                 <>
                   <span className="btn-spinner" />
-                  Procesando…
+                  {t('modals:processing')}
                 </>
               ) : (
-                '📤 Extraer Datos'
+                `📤 ${t('modals:extractData')}`
               )}
             </button>
           </div>

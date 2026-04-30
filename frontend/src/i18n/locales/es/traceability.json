@@ -1,0 +1,12 @@
+{
+  "title": "Trazabilidad",
+  "invoice": "Factura {{number}}",
+  "id": "ID {{id}}",
+  "downloadJson": "Descargar JSON",
+  "downloadExcel": "Descargar Excel",
+  "generating": "Generando...",
+  "loading": "Cargando eventos...",
+  "empty": "No hay eventos registrados.",
+  "userActor": "Usuario #{{id}}",
+  "genericError": "Ocurrió un error."
+}
