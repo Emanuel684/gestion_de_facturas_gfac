@@ -528,7 +528,7 @@ export default function InvoiceModal({
                     {u.username}
                     {form.assigned_user_ids.includes(u.id) && ' ✓'}
                   </button>
-                )}
+                ))}
               </div>
             </div>
           )}
