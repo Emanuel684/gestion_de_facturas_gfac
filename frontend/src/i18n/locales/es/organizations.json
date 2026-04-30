@@ -23,5 +23,23 @@
   "pageOf": "Página {{page}} de {{total}}",
   "loadError": "No se pudieron cargar las organizaciones.",
   "createError": "Error al crear la organización.",
-  "deleteError": "No se pudo eliminar la organización."
+  "deleteError": "No se pudo eliminar la organización.",
+  "detail": {
+    "title": "Gestión de organización",
+    "back": "Volver",
+    "invoicesAndStatus": "Facturas y estado",
+    "status": "Estado",
+    "supplier": "Proveedor",
+    "searchSupplier": "Buscar proveedor",
+    "number": "Nro",
+    "amount": "Monto",
+    "due": "Vence",
+    "actions": "Acciones",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "deleting": "Eliminando...",
+    "noInvoices": "Sin facturas con esos filtros.",
+    "deleteInvoiceConfirm": "¿Eliminar factura {{invoice}}?",
+    "deleteInvoiceError": "No se pudo eliminar la factura."
+  }
 }

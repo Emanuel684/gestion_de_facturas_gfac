@@ -1,14 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
+  deleteOrganizationInvoice,
   deleteOrganizationUser,
   getOrganization,
   getOrganizationInvoices,
   getOrganizationUsers,
+  updateOrganizationInvoice,
   updateOrganization,
   updateOrganizationUser,
 } from '../api';
+import InvoiceModal from '../components/InvoiceModal';
 import Navbar from '../components/Navbar';
+import { useTranslation } from 'react-i18next';
+import { localeFromLanguage } from '../utils/locale';
 import './OrganizationDetailPage.css';
 
 const PLAN_OPTIONS = [
@@ -30,11 +35,13 @@ const STATUS_OPTIONS = [
   { value: 'vencida', label: 'Vencida' },
 ];
 
-function fmtMoney(amount) {
-  return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(amount);
+function fmtMoney(amount, locale) {
+  return new Intl.NumberFormat(locale, { style: 'currency', currency: 'COP' }).format(amount);
 }
 
 export default function OrganizationDetailPage() {
+  const { t, i18n } = useTranslation(['organizations', 'common']);
+  const locale = localeFromLanguage(i18n.resolvedLanguage);
   const { organizationId } = useParams();
   const orgId = Number(organizationId);
 
@@ -53,6 +60,8 @@ export default function OrganizationDetailPage() {
   const [invoices, setInvoices] = useState([]);
   const [invoiceStatus, setInvoiceStatus] = useState('');
   const [invoiceSupplier, setInvoiceSupplier] = useState('');
+  const [editingInvoice, setEditingInvoice] = useState(null);
+  const [deletingInvoiceId, setDeletingInvoiceId] = useState(null);
 
   const fetchUsers = useCallback(async () => {
     const r = await getOrganizationUsers(orgId, showInactiveUsers);
@@ -159,17 +168,37 @@ export default function OrganizationDetailPage() {
     }
   };
 
+  const handleDeleteInvoice = async (inv) => {
+    if (!window.confirm(t('organizations:detail.deleteInvoiceConfirm', { invoice: inv.invoice_number }))) return;
+    setDeletingInvoiceId(inv.id);
+    setError('');
+    try {
+      await deleteOrganizationInvoice(orgId, inv.id);
+      await fetchInvoices();
+    } catch (err) {
+      const d = err.response?.data?.detail;
+      setError(typeof d === 'string' ? d : t('organizations:detail.deleteInvoiceError'));
+    } finally {
+      setDeletingInvoiceId(null);
+    }
+  };
+
+  const handleInvoiceSaved = async () => {
+    setEditingInvoice(null);
+    await fetchInvoices();
+  };
+
   return (
     <>
       <Navbar />
       <main className="org-detail-main">
         <div className="org-detail-header">
           <div>
-            <h1>Gestion de organizacion</h1>
-            <p>{org ? `${org.name} (${org.slug})` : 'Cargando...'}</p>
+            <h1>{t('organizations:detail.title')}</h1>
+            <p>{org ? `${org.name} (${org.slug})` : t('common:loading')}</p>
           </div>
           <Link className="btn btn-secondary" to="/app/organizaciones">
-            Volver
+            {t('organizations:detail.back')}
           </Link>
         </div>
 
@@ -267,11 +296,11 @@ export default function OrganizationDetailPage() {
 
             <section className="org-detail-card">
               <div className="org-detail-section-head">
-                <h2>Facturas y estado</h2>
+              <h2>{t('organizations:detail.invoicesAndStatus')}</h2>
               </div>
               <div className="org-detail-grid">
                 <div className="form-group">
-                  <label>Estado</label>
+                  <label>{t('organizations:detail.status')}</label>
                   <select value={invoiceStatus} onChange={(e) => setInvoiceStatus(e.target.value)}>
                     {STATUS_OPTIONS.map((s) => (
                       <option key={s.value || 'all'} value={s.value}>{s.label}</option>
@@ -279,11 +308,11 @@ export default function OrganizationDetailPage() {
                   </select>
                 </div>
                 <div className="form-group">
-                  <label>Proveedor</label>
+                  <label>{t('organizations:detail.supplier')}</label>
                   <input
                     value={invoiceSupplier}
                     onChange={(e) => setInvoiceSupplier(e.target.value)}
-                    placeholder="Buscar proveedor"
+                    placeholder={t('organizations:detail.searchSupplier')}
                   />
                 </div>
               </div>
@@ -291,11 +320,12 @@ export default function OrganizationDetailPage() {
                 <table className="org-invoices-table">
                   <thead>
                     <tr>
-                      <th>Nro</th>
-                      <th>Proveedor</th>
-                      <th>Estado</th>
-                      <th>Monto</th>
-                      <th>Vence</th>
+                      <th>{t('organizations:detail.number')}</th>
+                      <th>{t('organizations:detail.supplier')}</th>
+                      <th>{t('organizations:detail.status')}</th>
+                      <th>{t('organizations:detail.amount')}</th>
+                      <th>{t('organizations:detail.due')}</th>
+                      <th>{t('organizations:detail.actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -304,13 +334,34 @@ export default function OrganizationDetailPage() {
                         <td>{inv.invoice_number}</td>
                         <td>{inv.supplier}</td>
                         <td>{inv.status}</td>
-                        <td>{fmtMoney(inv.amount)}</td>
-                        <td>{inv.due_date ? new Date(inv.due_date).toLocaleDateString('es-CO') : '—'}</td>
+                        <td>{fmtMoney(inv.amount, locale)}</td>
+                        <td>{inv.due_date ? new Date(inv.due_date).toLocaleDateString(locale) : '—'}</td>
+                        <td>
+                          <div className="org-invoice-actions">
+                            <button
+                              className="btn btn-secondary btn-sm"
+                              type="button"
+                              onClick={() => setEditingInvoice(inv)}
+                            >
+                              {t('organizations:detail.edit')}
+                            </button>
+                            <button
+                              className="btn btn-secondary btn-sm"
+                              type="button"
+                              disabled={deletingInvoiceId === inv.id}
+                              onClick={() => handleDeleteInvoice(inv)}
+                            >
+                              {deletingInvoiceId === inv.id
+                                ? t('organizations:detail.deleting')
+                                : t('organizations:detail.delete')}
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     ))}
                     {invoices.length === 0 && (
                       <tr>
-                        <td colSpan={5} className="org-detail-muted">Sin facturas con esos filtros.</td>
+                        <td colSpan={6} className="org-detail-muted">{t('organizations:detail.noInvoices')}</td>
                       </tr>
                     )}
                   </tbody>
@@ -389,6 +440,15 @@ export default function OrganizationDetailPage() {
             </form>
           </div>
         </div>
+      )}
+      {editingInvoice && (
+        <InvoiceModal
+          invoice={editingInvoice}
+          users={users.filter((u) => u.is_active)}
+          updateHandler={(invoiceId, data) => updateOrganizationInvoice(orgId, invoiceId, data)}
+          onSuccess={handleInvoiceSaved}
+          onClose={() => setEditingInvoice(null)}
+        />
       )}
     </>
   );

@@ -23,5 +23,23 @@
   "pageOf": "Page {{page}} of {{total}}",
   "loadError": "Could not load organizations.",
   "createError": "Could not create organization.",
-  "deleteError": "Could not delete organization."
+  "deleteError": "Could not delete organization.",
+  "detail": {
+    "title": "Organization management",
+    "back": "Back",
+    "invoicesAndStatus": "Invoices and status",
+    "status": "Status",
+    "supplier": "Supplier",
+    "searchSupplier": "Search supplier",
+    "number": "Number",
+    "amount": "Amount",
+    "due": "Due",
+    "actions": "Actions",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleting": "Deleting...",
+    "noInvoices": "No invoices with those filters.",
+    "deleteInvoiceConfirm": "Delete invoice {{invoice}}?",
+    "deleteInvoiceError": "Could not delete the invoice."
+  }
 }

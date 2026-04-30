@@ -44,7 +44,15 @@ function numOrEmpty(v) {
   return Number.isFinite(n) ? String(n) : '';
 }
 
-export default function InvoiceModal({ invoice, users, onSuccess, onClose, prefill }) {
+export default function InvoiceModal({
+  invoice,
+  users,
+  onSuccess,
+  onClose,
+  prefill,
+  createHandler = createInvoice,
+  updateHandler = updateInvoice,
+}) {
   const isEdit = Boolean(invoice);
   const docLocked = isEdit && invoice?.document_locked;
 
@@ -224,8 +232,8 @@ export default function InvoiceModal({ invoice, users, onSuccess, onClose, prefi
     const payload = buildPayload();
     try {
       const resp = isEdit
-        ? await updateInvoice(invoice.id, payload)
-        : await createInvoice(payload);
+        ? await updateHandler(invoice.id, payload)
+        : await createHandler(payload);
       await Promise.resolve(onSuccess?.(resp.data));
     } catch (err) {
       setError(formatApiError(err));

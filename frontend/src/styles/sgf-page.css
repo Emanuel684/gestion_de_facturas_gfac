@@ -146,13 +146,13 @@ main.sgf-page {
 }
 
 .sgf-kpi--teal {
-  background: linear-gradient(135deg, #f0fdfa 0%, #fff 100%);
-  border-color: #99f6e4;
+  background: var(--color-kpi-teal-bg);
+  border-color: var(--color-kpi-teal-border);
 }
 
 .sgf-kpi--amber {
-  background: #fffbeb;
-  border-color: #fde68a;
+  background: var(--color-kpi-amber-bg);
+  border-color: var(--color-kpi-amber-border);
 }
 
 .sgf-kpi-label {
@@ -231,7 +231,12 @@ main.sgf-page {
 .sgf-skeleton-block {
   height: 96px;
   border-radius: 12px;
-  background: linear-gradient(90deg, #f3f4f6 0%, #e5e7eb 50%, #f3f4f6 100%);
+  background: linear-gradient(
+    90deg,
+    var(--color-skeleton-start) 0%,
+    var(--color-skeleton-mid) 50%,
+    var(--color-skeleton-start) 100%
+  );
   background-size: 200% 100%;
   animation: sgf-sk 1.2s ease-in-out infinite;
 }
@@ -248,7 +253,12 @@ main.sgf-page {
 .sgf-skeleton-chart {
   height: 280px;
   border-radius: 12px;
-  background: linear-gradient(90deg, #f3f4f6 0%, #e5e7eb 50%, #f3f4f6 100%);
+  background: linear-gradient(
+    90deg,
+    var(--color-skeleton-start) 0%,
+    var(--color-skeleton-mid) 50%,
+    var(--color-skeleton-start) 100%
+  );
   background-size: 200% 100%;
   animation: sgf-sk 1.2s ease-in-out infinite;
 }

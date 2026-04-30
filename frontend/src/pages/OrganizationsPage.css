@@ -7,11 +7,11 @@
 .orgs-header h1 {
   font-size: 1.6rem;
   font-weight: 800;
-  color: #134e4a;
+  color: var(--color-text);
 }
 
 .orgs-sub {
-  color: #64748b;
+  color: var(--color-text-muted);
   margin-top: 0.35rem;
   font-size: 0.95rem;
 }
@@ -19,8 +19,8 @@
 .orgs-form-section,
 .orgs-list-section {
   margin-top: 2rem;
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   padding: 1.5rem;
 }
@@ -29,7 +29,7 @@
 .orgs-list-section h2 {
   font-size: 1.1rem;
   margin-bottom: 1rem;
-  color: #0f172a;
+  color: var(--color-text);
 }
 
 .orgs-form-row {
@@ -43,7 +43,7 @@
   display: block;
   font-size: 0.8rem;
   font-weight: 600;
-  color: #475569;
+  color: var(--color-text-muted);
   margin-bottom: 0.25rem;
 }
 
@@ -51,19 +51,21 @@
 .orgs-form .form-group select {
   width: 100%;
   padding: 0.5rem 0.65rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text);
   border-radius: 8px;
   font-size: 1rem;
 }
 
 .orgs-admin-hint {
   font-size: 0.85rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   margin: 0.5rem 0 1rem;
 }
 
 .orgs-empty {
-  color: #94a3b8;
+  color: var(--color-text-subtle);
   font-size: 0.95rem;
 }
 
@@ -79,19 +81,21 @@
 .orgs-search {
   width: min(420px, 100%);
   padding: 0.55rem 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text);
   border-radius: 8px;
   font-size: 1rem;
 }
 
 .orgs-search:focus {
   outline: none;
-  border-color: #0e7490;
-  box-shadow: 0 0 0 3px rgba(14, 116, 144, 0.1);
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
 }
 
 .orgs-count {
-  color: #6b7280;
+  color: var(--color-text-muted);
   font-size: 0.85rem;
   font-weight: 600;
 }
@@ -112,9 +116,9 @@
   gap: 1rem;
   flex-wrap: wrap;
   padding: 0.85rem 1rem;
-  background: #f8fafc;
+  background: var(--color-surface-2);
   border-radius: 10px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
 }
 
 .orgs-card-main {
@@ -134,16 +138,16 @@
   font-size: 0.8rem;
   font-weight: 600;
   border-radius: 8px;
-  border: 1px solid #fecaca;
-  background: #fff;
-  color: #b91c1c;
+  border: 1px solid color-mix(in srgb, var(--color-danger) 30%, var(--color-border));
+  background: var(--color-surface);
+  color: var(--color-danger);
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
 }
 
 .btn-org-delete:hover:not(:disabled) {
-  background: #fef2f2;
-  border-color: #f87171;
+  background: color-mix(in srgb, var(--color-danger) 12%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-danger) 55%, var(--color-border));
 }
 
 .btn-org-delete:disabled {
@@ -153,18 +157,19 @@
 
 .orgs-card strong {
   display: block;
-  color: #0f172a;
+  color: var(--color-text);
 }
 
 .orgs-slug {
   display: block;
   font-size: 0.8rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   margin-top: 0.2rem;
 }
 
 .orgs-slug code {
-  background: #e2e8f0;
+  background: var(--color-bg-soft);
+  color: var(--color-text);
   padding: 0.1rem 0.35rem;
   border-radius: 4px;
 }
@@ -174,8 +179,8 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #0e7490;
-  background: #ecfeff;
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary-soft) 86%, var(--color-surface));
   padding: 0.35rem 0.65rem;
   border-radius: 999px;
 }
@@ -192,7 +197,7 @@
 .orgs-page-info {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--color-text-muted);
 }
 
 @media (max-width: 640px) {

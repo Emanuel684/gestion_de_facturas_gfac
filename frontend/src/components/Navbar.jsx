@@ -11,18 +11,18 @@ import {
 } from '../api';
 import './Navbar.css';
 
-const ROLE_COLORS = {
-  plataforma_admin: '#7c2d12',
-  administrador: '#059669',
-  contador: '#0e7490',
-  asistente: '#7c3aed',
-};
-
 const ROLE_LABELS = {
   plataforma_admin: 'rolePlatform',
   administrador: 'roleAdmin',
   contador: 'roleAccountant',
   asistente: 'roleAssistant',
+};
+
+const ROLE_CLASSNAMES = {
+  plataforma_admin: 'role-platform',
+  administrador: 'role-admin',
+  contador: 'role-accountant',
+  asistente: 'role-assistant',
 };
 
 export default function Navbar() {
@@ -140,10 +140,10 @@ export default function Navbar() {
         onClick={closeMenu}
       >
         <svg width="26" height="26" viewBox="0 0 40 40" fill="none" aria-hidden>
-          <rect width="40" height="40" rx="10" fill="#0e7490" />
+          <rect width="40" height="40" rx="10" fill="var(--color-primary)" />
           <path
             d="M10 14h20M10 20h20M10 26h14"
-            stroke="white"
+            stroke="var(--color-on-primary)"
             strokeWidth="2.5"
             strokeLinecap="round"
           />
@@ -272,8 +272,7 @@ export default function Navbar() {
               )}
               <span className="navbar-user">
                 <span
-                  className="role-badge"
-                  style={{ background: ROLE_COLORS[user.role] || '#6b7280' }}
+                  className={`role-badge ${ROLE_CLASSNAMES[user.role] ?? ''}`}
                 >
                   {ROLE_LABELS[user.role] ? t(`navbar:${ROLE_LABELS[user.role]}`) : user.role}
                 </span>

@@ -140,6 +140,12 @@ export const deleteOrganizationUser = (organizationId, userId) =>
 export const getOrganizationInvoices = (organizationId, params = {}) =>
   api.get(`/organizations/${organizationId}/invoices`, { params });
 
+export const updateOrganizationInvoice = (organizationId, invoiceId, data) =>
+  api.put(`/organizations/${organizationId}/invoices/${invoiceId}`, data);
+
+export const deleteOrganizationInvoice = (organizationId, invoiceId) =>
+  api.delete(`/organizations/${organizationId}/invoices/${invoiceId}`);
+
 // ── Public signup / mock checkout ────────────────────────────────────────────
 export const publicSignup = (data) => api.post('/public/signup', data);
 export const getPublicCheckout = (token) => api.get(`/public/checkout/${token}`);

@@ -109,8 +109,8 @@
   position: absolute;
   top: -6px;
   right: -8px;
-  background: #dc2626;
-  color: #fff;
+  background: var(--color-danger);
+  color: var(--color-on-danger);
   border-radius: 999px;
   font-size: 0.65rem;
   font-weight: 700;
@@ -129,7 +129,7 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 12px;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--color-shadow-elevated);
   padding: 0.6rem;
   z-index: 130;
 }
@@ -215,9 +215,25 @@
   border-radius: 20px;
   font-size: 0.7rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--color-surface);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+.role-badge.role-platform {
+  background: var(--color-role-platform);
+}
+
+.role-badge.role-admin {
+  background: var(--color-role-admin);
+}
+
+.role-badge.role-accountant {
+  background: var(--color-role-accountant);
+}
+
+.role-badge.role-assistant {
+  background: var(--color-role-assistant);
 }
 
 .navbar-menu-btn {
@@ -307,7 +323,7 @@
     justify-content: flex-start;
     padding: 1rem 1rem 2rem;
     background: var(--color-surface);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    box-shadow: var(--color-shadow-elevated);
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     transform: translateX(100%);
