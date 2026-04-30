@@ -27,13 +27,6 @@ body {
   flex-direction: column;
 }
 
-/* Solo landing: no usar `header` global o afecta dashboard/reportes (sgf-page-header). */
-header.landing-header {
-  background-color: #282c34;
-  padding: 1rem 2rem;
-  color: white;
-}
-
 main {
   flex: 1;
   padding: 2rem;

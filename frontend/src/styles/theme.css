@@ -296,6 +296,23 @@ select:focus,
   background: linear-gradient(135deg, #12304a 0%, #155e75 50%, #0f766e 100%);
 }
 
+html[data-theme='dark'] .landing-highlight-card {
+  background: linear-gradient(145deg, var(--color-surface) 0%, color-mix(in srgb, var(--color-primary-soft) 40%, var(--color-surface)) 100%);
+  border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+}
+
+html[data-theme='dark'] .landing-scope-in,
+html[data-theme='dark'] .landing-scope-out,
+html[data-theme='dark'] .landing-scope-deliver {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+html[data-theme='dark'] .landing-scope-in h3,
+html[data-theme='dark'] .landing-scope-out h3 {
+  color: var(--color-text);
+}
+
 .recharts-default-tooltip {
   background: var(--color-surface) !important;
   border-color: var(--color-border) !important;

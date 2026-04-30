@@ -1,6 +1,6 @@
 .landing {
   min-height: 100vh;
-  background: linear-gradient(180deg, #ecfeff 0%, #f8fafc 38%, #ffffff 100%);
+  background: linear-gradient(180deg, var(--color-bg) 0%, var(--color-surface-2) 38%, var(--color-surface) 100%);
   color: var(--color-text);
   scroll-behavior: smooth;
 }
@@ -196,17 +196,17 @@
   font-size: clamp(1.6rem, 4.2vw, 2.5rem);
   font-weight: 800;
   line-height: 1.18;
-  color: #134e4a;
+  color: var(--color-text);
   margin-bottom: 1rem;
 }
 
 .landing-hero-accent {
-  color: #0d9488;
+  color: var(--color-primary);
 }
 
 .landing-lead {
   font-size: 1.05rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   line-height: 1.7;
   margin-bottom: 1.75rem;
   max-width: 52ch;
@@ -249,7 +249,7 @@
 
 .landing-stats span {
   font-size: 0.78rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   line-height: 1.35;
 }
 
@@ -270,7 +270,7 @@
 }
 
 .landing-section-alt {
-  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+  background: linear-gradient(180deg, var(--color-surface-2) 0%, var(--color-surface) 100%);
 }
 
 .landing-kicker {
@@ -285,14 +285,14 @@
 .landing-section-title {
   font-size: clamp(1.35rem, 2.5vw, 1.75rem);
   font-weight: 800;
-  color: #134e4a;
+  color: var(--color-text);
   margin-bottom: 1rem;
   line-height: 1.25;
 }
 
 .landing-section-lead {
   font-size: 1.02rem;
-  color: #475569;
+  color: var(--color-text-muted);
   line-height: 1.65;
   margin-bottom: 1.25rem;
 }
@@ -319,7 +319,7 @@
 
 .landing-prose p {
   margin-bottom: 1rem;
-  color: #475569;
+  color: var(--color-text-muted);
   line-height: 1.7;
   font-size: 0.98rem;
 }
@@ -339,13 +339,13 @@
 .landing-highlight-card h3 {
   font-size: 1rem;
   font-weight: 700;
-  color: #134e4a;
+  color: var(--color-text);
   margin-bottom: 0.65rem;
 }
 
 .landing-highlight-card p {
   font-size: 0.92rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   line-height: 1.65;
   margin: 0;
 }
@@ -359,8 +359,8 @@
 .landing-checklist li {
   position: relative;
   padding: 0.55rem 0 0.55rem 1.6rem;
-  border-bottom: 1px solid #f1f5f9;
-  color: #475569;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-muted);
   line-height: 1.5;
 }
 
@@ -402,7 +402,7 @@
 
 .landing-muted {
   font-size: 0.92rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   line-height: 1.65;
 }
 
@@ -421,7 +421,7 @@
 
 .landing-compare-list li {
   padding: 0.65rem 0;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
@@ -432,13 +432,13 @@
 }
 
 .landing-compare-list strong {
-  color: #0f172a;
+  color: var(--color-text);
   font-size: 0.95rem;
 }
 
 .landing-compare-list span {
   font-size: 0.82rem;
-  color: #94a3b8;
+  color: var(--color-text-subtle);
 }
 
 .landing-differential {
@@ -484,7 +484,7 @@
 
 .landing-objective-general p {
   margin: 0;
-  color: #475569;
+  color: var(--color-text-muted);
   line-height: 1.65;
   font-size: 0.98rem;
 }
@@ -517,14 +517,14 @@
 .landing-card h4 {
   font-size: 1rem;
   font-weight: 700;
-  color: #134e4a;
+  color: var(--color-text);
   margin-bottom: 0.5rem;
 }
 
 .landing-card p {
   margin: 0;
   font-size: 0.88rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   line-height: 1.55;
 }
 
@@ -573,7 +573,7 @@
 .landing-scope-card ul {
   margin: 0;
   padding-left: 1.1rem;
-  color: #475569;
+  color: var(--color-text-muted);
   font-size: 0.88rem;
   line-height: 1.55;
 }
@@ -607,7 +607,7 @@
 .landing-scope-deliver p {
   margin: 0;
   font-size: 0.9rem;
-  color: #475569;
+  color: var(--color-text-muted);
   line-height: 1.55;
 }
 
@@ -632,7 +632,7 @@
   border-radius: 12px;
   margin-bottom: 0.65rem;
   font-size: 0.92rem;
-  color: #475569;
+  color: var(--color-text-muted);
 }
 
 .landing-tech-label {
@@ -646,7 +646,7 @@
 .landing-academic-meta {
   text-align: center;
   font-size: 0.92rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   line-height: 1.65;
   margin-bottom: 2rem;
 }
@@ -712,7 +712,7 @@
 .landing-team-card h3 {
   font-size: 1rem;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--color-text);
   margin-bottom: 0.35rem;
 }
 
@@ -727,7 +727,7 @@
 
 .landing-team-desc {
   font-size: 0.82rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   line-height: 1.45;
   margin: 0;
 }
@@ -747,7 +747,7 @@
 
 .landing-plans-sub {
   text-align: center;
-  color: #64748b;
+  color: var(--color-text-muted);
   margin: 0.5rem 0 2rem;
 }
 
@@ -796,7 +796,7 @@
 
 .plan-desc {
   font-size: 0.88rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   line-height: 1.5;
   flex: 1;
 }
@@ -809,12 +809,12 @@
 
 .plan-price strong {
   font-size: 1.65rem;
-  color: #134e4a;
+  color: var(--color-text);
 }
 
 .plan-price span {
   font-size: 0.9rem;
-  color: #94a3b8;
+  color: var(--color-text-subtle);
 }
 
 .plan-features {
@@ -822,7 +822,7 @@
   padding: 0;
   margin: 0;
   font-size: 0.85rem;
-  color: #475569;
+  color: var(--color-text-muted);
 }
 
 .plan-features li {
@@ -911,7 +911,7 @@
   flex-direction: column;
   gap: 0.25rem;
   font-size: 0.82rem;
-  color: #64748b;
+  color: var(--color-text-muted);
 }
 
 .landing-footer-logo {
