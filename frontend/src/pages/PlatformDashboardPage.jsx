@@ -14,10 +14,10 @@ import { getDateRangePreset } from '../utils/dateRangePresets';
 import '../components/charts/Charts.css';
 
 const STATUSES = [
-  { value: '', label: 'Todos' },
-  { value: 'pendiente', label: 'Pendiente' },
-  { value: 'pagada', label: 'Pagada' },
-  { value: 'vencida', label: 'Vencida' },
+  { value: '', labelKey: 'common:allStatuses' },
+  { value: 'pendiente', labelKey: 'common:pending' },
+  { value: 'pagada', labelKey: 'common:paid' },
+  { value: 'vencida', labelKey: 'common:overdue' },
 ];
 
 export default function PlatformDashboardPage() {
@@ -103,10 +103,10 @@ export default function PlatformDashboardPage() {
         <header className="sgf-page-header">
           <h1 className="sgf-page-title">{t('platform:dashboardTitle')}</h1>
           <p className="sgf-page-sub">
-            Elija organización para KPIs detallados. El ranking compara facturación entre clientes.
+            {t('platform:dashboardSub')}
           </p>
           <Link to="/app/plataforma/reportes" className="sgf-page-link">
-            Ir a reportes (PDF / Excel) →
+            {t('platform:goReports')}
           </Link>
         </header>
 
@@ -121,7 +121,7 @@ export default function PlatformDashboardPage() {
                 onChange={(e) => setOrgId(e.target.value)}
                 disabled={loading}
               >
-                <option value="">— Seleccione —</option>
+                <option value="">{t('platform:selectOption')}</option>
                 {orgs.map((o) => (
                   <option key={o.id} value={String(o.id)}>
                     {o.name} ({o.slug})
@@ -130,7 +130,7 @@ export default function PlatformDashboardPage() {
               </select>
             </div>
             <div className="sgf-field">
-              <span className="sgf-field-label">Estado (KPIs)</span>
+              <span className="sgf-field-label">{t('platform:kpiStatusLabel')}</span>
               <select
                 className="sgf-select"
                 value={statusFilter}
@@ -138,7 +138,7 @@ export default function PlatformDashboardPage() {
               >
                 {STATUSES.map((s) => (
                   <option key={s.value || 'all'} value={s.value}>
-                    {s.label}
+                    {t(s.labelKey)}
                   </option>
                 ))}
               </select>
@@ -190,10 +190,10 @@ export default function PlatformDashboardPage() {
 
         <section className="sgf-rank-panel">
           <div className="sgf-section-head sgf-section-head--tight">
-            <h2 className="sgf-section-title">Organizaciones con mayor facturación</h2>
-            <p className="sgf-section-sub">Suma de montos en el rango (organización plataforma excluida)</p>
+            <h2 className="sgf-section-title">{t('platform:topOrganizationsTitle')}</h2>
+            <p className="sgf-section-sub">{t('platform:topOrganizationsSub')}</p>
           </div>
-          <ChartCard title="Ranking visual" subtitle="Top por monto total facturado" className="platform-rank-chart">
+          <ChartCard title={t('platform:visualRankingTitle')} subtitle={t('platform:visualRankingSub')} className="platform-rank-chart">
             <TopOrganizationsBarChart rows={top} maxBars={12} />
           </ChartCard>
           <div className="sgf-rank-table-wrap">
@@ -201,27 +201,27 @@ export default function PlatformDashboardPage() {
               <thead>
                 <tr>
                   <th>#</th>
-                  <th>Organización</th>
-                  <th>Facturas</th>
-                  <th>Total facturado</th>
+                  <th>{t('platform:tableOrg')}</th>
+                  <th>{t('platform:tableInvoices')}</th>
+                  <th>{t('platform:tableTotalBilled')}</th>
                 </tr>
               </thead>
               <tbody>
                 {top.length === 0 ? (
                   <tr>
                     <td colSpan={4} className="sgf-muted">
-                      Sin datos en el rango.
+                      {t('platform:emptyRange')}
                     </td>
                   </tr>
                 ) : (
                   top.map((row, i) => (
                     <tr key={row.organization_id}>
-                      <td data-label="Posición">{i + 1}</td>
-                      <td data-label="Organización">
+                      <td data-label={t('platform:tablePosition')}>{i + 1}</td>
+                      <td data-label={t('platform:tableOrg')}>
                         {row.name} <span className="sgf-rank-slug">({row.slug})</span>
                       </td>
-                      <td data-label="Facturas">{row.invoice_count}</td>
-                      <td data-label="Total facturado">{moneyFmt(row.total_amount)}</td>
+                      <td data-label={t('platform:tableInvoices')}>{row.invoice_count}</td>
+                      <td data-label={t('platform:tableTotalBilled')}>{moneyFmt(row.total_amount, 'es-CO')}</td>
                     </tr>
                   ))
                 )}
@@ -238,25 +238,25 @@ export default function PlatformDashboardPage() {
 
         {stats && (
           <>
-            <h2 className="sgf-title-accent">Detalle: {stats.organization_name}</h2>
+            <h2 className="sgf-title-accent">{t('platform:detailPrefix', { name: stats.organization_name })}</h2>
             <div className="sgf-kpi-row">
               <div className="sgf-kpi">
-                <span className="sgf-kpi-label">Total facturas</span>
+                <span className="sgf-kpi-label">{t('platform:kpiTotalInvoices')}</span>
                 <span className="sgf-kpi-value">{stats.total_invoices}</span>
               </div>
               <div className="sgf-kpi sgf-kpi--teal">
-                <span className="sgf-kpi-label">Monto total</span>
+                <span className="sgf-kpi-label">{t('platform:kpiTotalAmount')}</span>
                 <span className="sgf-kpi-value">{moneyFmt(stats.total_amount)}</span>
               </div>
               <div className="sgf-kpi sgf-kpi--amber">
-                <span className="sgf-kpi-label">Pendientes (vencen en 7 días)</span>
+                <span className="sgf-kpi-label">{t('platform:kpiPending7Days')}</span>
                 <span className="sgf-kpi-value">{stats.pending_due_within_7_days}</span>
               </div>
             </div>
 
             <div className="sgf-section-head">
-              <h2 className="sgf-section-title">Visualización</h2>
-              <p className="sgf-section-sub">Mismos gráficos que en la vista web</p>
+              <h2 className="sgf-section-title">{t('platform:visualizationTitle')}</h2>
+              <p className="sgf-section-sub">{t('platform:visualizationSub')}</p>
             </div>
             <DashboardChartsGrid stats={stats} />
           </>

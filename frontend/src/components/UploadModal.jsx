@@ -41,13 +41,13 @@ export default function UploadModal({ onExtracted, onClose }) {
 
   const validateFile = (f) => {
     if (f.size > MAX_SIZE_MB * 1024 * 1024) {
-      setError(`Max ${MAX_SIZE_MB} MB.`);
+      setError(t('modals:upload.maxSize', { max: MAX_SIZE_MB }));
       return false;
     }
     const ext = f.name.split('.').pop()?.toLowerCase();
     const validExts = ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'tiff', 'tif', 'pdf', 'docx'];
     if (!validExts.includes(ext)) {
-      setError('Unsupported format. Use image, PDF or DOCX.');
+      setError(t('modals:upload.unsupportedFormat'));
       return false;
     }
     return true;
@@ -79,7 +79,7 @@ export default function UploadModal({ onExtracted, onClose }) {
       onExtracted(resp.data);
     } catch (err) {
       const detail = err.response?.data?.detail;
-      setError(typeof detail === 'string' ? detail : 'Error processing file.');
+      setError(typeof detail === 'string' ? detail : t('modals:upload.processError'));
     } finally {
       setLoading(false);
     }
@@ -104,8 +104,7 @@ export default function UploadModal({ onExtracted, onClose }) {
 
         <div className="upload-body">
           <p className="upload-hint">
-            Suba una foto, PDF o documento Word (.docx) con los datos de la factura.
-            El sistema extraerá automáticamente los campos para crear una nueva factura.
+            {t('modals:upload.hintPrimary')} {t('modals:upload.hintSecondary')}
           </p>
 
           {/* Drop zone */}
@@ -132,16 +131,16 @@ export default function UploadModal({ onExtracted, onClose }) {
                 </svg>
               </div>
               <p className="drop-zone-text">
-                <strong>Haga clic o arrastre</strong> un archivo aquí
+                <strong>{t('modals:upload.dropCta')}</strong>
               </p>
               <p className="drop-zone-formats">
-                JPEG, PNG, PDF, DOCX — máx. {MAX_SIZE_MB} MB
+                {t('modals:upload.formats', { max: MAX_SIZE_MB })}
               </p>
             </div>
           ) : (
             <div className="file-preview">
               {preview ? (
-                <img src={preview} alt="Vista previa" className="file-preview-img" />
+                <img src={preview} alt={t('modals:upload.previewAlt')} className="file-preview-img" />
               ) : (
                 <div className="file-preview-icon">{getFileIcon()}</div>
               )}
@@ -152,7 +151,7 @@ export default function UploadModal({ onExtracted, onClose }) {
               <button
                 className="file-remove"
                 onClick={removeFile}
-                title="Quitar archivo"
+                title={t('modals:upload.removeFile')}
                 disabled={loading}
               >
                 ✕

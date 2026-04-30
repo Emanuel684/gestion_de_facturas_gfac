@@ -8,5 +8,99 @@
   "editUser": "Edit user",
   "newUser": "New user",
   "extractData": "Extract data",
-  "uploadInvoiceDoc": "Upload invoice document"
+  "uploadInvoiceDoc": "Upload invoice document",
+  "errorGeneric": "An error occurred.",
+  "invoice": {
+    "titleEdit": "Edit invoice",
+    "titleNew": "New invoice",
+    "lockedBanner": "Tax document locked: you can only adjust collections (internal status, due date, assignments) and DIAN lifecycle status.",
+    "generalData": "General data",
+    "invoiceNumber": "Invoice # *",
+    "supplier": "Supplier *",
+    "supplierPlaceholder": "Supplier name",
+    "description": "Description",
+    "descriptionPlaceholder": "Optional description...",
+    "operationalAmount": "Operational amount (COP) *",
+    "collectionStatus": "Collection status",
+    "dueDate": "Due date",
+    "issuerSection": "Issuer (fiscal profile)",
+    "nit": "TIN",
+    "businessName": "Business name",
+    "missingFiscalProfile": "No fiscal profile configured. An administrator can complete it in billing settings or via API",
+    "electronicSection": "Electronic document (DIAN preparation)",
+    "documentType": "Document type",
+    "dianStatus": "DIAN lifecycle status",
+    "issueDate": "Issue date",
+    "currency": "Currency",
+    "buyerSection": "Buyer",
+    "buyerIdType": "ID type",
+    "buyerIdTypePlaceholder": "TIN, ID, Passport...",
+    "buyerIdNumber": "ID number",
+    "buyerName": "Buyer name",
+    "totalsSection": "Totals and VAT",
+    "totalsHint": "Optional: if omitted, server derives totals from operational amount. Use 0.19 VAT for Colombia standard.",
+    "subtotal": "Subtotal",
+    "taxableBase": "Taxable base",
+    "vatRate": "VAT rate",
+    "vatValue": "VAT value",
+    "withholdings": "Withholdings",
+    "documentTotal": "Document total",
+    "assignTo": "Assign to",
+    "save": "Save changes",
+    "create": "Create invoice",
+    "statuses": {
+      "pending": "Pending",
+      "paid": "Paid",
+      "overdue": "Overdue"
+    },
+    "documentTypes": {
+      "invoiceSale": "Sales invoice",
+      "creditNote": "Credit note",
+      "debitNote": "Debit note"
+    },
+    "dianStatuses": {
+      "draft": "Draft",
+      "readyToSend": "Ready to send",
+      "sentToProvider": "Sent to provider/OSE",
+      "accepted": "Accepted by DIAN",
+      "rejected": "Rejected by DIAN",
+      "contingency": "Contingency"
+    }
+  },
+  "upload": {
+    "hintPrimary": "Upload an image, PDF, or Word document (.docx) with invoice data.",
+    "hintSecondary": "The system will automatically extract fields to create a new invoice.",
+    "dropCta": "Click or drag a file here",
+    "formats": "JPEG, PNG, PDF, DOCX — max {{max}} MB",
+    "previewAlt": "Preview",
+    "removeFile": "Remove file",
+    "maxSize": "Max {{max}} MB.",
+    "unsupportedFormat": "Unsupported format. Use image, PDF or DOCX.",
+    "processError": "Error processing file."
+  },
+  "user": {
+    "username": "Username *",
+    "usernamePlaceholder": "username",
+    "role": "Role *",
+    "email": "Email *",
+    "emailPlaceholder": "user@company.com",
+    "newPassword": "New password",
+    "password": "Password *",
+    "newPasswordPlaceholder": "Leave blank to keep current password",
+    "passwordPlaceholder": "Minimum 6 characters",
+    "activeUserHint": "Active user (can sign in)",
+    "validationUsernameMin": "Username must have at least 3 characters.",
+    "validationPasswordMin": "Password must have at least 6 characters.",
+    "validationPasswordEditMin": "If changing password, it must have at least 6 characters.",
+    "saveError": "Error saving user.",
+    "roles": {
+      "admin": "Administrator",
+      "accountant": "Accountant",
+      "assistant": "Assistant"
+    },
+    "activeOptions": {
+      "yes": "Yes",
+      "no": "No"
+    }
+  }
 }

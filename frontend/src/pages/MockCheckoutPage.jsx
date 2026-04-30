@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { localeFromLanguage } from '../utils/locale';
 import { completePublicCheckout, getPublicCheckout } from '../api';
 import { useAuth } from '../context/AuthContext';
 import './MockCheckoutPage.css';
 
-function formatCurrency(amount, currency = 'COP') {
+function formatCurrency(amount, locale, currency = 'COP') {
   const n = typeof amount === 'string' ? parseFloat(amount, 10) : amount;
   if (Number.isNaN(n)) return String(amount);
-  return new Intl.NumberFormat('es-CO', {
+  return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: currency || 'COP',
     minimumFractionDigits: 0,
@@ -16,14 +17,9 @@ function formatCurrency(amount, currency = 'COP') {
   }).format(n);
 }
 
-const STATUS_LABELS = {
-  created: 'Pendiente de pago',
-  completed: 'Completado',
-  expired: 'Expirado',
-};
-
 export default function MockCheckoutPage() {
-  const { t } = useTranslation(['auth']);
+  const { t, i18n } = useTranslation(['auth', 'common']);
+  const locale = localeFromLanguage(i18n.resolvedLanguage);
   const { sessionToken } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -31,36 +27,41 @@ export default function MockCheckoutPage() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState('info');
   const [error, setError] = useState('');
 
   useEffect(() => {
     setError('');
     getPublicCheckout(sessionToken)
       .then((r) => setSession(r.data))
-      .catch(() => setError('No se pudo cargar la sesión de pago. Revise el enlace o solicite uno nuevo.'))
+      .catch(() => setError(t('auth:mockLoadError')))
       .finally(() => setLoading(false));
   }, [sessionToken]);
 
   const complete = async (outcome) => {
     setActionLoading(true);
     setMessage('');
+    setMessageType('info');
     try {
       await completePublicCheckout(sessionToken, outcome);
       if (outcome === 'paid') {
         setMessage(
           user
-            ? 'Pago registrado correctamente. Redirigiendo a facturación…'
-            : 'Pago aprobado. Ya puede iniciar sesión.'
+            ? t('auth:mockProcessingSuccessUser')
+            : t('auth:mockProcessingSuccessGuest')
         );
+        setMessageType('success');
         setTimeout(() => {
           navigate(user ? '/app/billing' : '/login', { replace: true });
         }, 1400);
       } else {
-        setMessage('El pago fue rechazado (simulación). Puede intentar de nuevo si la sesión sigue activa.');
+        setMessage(t('auth:mockProcessingFailed'));
+        setMessageType('error');
       }
     } catch (err) {
       const d = err.response?.data?.detail;
-      setMessage(typeof d === 'string' ? d : 'No se pudo procesar el pago.');
+      setMessage(typeof d === 'string' ? d : t('auth:mockProcessingError'));
+      setMessageType('error');
     } finally {
       setActionLoading(false);
     }
@@ -92,9 +93,9 @@ export default function MockCheckoutPage() {
             </svg>
           <h1>{t('auth:mockUnavailable', { defaultValue: 'Pago no disponible' })}</h1>
           </div>
-          <p className="checkout-mock-sub">{error || 'No se encontró la sesión de checkout.'}</p>
+          <p className="checkout-mock-sub">{error || t('auth:mockSessionNotFound')}</p>
           <p className="checkout-mock-footer">
-            <Link to={user ? '/app/billing' : '/'}>{user ? '← Volver a facturación' : '← Volver al inicio'}</Link>
+            <Link to={user ? '/app/billing' : '/'}>{user ? t('auth:mockBackBilling') : t('auth:mockBackHome')}</Link>
           </p>
         </div>
       </div>
@@ -125,25 +126,25 @@ export default function MockCheckoutPage() {
         </p>
 
         <p className="checkout-mock-detail">
-          <strong>Plan:</strong> {session.plan_tier}
+          <strong>{t('auth:mockPlan')}:</strong> {session.plan_tier}
         </p>
         <p className="checkout-mock-detail">
-          <strong>Monto:</strong> {formatCurrency(session.amount, session.currency)}
+          <strong>{t('auth:mockAmount')}:</strong> {formatCurrency(session.amount, locale, session.currency)}
         </p>
         <p className="checkout-mock-detail">
-          <strong>Estado:</strong> {STATUS_LABELS[session.status] || session.status}
+          <strong>{t('auth:mockStatus')}:</strong> {t(`auth:checkoutStatuses.${session.status}`)}
         </p>
         {isExpired && (
-          <div className="alert alert-error">Esta sesión expiró. Genere un nuevo pago desde facturación o registro.</div>
+          <div className="alert alert-error">{t('auth:mockExpired')}</div>
         )}
         {isDone && (
-          <div className="checkout-mock-msg-info">Esta sesión ya fue procesada.</div>
+          <div className="checkout-mock-msg-info">{t('auth:mockAlreadyProcessed')}</div>
         )}
 
         {message && (
           <div
             className={
-              message.includes('correctamente') || message.includes('aprobado')
+              messageType === 'success'
                 ? 'checkout-mock-msg-ok'
                 : 'alert alert-error'
             }
@@ -159,7 +160,7 @@ export default function MockCheckoutPage() {
             onClick={() => complete('paid')}
             disabled={actionLoading || !canAct}
           >
-            {actionLoading ? 'Procesando…' : 'Simular pago exitoso'}
+            {actionLoading ? t('common:loading') : t('auth:mockSimulateSuccess')}
           </button>
           <button
             type="button"
@@ -167,16 +168,16 @@ export default function MockCheckoutPage() {
             onClick={() => complete('failed')}
             disabled={actionLoading || !canAct}
           >
-            Simular pago fallido
+            {t('auth:mockSimulateFailure')}
           </button>
         </div>
 
         <p className="checkout-mock-footer">
           <Link to={user ? '/app/billing' : '/login'}>
-            {user ? '← Volver a facturación y suscripción' : '← Ir al inicio de sesión'}
+            {user ? t('auth:mockBackBillingSubscription') : t('auth:mockGoLogin')}
           </Link>
           {' · '}
-          <Link to="/">Inicio</Link>
+          <Link to="/">{t('auth:home')}</Link>
         </p>
       </div>
     </div>

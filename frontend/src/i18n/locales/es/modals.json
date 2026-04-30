@@ -8,5 +8,99 @@
   "editUser": "Editar usuario",
   "newUser": "Nuevo usuario",
   "extractData": "Extraer datos",
-  "uploadInvoiceDoc": "Cargar documento de factura"
+  "uploadInvoiceDoc": "Cargar documento de factura",
+  "errorGeneric": "Ocurrió un error.",
+  "invoice": {
+    "titleEdit": "Editar factura",
+    "titleNew": "Nueva factura",
+    "lockedBanner": "Documento fiscal bloqueado: solo puede ajustar cobranza (estado interno, vencimiento, asignaciones) y el estado DIAN.",
+    "generalData": "Datos generales",
+    "invoiceNumber": "N° factura *",
+    "supplier": "Proveedor *",
+    "supplierPlaceholder": "Nombre del proveedor",
+    "description": "Descripción",
+    "descriptionPlaceholder": "Descripción opcional...",
+    "operationalAmount": "Monto operativo (COP) *",
+    "collectionStatus": "Estado cobranza",
+    "dueDate": "Fecha de vencimiento",
+    "issuerSection": "Emisor (perfil fiscal)",
+    "nit": "NIT",
+    "businessName": "Razón social",
+    "missingFiscalProfile": "Sin perfil fiscal configurado. Un administrador puede completarlo en la sección de facturación o vía API",
+    "electronicSection": "Documento electrónico (preparación DIAN)",
+    "documentType": "Tipo de documento",
+    "dianStatus": "Estado ciclo DIAN",
+    "issueDate": "Fecha de emisión",
+    "currency": "Moneda",
+    "buyerSection": "Adquirente",
+    "buyerIdType": "Tipo ID",
+    "buyerIdTypePlaceholder": "NIT, CC, CE...",
+    "buyerIdNumber": "Número ID",
+    "buyerName": "Nombre adquirente",
+    "totalsSection": "Totales e IVA",
+    "totalsHint": "Opcional: si no completa, el servidor deriva montos a partir del monto operativo. Use IVA 0,19 para el estándar Colombia.",
+    "subtotal": "Subtotal",
+    "taxableBase": "Base gravable",
+    "vatRate": "Alícuota IVA",
+    "vatValue": "Valor IVA",
+    "withholdings": "Retenciones",
+    "documentTotal": "Total documento",
+    "assignTo": "Asignar a",
+    "save": "Guardar cambios",
+    "create": "Crear factura",
+    "statuses": {
+      "pending": "Pendiente",
+      "paid": "Pagada",
+      "overdue": "Vencida"
+    },
+    "documentTypes": {
+      "invoiceSale": "Factura de venta",
+      "creditNote": "Nota crédito",
+      "debitNote": "Nota débito"
+    },
+    "dianStatuses": {
+      "draft": "Borrador",
+      "readyToSend": "Lista para envío",
+      "sentToProvider": "Enviada a proveedor/OSE",
+      "accepted": "Aceptada DIAN",
+      "rejected": "Rechazada DIAN",
+      "contingency": "Contingencia"
+    }
+  },
+  "upload": {
+    "hintPrimary": "Suba una foto, PDF o documento Word (.docx) con los datos de la factura.",
+    "hintSecondary": "El sistema extraerá automáticamente los campos para crear una nueva factura.",
+    "dropCta": "Haga clic o arrastre un archivo aquí",
+    "formats": "JPEG, PNG, PDF, DOCX — máx. {{max}} MB",
+    "previewAlt": "Vista previa",
+    "removeFile": "Quitar archivo",
+    "maxSize": "Máx. {{max}} MB.",
+    "unsupportedFormat": "Formato no soportado. Use imagen, PDF o DOCX.",
+    "processError": "Error al procesar el archivo."
+  },
+  "user": {
+    "username": "Usuario *",
+    "usernamePlaceholder": "nombre_usuario",
+    "role": "Rol *",
+    "email": "Email *",
+    "emailPlaceholder": "usuario@empresa.com",
+    "newPassword": "Nueva contraseña",
+    "password": "Contraseña *",
+    "newPasswordPlaceholder": "Dejar vacío para no cambiar",
+    "passwordPlaceholder": "Mínimo 6 caracteres",
+    "activeUserHint": "Usuario activo (puede iniciar sesión)",
+    "validationUsernameMin": "El nombre de usuario debe tener al menos 3 caracteres.",
+    "validationPasswordMin": "La contraseña debe tener al menos 6 caracteres.",
+    "validationPasswordEditMin": "Si cambia la contraseña, debe tener al menos 6 caracteres.",
+    "saveError": "Error al guardar el usuario.",
+    "roles": {
+      "admin": "Administrador",
+      "accountant": "Contador",
+      "assistant": "Asistente"
+    },
+    "activeOptions": {
+      "yes": "Sí",
+      "no": "No"
+    }
+  }
 }

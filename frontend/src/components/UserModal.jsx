@@ -4,17 +4,13 @@ import { createUser, updateUser } from '../api';
 import './InvoiceModal.css';
 import './UserModal.css';
 
-const ROLES = [
-  { value: 'administrador', label: 'Administrador' },
-  { value: 'contador', label: 'Contador' },
-  { value: 'asistente', label: 'Asistente' },
-];
+const ROLES = ['administrador', 'contador', 'asistente'];
 
-function formatApiError(err) {
+function formatApiError(err, fallback) {
   const d = err.response?.data?.detail;
   if (typeof d === 'string') return d;
   if (Array.isArray(d)) return d.map((x) => x.msg || JSON.stringify(x)).join(' ');
-  return 'Error al guardar el usuario.';
+  return fallback;
 }
 
 const emptyForm = () => ({
@@ -67,15 +63,15 @@ export default function UserModal({ user = null, onSuccess, onClose }) {
     if (!form) return;
 
     if (form.username.trim().length < 3) {
-      setError('El nombre de usuario debe tener al menos 3 caracteres.');
+      setError(t('modals:user.validationUsernameMin'));
       return;
     }
     if (!isEdit && form.password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres.');
+      setError(t('modals:user.validationPasswordMin'));
       return;
     }
     if (isEdit && form.password.length > 0 && form.password.length < 6) {
-      setError('Si cambia la contraseña, debe tener al menos 6 caracteres.');
+      setError(t('modals:user.validationPasswordEditMin'));
       return;
     }
 
@@ -103,7 +99,7 @@ export default function UserModal({ user = null, onSuccess, onClose }) {
         onSuccess(resp.data);
       }
     } catch (err) {
-      setError(formatApiError(err));
+      setError(formatApiError(err, t('modals:user.saveError')));
     } finally {
       setLoading(false);
     }
@@ -134,23 +130,23 @@ export default function UserModal({ user = null, onSuccess, onClose }) {
         <form onSubmit={handleSubmit} className="modal-form">
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="um-username">Usuario *</label>
+              <label htmlFor="um-username">{t('modals:user.username')}</label>
               <input
                 id="um-username"
                 type="text"
                 value={form.username}
                 onChange={set('username')}
-                placeholder="nombre_usuario"
+                placeholder={t('modals:user.usernamePlaceholder')}
                 required
                 autoFocus
               />
             </div>
             <div className="form-group">
-              <label htmlFor="um-role">Rol *</label>
+              <label htmlFor="um-role">{t('modals:user.role')}</label>
               <select id="um-role" value={form.role} onChange={set('role')}>
-                {ROLES.map((r) => (
-                  <option key={r.value} value={r.value}>
-                    {r.label}
+                {ROLES.map((roleValue) => (
+                  <option key={roleValue} value={roleValue}>
+                    {t(`modals:user.roles.${roleValue === 'administrador' ? 'admin' : roleValue === 'contador' ? 'accountant' : 'assistant'}`)}
                   </option>
                 ))}
               </select>
@@ -158,25 +154,25 @@ export default function UserModal({ user = null, onSuccess, onClose }) {
           </div>
 
           <div className="form-group">
-            <label htmlFor="um-email">Email *</label>
+            <label htmlFor="um-email">{t('modals:user.email')}</label>
             <input
               id="um-email"
               type="email"
               value={form.email}
               onChange={set('email')}
-              placeholder="usuario@empresa.com"
+              placeholder={t('modals:user.emailPlaceholder')}
               required
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="um-password">{isEdit ? 'Nueva contraseña' : 'Contraseña *'}</label>
+            <label htmlFor="um-password">{isEdit ? t('modals:user.newPassword') : t('modals:user.password')}</label>
             <input
               id="um-password"
               type="password"
               value={form.password}
               onChange={set('password')}
-              placeholder={isEdit ? 'Dejar vacío para no cambiar' : 'Mínimo 6 caracteres'}
+              placeholder={isEdit ? t('modals:user.newPasswordPlaceholder') : t('modals:user.passwordPlaceholder')}
               required={!isEdit}
               minLength={isEdit ? undefined : 6}
               autoComplete={isEdit ? 'new-password' : 'new-password'}
@@ -186,7 +182,7 @@ export default function UserModal({ user = null, onSuccess, onClose }) {
           {isEdit && (
             <label className="user-modal-checkbox">
               <input type="checkbox" checked={form.is_active} onChange={set('is_active')} />
-              <span>Usuario activo (puede iniciar sesión)</span>
+              <span>{t('modals:user.activeUserHint')}</span>
             </label>
           )}
 

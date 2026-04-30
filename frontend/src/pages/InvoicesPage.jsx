@@ -398,8 +398,8 @@ export default function InvoicesPage() {
             <div className="overdue-banner-body">
               <strong>
                 {overdueInvoices.length === 1
-                  ? '1 factura vencida sin pagar'
-                  : `${overdueInvoices.length} facturas vencidas sin pagar`}
+                  ? t('invoices:overdueBannerOne')
+                  : t('invoices:overdueBannerMany', { count: overdueInvoices.length })}
               </strong>
               <span className="overdue-banner-list">
                 {overdueInvoices.slice(0, 5).map((inv) => (
@@ -408,11 +408,11 @@ export default function InvoicesPage() {
                   </span>
                 ))}
                 {overdueInvoices.length > 5 && (
-                  <span className="overdue-chip overdue-chip-more">+{overdueInvoices.length - 5} más</span>
+                  <span className="overdue-chip overdue-chip-more">{t('invoices:moreCount', { count: overdueInvoices.length - 5 })}</span>
                 )}
               </span>
             </div>
-            <button type="button" className="overdue-banner-dismiss" title="Descartar" onClick={() => setOverdueDismissed(true)}>
+            <button type="button" className="overdue-banner-dismiss" title={t('invoices:discard')} onClick={() => setOverdueDismissed(true)}>
               ✕
             </button>
           </div>
@@ -424,8 +424,8 @@ export default function InvoicesPage() {
             <div className="due-soon-banner-body">
               <strong>
                 {dueSoonInvoices.length === 1
-                  ? '1 factura vence en los próximos 7 días'
-                  : `${dueSoonInvoices.length} facturas vencen en los próximos 7 días`}
+                  ? t('invoices:dueSoonBannerOne')
+                  : t('invoices:dueSoonBannerMany', { count: dueSoonInvoices.length })}
               </strong>
               <span className="due-soon-banner-list">
                 {dueSoonInvoices.slice(0, 5).map((inv) => (
@@ -434,11 +434,11 @@ export default function InvoicesPage() {
                   </span>
                 ))}
                 {dueSoonInvoices.length > 5 && (
-                  <span className="due-soon-chip due-soon-chip-more">+{dueSoonInvoices.length - 5} más</span>
+                  <span className="due-soon-chip due-soon-chip-more">{t('invoices:moreCount', { count: dueSoonInvoices.length - 5 })}</span>
                 )}
               </span>
             </div>
-            <button type="button" className="due-soon-banner-dismiss" title="Descartar" onClick={() => setDueSoonDismissed(true)}>
+            <button type="button" className="due-soon-banner-dismiss" title={t('invoices:discard')} onClick={() => setDueSoonDismissed(true)}>
               ✕
             </button>
           </div>
@@ -511,8 +511,7 @@ export default function InvoicesPage() {
 
         {viewMode === 'kanban' && (
           <p className="view-hint">
-            Arrastre las facturas entre columnas para cambiar el estado de cobro. Los asistentes no pueden modificar
-            facturas.
+            {t('invoices:kanbanHint')}
           </p>
         )}
 
@@ -554,9 +553,9 @@ export default function InvoicesPage() {
                 {inv.description && <p className="invoice-desc">{inv.description}</p>}
 
                 <div className="invoice-meta">
-                  <span title="Registrado por">👤 {getUserName(inv.creator_id)}</span>
+                  <span title={t('invoices:registeredBy')}>👤 {getUserName(inv.creator_id)}</span>
                   {inv.due_date && (
-                    <span title="Fecha de vencimiento">📅 {new Date(inv.due_date).toLocaleDateString(locale)}</span>
+                    <span title={t('invoices:dueDateLabel')}>📅 {new Date(inv.due_date).toLocaleDateString(locale)}</span>
                   )}
                 </div>
 

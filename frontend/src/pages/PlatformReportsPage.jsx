@@ -9,10 +9,10 @@ import { getDateRangePreset } from '../utils/dateRangePresets';
 import '../components/charts/Charts.css';
 
 const STATUSES = [
-  { value: '', label: 'Todos los estados' },
-  { value: 'pendiente', label: 'Pendiente' },
-  { value: 'pagada', label: 'Pagada' },
-  { value: 'vencida', label: 'Vencida' },
+  { value: '', labelKey: 'common:allStatuses' },
+  { value: 'pendiente', labelKey: 'common:pending' },
+  { value: 'pagada', labelKey: 'common:paid' },
+  { value: 'vencida', labelKey: 'common:overdue' },
 ];
 
 function triggerDownload(blob, fallbackName) {
@@ -112,9 +112,9 @@ export default function PlatformReportsPage() {
       <main className="sgf-page">
         <header className="sgf-page-header">
           <h1 className="sgf-page-title">{t('platform:reportsTitle')}</h1>
-          <p className="sgf-page-sub">Exporte y visualice todas las facturas de la organización elegida.</p>
+          <p className="sgf-page-sub">{t('platform:reportsSub')}</p>
           <Link to="/app/plataforma/dashboard" className="sgf-page-link">
-            ← Volver al dashboard
+            {t('platform:backToDashboard')}
           </Link>
         </header>
 
@@ -125,7 +125,7 @@ export default function PlatformReportsPage() {
             <div className="sgf-field">
               <span className="sgf-field-label">{t('platform:orgLabel')}</span>
               <select className="sgf-select" value={orgId} onChange={(e) => setOrgId(e.target.value)}>
-                <option value="">— Seleccione —</option>
+                <option value="">{t('platform:selectOption')}</option>
                 {orgs.map((o) => (
                   <option key={o.id} value={String(o.id)}>
                     {o.name} ({o.slug})
@@ -162,7 +162,7 @@ export default function PlatformReportsPage() {
               <select className="sgf-select" value={status} onChange={(e) => setStatus(e.target.value)}>
                 {STATUSES.map((s) => (
                   <option key={s.value || 'all'} value={s.value}>
-                    {s.label}
+                    {t(s.labelKey)}
                   </option>
                 ))}
               </select>
@@ -187,14 +187,14 @@ export default function PlatformReportsPage() {
             </div>
           </div>
           {error && <div className="alert alert-error">{error}</div>}
-          <p className="sgf-report-hint">Vista de auditoría: incluye todas las facturas de la organización.</p>
+          <p className="sgf-report-hint">{t('platform:auditHint')}</p>
         </div>
 
         {orgId && (
           <div className="sgf-panel">
             <div className="sgf-section-head sgf-section-head--tight">
               <h2 className="sgf-section-title">{t('platform:previewCharts')}</h2>
-              <p className="sgf-section-sub">Mismos criterios que los archivos exportados</p>
+              <p className="sgf-section-sub">{t('platform:previewSub')}</p>
             </div>
             {chartError && <div className="alert alert-error">{chartError}</div>}
             {loadingCharts && <div className="sgf-skeleton-chart" aria-hidden />}

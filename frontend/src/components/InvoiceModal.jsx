@@ -1,41 +1,27 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { createInvoice, updateInvoice, getFiscalProfile } from '../api';
 import './InvoiceModal.css';
 
-const STATUSES = [
-  { value: 'pendiente', label: 'Pendiente' },
-  { value: 'pagada', label: 'Pagada' },
-  { value: 'vencida', label: 'Vencida' },
-];
+const STATUSES = ['pendiente', 'pagada', 'vencida'];
 
-const DOC_TYPES = [
-  { value: 'factura_venta', label: 'Factura de venta' },
-  { value: 'nota_credito', label: 'Nota crédito' },
-  { value: 'nota_debito', label: 'Nota débito' },
-];
+const DOC_TYPES = ['factura_venta', 'nota_credito', 'nota_debito'];
 
 const PREFILL_DOC_TYPES = new Set(['factura_venta', 'nota_credito', 'nota_debito']);
 
 const DIAN_STATUSES = [
-  { value: 'borrador', label: 'Borrador' },
-  { value: 'lista_para_envio', label: 'Lista para envío' },
-  { value: 'enviada_proveedor', label: 'Enviada a proveedor/OSE' },
-  { value: 'aceptada_dian', label: 'Aceptada DIAN' },
-  { value: 'rechazada_dian', label: 'Rechazada DIAN' },
-  { value: 'contingencia', label: 'Contingencia' },
+  'borrador',
+  'lista_para_envio',
+  'enviada_proveedor',
+  'aceptada_dian',
+  'rechazada_dian',
+  'contingencia',
 ];
 
 function defaultIssueLocal() {
   const d = new Date();
   d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
   return d.toISOString().slice(0, 16);
-}
-
-function formatApiError(err) {
-  const d = err.response?.data?.detail;
-  if (typeof d === 'string') return d;
-  if (Array.isArray(d)) return d.map((x) => x.msg || JSON.stringify(x)).join('; ');
-  return 'Ocurrió un error.';
 }
 
 function numOrEmpty(v) {
@@ -53,8 +39,15 @@ export default function InvoiceModal({
   createHandler = createInvoice,
   updateHandler = updateInvoice,
 }) {
+  const { t } = useTranslation(['modals']);
   const isEdit = Boolean(invoice);
   const docLocked = isEdit && invoice?.document_locked;
+  const formatApiError = (err) => {
+    const d = err.response?.data?.detail;
+    if (typeof d === 'string') return d;
+    if (Array.isArray(d)) return d.map((x) => x.msg || JSON.stringify(x)).join('; ');
+    return t('modals:errorGeneric');
+  };
 
   const initial = useMemo(
     () => ({
@@ -248,25 +241,24 @@ export default function InvoiceModal({
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal-box modal-box-wide">
         <div className="modal-header">
-          <h2>{isEdit ? 'Editar Factura' : 'Nueva Factura'}</h2>
-          <button className="modal-close" onClick={onClose} aria-label="Cerrar">
+          <h2>{isEdit ? t('modals:invoice.titleEdit') : t('modals:invoice.titleNew')}</h2>
+          <button className="modal-close" onClick={onClose} aria-label={t('modals:close')}>
             ✕
           </button>
         </div>
 
         {docLocked && (
           <div className="modal-banner">
-            Documento fiscal bloqueado: solo puede ajustar cobranza (estado interno, vencimiento,
-            asignaciones) y el estado DIAN.
+            {t('modals:invoice.lockedBanner')}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="modal-form">
           <section className="form-section">
-            <h3 className="form-section-title">Datos generales</h3>
+            <h3 className="form-section-title">{t('modals:invoice.generalData')}</h3>
             <div className="form-row">
               <div className="form-group">
-                <label>N° Factura *</label>
+                <label>{t('modals:invoice.invoiceNumber')}</label>
                 <input
                   type="text"
                   value={form.invoice_number}
@@ -278,12 +270,12 @@ export default function InvoiceModal({
                 />
               </div>
               <div className="form-group">
-                <label>Proveedor *</label>
+                <label>{t('modals:invoice.supplier')}</label>
                 <input
                   type="text"
                   value={form.supplier}
                   onChange={set('supplier')}
-                  placeholder="Nombre del proveedor"
+                  placeholder={t('modals:invoice.supplierPlaceholder')}
                   required
                   disabled={fiscalDisabled}
                 />
@@ -291,11 +283,11 @@ export default function InvoiceModal({
             </div>
 
             <div className="form-group">
-              <label>Descripción</label>
+              <label>{t('modals:invoice.description')}</label>
               <textarea
                 value={form.description}
                 onChange={set('description')}
-                placeholder="Descripción opcional…"
+                placeholder={t('modals:invoice.descriptionPlaceholder')}
                 rows={2}
                 disabled={fiscalDisabled}
               />
@@ -303,7 +295,7 @@ export default function InvoiceModal({
 
             <div className="form-row">
               <div className="form-group">
-                <label>Monto operativo (COP) *</label>
+                <label>{t('modals:invoice.operationalAmount')}</label>
                 <input
                   type="number"
                   step="0.01"
@@ -316,11 +308,11 @@ export default function InvoiceModal({
                 />
               </div>
               <div className="form-group">
-                <label>Estado cobranza</label>
+                <label>{t('modals:invoice.collectionStatus')}</label>
                 <select value={form.status} onChange={set('status')}>
-                  {STATUSES.map((s) => (
-                    <option key={s.value} value={s.value}>
-                      {s.label}
+                  {STATUSES.map((status) => (
+                    <option key={status} value={status}>
+                      {t(`modals:invoice.statuses.${status === 'pendiente' ? 'pending' : status === 'pagada' ? 'paid' : 'overdue'}`)}
                     </option>
                   ))}
                 </select>
@@ -328,56 +320,65 @@ export default function InvoiceModal({
             </div>
 
             <div className="form-group">
-              <label>Fecha de Vencimiento</label>
+              <label>{t('modals:invoice.dueDate')}</label>
               <input type="datetime-local" value={form.due_date} onChange={set('due_date')} />
             </div>
           </section>
 
           <section className="form-section">
-            <h3 className="form-section-title">Emisor (perfil fiscal)</h3>
+            <h3 className="form-section-title">{t('modals:invoice.issuerSection')}</h3>
             {seller ? (
               <div className="readonly-block">
                 <p>
-                  <strong>NIT:</strong> {seller.nit}
+                  <strong>{t('modals:invoice.nit')}:</strong> {seller.nit}
                   {seller.dv ? `-${seller.dv}` : ''}
                 </p>
                 {seller.name && (
                   <p>
-                    <strong>Razón social:</strong> {seller.name}
+                    <strong>{t('modals:invoice.businessName')}:</strong> {seller.name}
                   </p>
                 )}
               </div>
             ) : (
               <p className="hint-text">
-                Sin perfil fiscal configurado. Un administrador puede completarlo en la sección de
-                facturación o vía API <code>/api/fiscal/profile</code>.
+                {t('modals:invoice.missingFiscalProfile')} <code>/api/fiscal/profile</code>.
               </p>
             )}
           </section>
 
           <section className="form-section">
-            <h3 className="form-section-title">Documento electrónico (preparación DIAN)</h3>
+            <h3 className="form-section-title">{t('modals:invoice.electronicSection')}</h3>
             <div className="form-row">
               <div className="form-group">
-                <label>Tipo de documento</label>
+                <label>{t('modals:invoice.documentType')}</label>
                 <select
                   value={form.document_type}
                   onChange={set('document_type')}
                   disabled={fiscalDisabled}
                 >
-                  {DOC_TYPES.map((s) => (
-                    <option key={s.value} value={s.value}>
-                      {s.label}
+                  {DOC_TYPES.map((docType) => (
+                    <option key={docType} value={docType}>
+                      {t(`modals:invoice.documentTypes.${docType === 'factura_venta' ? 'invoiceSale' : docType === 'nota_credito' ? 'creditNote' : 'debitNote'}`)}
                     </option>
                   ))}
                 </select>
               </div>
               <div className="form-group">
-                <label>Estado ciclo DIAN</label>
+                <label>{t('modals:invoice.dianStatus')}</label>
                 <select value={form.dian_lifecycle_status} onChange={set('dian_lifecycle_status')}>
-                  {DIAN_STATUSES.map((s) => (
-                    <option key={s.value} value={s.value}>
-                      {s.label}
+                  {DIAN_STATUSES.map((status) => (
+                    <option key={status} value={status}>
+                      {t(`modals:invoice.dianStatuses.${status === 'borrador'
+                        ? 'draft'
+                        : status === 'lista_para_envio'
+                          ? 'readyToSend'
+                          : status === 'enviada_proveedor'
+                            ? 'sentToProvider'
+                            : status === 'aceptada_dian'
+                              ? 'accepted'
+                              : status === 'rechazada_dian'
+                                ? 'rejected'
+                                : 'contingency'}`)}
                     </option>
                   ))}
                 </select>
@@ -385,7 +386,7 @@ export default function InvoiceModal({
             </div>
             <div className="form-row">
               <div className="form-group">
-                <label>Fecha de emisión</label>
+                <label>{t('modals:invoice.issueDate')}</label>
                 <input
                   type="datetime-local"
                   value={form.issue_date}
@@ -394,7 +395,7 @@ export default function InvoiceModal({
                 />
               </div>
               <div className="form-group">
-                <label>Moneda</label>
+                <label>{t('modals:invoice.currency')}</label>
                 <input
                   type="text"
                   value={form.currency}
@@ -407,20 +408,20 @@ export default function InvoiceModal({
           </section>
 
           <section className="form-section">
-            <h3 className="form-section-title">Adquirente</h3>
+            <h3 className="form-section-title">{t('modals:invoice.buyerSection')}</h3>
             <div className="form-row">
               <div className="form-group">
-                <label>Tipo ID</label>
+                <label>{t('modals:invoice.buyerIdType')}</label>
                 <input
                   type="text"
                   value={form.buyer_id_type}
                   onChange={set('buyer_id_type')}
-                  placeholder="NIT, CC, CE…"
+                  placeholder={t('modals:invoice.buyerIdTypePlaceholder')}
                   disabled={fiscalDisabled}
                 />
               </div>
               <div className="form-group">
-                <label>Número ID</label>
+                <label>{t('modals:invoice.buyerIdNumber')}</label>
                 <input
                   type="text"
                   value={form.buyer_id_number}
@@ -430,7 +431,7 @@ export default function InvoiceModal({
               </div>
             </div>
             <div className="form-group">
-              <label>Nombre adquirente</label>
+              <label>{t('modals:invoice.buyerName')}</label>
               <input
                 type="text"
                 value={form.buyer_name}
@@ -441,14 +442,13 @@ export default function InvoiceModal({
           </section>
 
           <section className="form-section">
-            <h3 className="form-section-title">Totales e IVA</h3>
+            <h3 className="form-section-title">{t('modals:invoice.totalsSection')}</h3>
             <p className="hint-text">
-              Opcional: si no completa, el servidor deriva montos a partir del monto operativo. Use
-              IVA 0,19 para el estándar Colombia.
+              {t('modals:invoice.totalsHint')}
             </p>
             <div className="form-row">
               <div className="form-group">
-                <label>Subtotal</label>
+                <label>{t('modals:invoice.subtotal')}</label>
                 <input
                   type="number"
                   step="0.01"
@@ -458,7 +458,7 @@ export default function InvoiceModal({
                 />
               </div>
               <div className="form-group">
-                <label>Base gravable</label>
+                <label>{t('modals:invoice.taxableBase')}</label>
                 <input
                   type="number"
                   step="0.01"
@@ -470,7 +470,7 @@ export default function InvoiceModal({
             </div>
             <div className="form-row">
               <div className="form-group">
-                <label>Alícuota IVA</label>
+                <label>{t('modals:invoice.vatRate')}</label>
                 <input
                   type="number"
                   step="0.01"
@@ -480,7 +480,7 @@ export default function InvoiceModal({
                 />
               </div>
               <div className="form-group">
-                <label>Valor IVA</label>
+                <label>{t('modals:invoice.vatValue')}</label>
                 <input
                   type="number"
                   step="0.01"
@@ -492,7 +492,7 @@ export default function InvoiceModal({
             </div>
             <div className="form-row">
               <div className="form-group">
-                <label>Retenciones</label>
+                <label>{t('modals:invoice.withholdings')}</label>
                 <input
                   type="number"
                   step="0.01"
@@ -502,7 +502,7 @@ export default function InvoiceModal({
                 />
               </div>
               <div className="form-group">
-                <label>Total documento</label>
+                <label>{t('modals:invoice.documentTotal')}</label>
                 <input
                   type="number"
                   step="0.01"
@@ -516,7 +516,7 @@ export default function InvoiceModal({
 
           {users.length > 0 && (
             <div className="form-group">
-              <label>Asignar a</label>
+              <label>{t('modals:invoice.assignTo')}</label>
               <div className="user-chips">
                 {users.map((u) => (
                   <button
@@ -528,7 +528,7 @@ export default function InvoiceModal({
                     {u.username}
                     {form.assigned_user_ids.includes(u.id) && ' ✓'}
                   </button>
-                ))}
+                )}
               </div>
             </div>
           )}
@@ -537,10 +537,10 @@ export default function InvoiceModal({
 
           <div className="modal-footer">
             <button type="button" className="btn btn-secondary" onClick={onClose}>
-              Cancelar
+              {t('modals:cancel')}
             </button>
             <button type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? 'Guardando…' : isEdit ? 'Guardar Cambios' : 'Crear Factura'}
+              {loading ? t('modals:saving') : isEdit ? t('modals:invoice.save') : t('modals:invoice.create')}
             </button>
           </div>
         </form>

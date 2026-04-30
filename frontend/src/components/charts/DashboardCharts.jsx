@@ -13,12 +13,12 @@ import {
   ComposedChart,
   Line,
 } from 'recharts';
+import { useTranslation } from 'react-i18next';
+import { localeFromLanguage } from '../../utils/locale';
 import './Charts.css';
 
 const STATUS_KEYS = ['pendiente', 'pagada', 'vencida'];
 const STATUS_COLORS = { pendiente: '#f59e0b', pagada: '#10b981', vencida: '#ef4444' };
-const STATUS_LABELS = { pendiente: 'Pendiente', pagada: 'Pagada', vencida: 'Vencida' };
-
 function chartTheme() {
   if (typeof window === 'undefined') {
     return { grid: '#e5e7eb', axis: '#6b7280' };
@@ -30,9 +30,9 @@ function chartTheme() {
   };
 }
 
-export function moneyFmt(n) {
+export function moneyFmt(n, locale = 'es-CO') {
   if (n == null || Number.isNaN(Number(n))) return '—';
-  return new Intl.NumberFormat('es-CO', {
+  return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: 'COP',
     maximumFractionDigits: 0,
@@ -49,14 +49,18 @@ export function ChartCard({ title, subtitle, children, className = '' }) {
   );
 }
 
-function EmptyChart({ message = 'Sin datos en este periodo' }) {
-  return <div className="chart-empty">{message}</div>;
+function EmptyChart({ message }) {
+  const { t } = useTranslation(['dashboard']);
+  const fallback = t('dashboard:charts.emptyPeriod');
+  const text = message || fallback;
+  return <div className="chart-empty">{text}</div>;
 }
 
 /** Torta: cantidad de facturas por estado */
 export function StatusCountPieChart({ stats }) {
+  const { t } = useTranslation(['dashboard', 'common']);
   const data = STATUS_KEYS.map((k) => ({
-    name: STATUS_LABELS[k],
+    name: t(`common:${k === 'pendiente' ? 'pending' : k === 'pagada' ? 'paid' : 'overdue'}`),
     key: k,
     value: Number(stats?.count_by_status?.[k] ?? 0),
   })).filter((d) => d.value > 0);
@@ -83,7 +87,7 @@ export function StatusCountPieChart({ stats }) {
             <Cell key={d.key} fill={STATUS_COLORS[d.key]} />
           ))}
         </Pie>
-        <Tooltip formatter={(v) => [`${v} facturas`, 'Cantidad']} />
+        <Tooltip formatter={(v) => [t('dashboard:charts.tooltipCount', { count: v }), t('dashboard:charts.tooltipQuantity')]} />
         <Legend />
       </PieChart>
     </ResponsiveContainer>
@@ -92,8 +96,10 @@ export function StatusCountPieChart({ stats }) {
 
 /** Torta: montos por estado */
 export function StatusAmountPieChart({ stats }) {
+  const { t, i18n } = useTranslation(['dashboard', 'common']);
+  const locale = localeFromLanguage(i18n.resolvedLanguage);
   const data = STATUS_KEYS.map((k) => ({
-    name: STATUS_LABELS[k],
+    name: t(`common:${k === 'pendiente' ? 'pending' : k === 'pagada' ? 'paid' : 'overdue'}`),
     key: k,
     value: Number(stats?.amount_by_status?.[k] ?? 0),
   })).filter((d) => d.value > 0);
@@ -120,7 +126,7 @@ export function StatusAmountPieChart({ stats }) {
             <Cell key={d.key} fill={STATUS_COLORS[d.key]} />
           ))}
         </Pie>
-        <Tooltip formatter={(v) => [moneyFmt(v), 'Monto']} />
+        <Tooltip formatter={(v) => [moneyFmt(v, locale), t('dashboard:charts.tooltipAmount')]} />
         <Legend />
       </PieChart>
     </ResponsiveContainer>
@@ -129,6 +135,8 @@ export function StatusAmountPieChart({ stats }) {
 
 /** Barras: facturación mensual + línea de cantidad de documentos */
 export function MonthlyBillingChart({ monthly }) {
+  const { t, i18n } = useTranslation(['dashboard']);
+  const locale = localeFromLanguage(i18n.resolvedLanguage);
   const colors = chartTheme();
   const rows = (monthly ?? []).map((m) => ({
     month: m.month,
@@ -153,17 +161,19 @@ export function MonthlyBillingChart({ monthly }) {
         <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: colors.axis }} />
         <Tooltip
           formatter={(value, name) =>
-            name === 'monto' ? [moneyFmt(value), 'Monto total'] : [value, 'Facturas']
+            name === 'monto'
+              ? [moneyFmt(value, locale), t('dashboard:charts.tooltipTotal')]
+              : [value, t('dashboard:charts.tooltipInvoices')]
           }
-          labelFormatter={(l) => `Mes ${l}`}
+          labelFormatter={(l) => t('dashboard:charts.monthLabel', { month: l })}
         />
         <Legend />
-        <Bar yAxisId="left" dataKey="monto" name="Monto total" fill="#0e7490" radius={[4, 4, 0, 0]} />
+        <Bar yAxisId="left" dataKey="monto" name={t('dashboard:charts.tooltipTotal')} fill="#0e7490" radius={[4, 4, 0, 0]} />
         <Line
           yAxisId="right"
           type="monotone"
           dataKey="docs"
-          name="Nº facturas"
+          name={t('dashboard:charts.lineInvoices')}
           stroke="#7c3aed"
           strokeWidth={2}
           dot={{ r: 3 }}
@@ -175,6 +185,7 @@ export function MonthlyBillingChart({ monthly }) {
 
 /** Histograma: facturas por tramo de monto */
 export function AmountHistogramChart({ histogram }) {
+  const { t } = useTranslation(['dashboard']);
   const colors = chartTheme();
   const rows = (histogram ?? []).map((h) => ({
     label: h.label,
@@ -182,7 +193,7 @@ export function AmountHistogramChart({ histogram }) {
   }));
 
   if (!rows.some((r) => r.n > 0)) {
-    return <EmptyChart message="Sin facturas en el rango para histograma" />;
+    return <EmptyChart message={t('dashboard:charts.emptyHistogram')} />;
   }
 
   return (
@@ -191,8 +202,8 @@ export function AmountHistogramChart({ histogram }) {
         <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} horizontal />
         <XAxis type="number" tick={{ fontSize: 11, fill: colors.axis }} allowDecimals={false} />
         <YAxis type="category" dataKey="label" width={100} tick={{ fontSize: 11, fill: colors.axis }} />
-        <Tooltip formatter={(v) => [`${v} facturas`, 'Cantidad']} />
-        <Bar dataKey="n" name="Facturas" fill="#14b8a6" radius={[0, 4, 4, 0]} />
+        <Tooltip formatter={(v) => [t('dashboard:charts.tooltipCount', { count: v }), t('dashboard:charts.tooltipQuantity')]} />
+        <Bar dataKey="n" name={t('dashboard:charts.barInvoices')} fill="#14b8a6" radius={[0, 4, 4, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -200,6 +211,8 @@ export function AmountHistogramChart({ histogram }) {
 
 /** Barras horizontales: ranking de organizaciones (plataforma) */
 export function TopOrganizationsBarChart({ rows, maxBars = 12 }) {
+  const { t, i18n } = useTranslation(['dashboard']);
+  const locale = localeFromLanguage(i18n.resolvedLanguage);
   const colors = chartTheme();
   const slice = (rows ?? []).slice(0, maxBars).map((r) => ({
     name: r.name.length > 28 ? `${r.name.slice(0, 26)}…` : r.name,
@@ -208,7 +221,7 @@ export function TopOrganizationsBarChart({ rows, maxBars = 12 }) {
   }));
 
   if (slice.length === 0) {
-    return <EmptyChart message="Sin datos de ranking" />;
+    return <EmptyChart message={t('dashboard:charts.emptyRanking')} />;
   }
 
   return (
@@ -222,10 +235,10 @@ export function TopOrganizationsBarChart({ rows, maxBars = 12 }) {
         />
         <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 11, fill: colors.axis }} />
         <Tooltip
-          formatter={(v) => [moneyFmt(v), 'Facturación']}
+          formatter={(v) => [moneyFmt(v, locale), t('dashboard:charts.billingLabel')]}
           labelFormatter={(_, p) => p?.[0]?.payload?.slug ?? ''}
         />
-        <Bar dataKey="total" name="Total" fill="#0e7490" radius={[0, 4, 4, 0]} />
+        <Bar dataKey="total" name={t('dashboard:charts.tooltipTotal')} fill="#0e7490" radius={[0, 4, 4, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -233,25 +246,26 @@ export function TopOrganizationsBarChart({ rows, maxBars = 12 }) {
 
 /** Bloque estándar: rejilla de gráficos del dashboard */
 export function DashboardChartsGrid({ stats }) {
+  const { t } = useTranslation(['dashboard']);
   if (!stats) return null;
 
   return (
     <>
       <div className="chart-grid">
-        <ChartCard title="Facturas por estado" subtitle="Distribución por cantidad">
+        <ChartCard title={t('dashboard:charts.statusCountTitle')} subtitle={t('dashboard:charts.statusCountSubtitle')}>
           <StatusCountPieChart stats={stats} />
         </ChartCard>
-        <ChartCard title="Montos por estado" subtitle="Participación por valor (COP)">
+        <ChartCard title={t('dashboard:charts.statusAmountTitle')} subtitle={t('dashboard:charts.statusAmountSubtitle')}>
           <StatusAmountPieChart stats={stats} />
         </ChartCard>
       </div>
       <div className="chart-grid">
-        <ChartCard title="Evolución mensual" subtitle="Montos y volumen de documentos" className="chart-card--tall">
+        <ChartCard title={t('dashboard:charts.monthlyTitle')} subtitle={t('dashboard:charts.monthlySubtitle')} className="chart-card--tall">
           <MonthlyBillingChart monthly={stats.monthly} />
         </ChartCard>
         <ChartCard
-          title="Histograma de montos"
-          subtitle="Cantidad de facturas por tramo (COP)"
+          title={t('dashboard:charts.histogramTitle')}
+          subtitle={t('dashboard:charts.histogramSubtitle')}
           className="chart-card--tall"
         >
           <AmountHistogramChart histogram={stats.histogram_by_amount} />

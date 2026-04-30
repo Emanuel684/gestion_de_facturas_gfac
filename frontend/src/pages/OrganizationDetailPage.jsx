@@ -16,31 +16,18 @@ import { useTranslation } from 'react-i18next';
 import { localeFromLanguage } from '../utils/locale';
 import './OrganizationDetailPage.css';
 
-const PLAN_OPTIONS = [
-  { value: 'basico', label: 'Basico' },
-  { value: 'profesional', label: 'Profesional' },
-  { value: 'empresarial', label: 'Empresarial' },
-];
+const PLAN_OPTIONS = ['basico', 'profesional', 'empresarial'];
 
-const ROLE_OPTIONS = [
-  { value: 'administrador', label: 'Administrador' },
-  { value: 'contador', label: 'Contador' },
-  { value: 'asistente', label: 'Asistente' },
-];
+const ROLE_OPTIONS = ['administrador', 'contador', 'asistente'];
 
-const STATUS_OPTIONS = [
-  { value: '', label: 'Todos' },
-  { value: 'pendiente', label: 'Pendiente' },
-  { value: 'pagada', label: 'Pagada' },
-  { value: 'vencida', label: 'Vencida' },
-];
+const STATUS_OPTIONS = ['', 'pendiente', 'pagada', 'vencida'];
 
 function fmtMoney(amount, locale) {
   return new Intl.NumberFormat(locale, { style: 'currency', currency: 'COP' }).format(amount);
 }
 
 export default function OrganizationDetailPage() {
-  const { t, i18n } = useTranslation(['organizations', 'common']);
+  const { t, i18n } = useTranslation(['organizations', 'common', 'modals']);
   const locale = localeFromLanguage(i18n.resolvedLanguage);
   const { organizationId } = useParams();
   const orgId = Number(organizationId);
@@ -89,7 +76,7 @@ export default function OrganizationDetailPage() {
       });
     } catch (err) {
       const d = err.response?.data?.detail;
-      setError(typeof d === 'string' ? d : 'No se pudo cargar la organización.');
+      setError(typeof d === 'string' ? d : t('organizations:detail.loadError'));
     } finally {
       setLoading(false);
     }
@@ -123,7 +110,7 @@ export default function OrganizationDetailPage() {
       setOrg(r.data);
     } catch (err) {
       const d = err.response?.data?.detail;
-      setError(typeof d === 'string' ? d : 'No se pudo actualizar la organización.');
+      setError(typeof d === 'string' ? d : t('organizations:detail.updateError'));
     } finally {
       setSavingOrg(false);
     }
@@ -147,14 +134,14 @@ export default function OrganizationDetailPage() {
       await fetchUsers();
     } catch (err) {
       const d = err.response?.data?.detail;
-      setError(typeof d === 'string' ? d : 'No se pudo actualizar el usuario.');
+      setError(typeof d === 'string' ? d : t('organizations:detail.updateUserError'));
     } finally {
       setSavingUser(false);
     }
   };
 
   const handleDeleteUser = async (u) => {
-    if (!window.confirm(`Deshabilitar usuario ${u.username}?`)) return;
+    if (!window.confirm(t('organizations:detail.disableUserConfirm', { username: u.username }))) return;
     setDeletingUserId(u.id);
     setError('');
     try {
@@ -162,7 +149,7 @@ export default function OrganizationDetailPage() {
       await fetchUsers();
     } catch (err) {
       const d = err.response?.data?.detail;
-      setError(typeof d === 'string' ? d : 'No se pudo eliminar el usuario.');
+      setError(typeof d === 'string' ? d : t('organizations:detail.deleteUserError'));
     } finally {
       setDeletingUserId(null);
     }
@@ -209,11 +196,11 @@ export default function OrganizationDetailPage() {
         ) : (
           <>
             <section className="org-detail-card">
-              <h2>Editar organizacion</h2>
+              <h2>{t('organizations:detail.editOrganization')}</h2>
               <form className="org-detail-form" onSubmit={handleSaveOrg}>
                 <div className="org-detail-grid">
                   <div className="form-group">
-                    <label>Nombre</label>
+                    <label>{t('organizations:detail.name')}</label>
                     <input
                       value={orgForm.name}
                       onChange={(e) => setOrgForm((f) => ({ ...f, name: e.target.value }))}
@@ -221,7 +208,7 @@ export default function OrganizationDetailPage() {
                     />
                   </div>
                   <div className="form-group">
-                    <label>Slug</label>
+                    <label>{t('organizations:detail.slug')}</label>
                     <input
                       value={orgForm.slug}
                       onChange={(e) => setOrgForm((f) => ({ ...f, slug: e.target.value }))}
@@ -229,36 +216,36 @@ export default function OrganizationDetailPage() {
                     />
                   </div>
                   <div className="form-group">
-                    <label>Plan</label>
+                    <label>{t('organizations:detail.plan')}</label>
                     <select
                       value={orgForm.plan_tier}
                       onChange={(e) => setOrgForm((f) => ({ ...f, plan_tier: e.target.value }))}
                     >
-                      {PLAN_OPTIONS.map((p) => (
-                        <option key={p.value} value={p.value}>{p.label}</option>
+                      {PLAN_OPTIONS.map((planKey) => (
+                        <option key={planKey} value={planKey}>{planKey}</option>
                       ))}
                     </select>
                   </div>
                 </div>
                 <button className="btn btn-primary" type="submit" disabled={savingOrg}>
-                  {savingOrg ? 'Guardando...' : 'Guardar cambios'}
+                  {savingOrg ? t('organizations:detail.saving') : t('organizations:detail.saveChanges')}
                 </button>
               </form>
             </section>
 
             <section className="org-detail-card">
               <div className="org-detail-section-head">
-                <h2>Usuarios</h2>
+                <h2>{t('organizations:detail.usersTitle')}</h2>
                 <label className="org-detail-check">
                   <input
                     type="checkbox"
                     checked={showInactiveUsers}
                     onChange={(e) => setShowInactiveUsers(e.target.checked)}
                   />
-                  Incluir inactivos
+                  {t('organizations:detail.includeInactive')}
                 </label>
               </div>
-              <p className="org-detail-muted">{activeUsers} activos / {users.length} visibles</p>
+              <p className="org-detail-muted">{t('organizations:detail.activeVsVisible', { active: activeUsers, total: users.length })}</p>
               <div className="org-users-list">
                 {users.map((u) => (
                   <article className="org-user-item" key={u.id}>
@@ -267,7 +254,7 @@ export default function OrganizationDetailPage() {
                     </div>
                     <div className="org-user-actions">
                       <span className={`org-user-status ${u.is_active ? 'active' : 'inactive'}`}>
-                        {u.is_active ? 'Activo' : 'Inactivo'}
+                        {u.is_active ? t('organizations:detail.active') : t('organizations:detail.inactive')}
                       </span>
                       <span className="org-user-role">{u.role}</span>
                       <button
@@ -275,7 +262,7 @@ export default function OrganizationDetailPage() {
                         type="button"
                         onClick={() => setEditingUser({ ...u, password: '' })}
                       >
-                        Editar
+                        {t('organizations:detail.editUser')}
                       </button>
                       {u.is_active && (
                         <button
@@ -284,13 +271,13 @@ export default function OrganizationDetailPage() {
                           disabled={deletingUserId === u.id}
                           onClick={() => handleDeleteUser(u)}
                         >
-                          {deletingUserId === u.id ? 'Eliminando...' : 'Eliminar'}
+                          {deletingUserId === u.id ? t('organizations:detail.deletingUser') : t('organizations:detail.deleteUser')}
                         </button>
                       )}
                     </div>
                   </article>
                 ))}
-                {users.length === 0 && <p className="org-detail-muted">Sin usuarios para esta organización.</p>}
+                {users.length === 0 && <p className="org-detail-muted">{t('organizations:detail.noUsers')}</p>}
               </div>
             </section>
 
@@ -302,8 +289,16 @@ export default function OrganizationDetailPage() {
                 <div className="form-group">
                   <label>{t('organizations:detail.status')}</label>
                   <select value={invoiceStatus} onChange={(e) => setInvoiceStatus(e.target.value)}>
-                    {STATUS_OPTIONS.map((s) => (
-                      <option key={s.value || 'all'} value={s.value}>{s.label}</option>
+                    {STATUS_OPTIONS.map((statusValue) => (
+                      <option key={statusValue || 'all'} value={statusValue}>
+                        {statusValue === ''
+                          ? t('common:allStatuses')
+                          : statusValue === 'pendiente'
+                            ? t('common:pending')
+                            : statusValue === 'pagada'
+                              ? t('common:paid')
+                              : t('common:overdue')}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -376,12 +371,12 @@ export default function OrganizationDetailPage() {
         <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setEditingUser(null)}>
           <div className="modal-box">
             <div className="modal-header">
-              <h2>Editar usuario</h2>
-              <button className="modal-close" onClick={() => setEditingUser(null)} aria-label="Cerrar">✕</button>
+              <h2>{t('organizations:detail.editUserModalTitle')}</h2>
+              <button className="modal-close" onClick={() => setEditingUser(null)} aria-label={t('modals:close')}>✕</button>
             </div>
             <form className="modal-form" onSubmit={handleSaveUser}>
               <div className="form-group">
-                <label>Usuario</label>
+                <label>{t('organizations:detail.username')}</label>
                 <input
                   value={editingUser.username}
                   onChange={(e) => setEditingUser((u) => ({ ...u, username: e.target.value }))}
@@ -389,7 +384,7 @@ export default function OrganizationDetailPage() {
                 />
               </div>
               <div className="form-group">
-                <label>Email</label>
+                <label>{t('organizations:detail.emailLabel')}</label>
                 <input
                   type="email"
                   value={editingUser.email}
@@ -399,29 +394,29 @@ export default function OrganizationDetailPage() {
               </div>
               <div className="form-row">
                 <div className="form-group">
-                  <label>Rol</label>
+                  <label>{t('organizations:detail.role')}</label>
                   <select
                     value={editingUser.role}
                     onChange={(e) => setEditingUser((u) => ({ ...u, role: e.target.value }))}
                   >
-                    {ROLE_OPTIONS.map((r) => (
-                      <option key={r.value} value={r.value}>{r.label}</option>
+                    {ROLE_OPTIONS.map((roleValue) => (
+                      <option key={roleValue} value={roleValue}>{roleValue}</option>
                     ))}
                   </select>
                 </div>
                 <div className="form-group">
-                  <label>Activo</label>
+                  <label>{t('organizations:detail.activeLabel')}</label>
                   <select
                     value={editingUser.is_active ? 'yes' : 'no'}
                     onChange={(e) => setEditingUser((u) => ({ ...u, is_active: e.target.value === 'yes' }))}
                   >
-                    <option value="yes">Si</option>
-                    <option value="no">No</option>
+                    <option value="yes">{t('organizations:detail.yes')}</option>
+                    <option value="no">{t('organizations:detail.no')}</option>
                   </select>
                 </div>
               </div>
               <div className="form-group">
-                <label>Nueva contraseña (opcional)</label>
+                <label>{t('organizations:detail.newPasswordOptional')}</label>
                 <input
                   type="password"
                   minLength={6}
@@ -431,10 +426,10 @@ export default function OrganizationDetailPage() {
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setEditingUser(null)}>
-                  Cancelar
+                  {t('modals:cancel')}
                 </button>
                 <button type="submit" className="btn btn-primary" disabled={savingUser}>
-                  {savingUser ? 'Guardando...' : 'Guardar'}
+                  {savingUser ? t('organizations:detail.saving') : t('organizations:detail.save')}
                 </button>
               </div>
             </form>

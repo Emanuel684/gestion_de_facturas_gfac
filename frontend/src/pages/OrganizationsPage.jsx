@@ -101,9 +101,7 @@ export default function OrganizationsPage() {
   }, [page, totalPages]);
 
   const handleDelete = async (o) => {
-    const msg =
-      `¿Eliminar permanentemente la organización «${o.name}» (${o.slug})?\n\n` +
-      'Se borrarán todos los datos: usuarios (activos e inactivos), facturas, eventos, suscripciones, pagos y perfiles fiscales. Esta acción no se puede deshacer.';
+    const msg = t('organizations:confirmDeletePermanent', { name: o.name, slug: o.slug });
     if (!window.confirm(msg)) return;
     setError('');
     setDeletingId(o.id);
@@ -135,7 +133,7 @@ export default function OrganizationsPage() {
             <div className="orgs-form-row">
               <div className="form-group">
                 <label>{t('organizations:orgName')}</label>
-                <input value={form.name} onChange={set('name')} required placeholder="Acme SAS" />
+                <input value={form.name} onChange={set('name')} required placeholder={t('organizations:orgName')} />
               </div>
               <div className="form-group">
                 <label>{t('organizations:slug')}</label>
@@ -143,9 +141,9 @@ export default function OrganizationsPage() {
                   value={form.slug}
                   onChange={set('slug')}
                   required
-                  placeholder="ej. acme-corp"
+                  placeholder={t('organizations:slug')}
                   pattern="[a-z0-9]+(-[a-z0-9]+)*"
-                  title="minúsculas, números y guiones"
+                  title={t('organizations:slugTitleHint')}
                 />
               </div>
               <div className="form-group">
@@ -196,7 +194,7 @@ export default function OrganizationsPage() {
             <div className="spinner-center"><div className="spinner" /></div>
           ) : filteredOrgs.length === 0 ? (
             <p className="orgs-empty">
-              {searchName.trim() ? 'No se encontraron organizaciones con ese nombre.' : 'Aún no hay organizaciones activas.'}
+              {searchName.trim() ? t('organizations:emptySearch') : t('organizations:emptyNoneActive')}
             </p>
           ) : (
             <>
@@ -212,7 +210,7 @@ export default function OrganizationsPage() {
                     <Link
                       className="btn btn-secondary btn-sm"
                       to={`/app/organizaciones/${o.id}`}
-                      title="Editar organización y administrar sus usuarios/facturas"
+                      title={t('organizations:manageTitle')}
                     >
                       {t('organizations:manage')}
                     </Link>
@@ -220,7 +218,7 @@ export default function OrganizationsPage() {
                       type="button"
                       className="btn btn-org-delete"
                       disabled={deletingId === o.id}
-                      title="Eliminar organización y todos sus datos"
+                      title={t('organizations:deleteTitle')}
                       onClick={() => handleDelete(o)}
                     >
                       {deletingId === o.id ? t('organizations:deleting') : t('organizations:delete')}
