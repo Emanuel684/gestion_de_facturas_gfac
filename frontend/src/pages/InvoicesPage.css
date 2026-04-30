@@ -15,9 +15,9 @@
   gap: 1rem;
 }
 
-.invoices-title { font-size: 1.6rem; font-weight: 700; color: #1e1b4b; }
-.invoices-sub   { font-size: 0.85rem; color: #6b7280; margin-top: 0.2rem; }
-.invoices-org   { font-weight: 600; color: #0e7490; }
+.invoices-title { font-size: 1.6rem; font-weight: 700; color: var(--color-text); }
+.invoices-sub   { font-size: 0.85rem; color: var(--color-text-muted); margin-top: 0.2rem; }
+.invoices-org   { font-weight: 600; color: var(--color-primary); }
 
 /* Header action buttons */
 .header-actions {
@@ -55,31 +55,31 @@
   margin-bottom: 1.5rem;
   flex-wrap: wrap;
 }
-.filter-label { font-size: 0.85rem; color: #6b7280; margin-right: 0.25rem; }
+.filter-label { font-size: 0.85rem; color: var(--color-text-muted); margin-right: 0.25rem; }
 .filter-btn {
   padding: 0.45rem 0.9rem;
-  border: 1.5px solid #e5e7eb;
+  border: 1.5px solid var(--color-border);
   border-radius: 20px;
-  background: #fff;
+  background: var(--color-surface);
   font-size: 0.82rem;
   cursor: pointer;
-  color: #374151;
+  color: var(--color-text-muted);
   transition: all 0.15s;
 }
-.filter-btn:hover  { border-color: #0e7490; color: #0e7490; }
-.filter-btn.active { background: #0e7490; color: #fff; border-color: #0e7490; }
+.filter-btn:hover  { border-color: var(--color-primary); color: var(--color-primary); }
+.filter-btn.active { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
 
 .supplier-search {
   margin-left: auto;
   padding: 0.4rem 0.75rem;
-  border: 1.5px solid #d1d5db;
+  border: 1.5px solid var(--color-border-strong);
   border-radius: 20px;
   font-size: 0.85rem;
   outline: none;
   width: 220px;
   transition: border-color 0.15s;
 }
-.supplier-search:focus { border-color: #0e7490; box-shadow: 0 0 0 3px rgba(14,116,144,0.1); }
+.supplier-search:focus { border-color: var(--color-primary); box-shadow: var(--focus-ring); }
 
 /* View mode toggle */
 .filter-bar-with-view {

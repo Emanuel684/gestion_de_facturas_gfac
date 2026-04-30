@@ -1,0 +1,11 @@
+{
+  "title": "Dashboard",
+  "subtitle": "Resumen de facturas de su organización",
+  "goReports": "Ir a reportes (PDF / Excel) →",
+  "totalInvoices": "Total facturas",
+  "totalAmount": "Monto total",
+  "pendingNext7": "Pendientes (próx. 7 días)",
+  "visualization": "Visualización",
+  "visualizationSub": "Mismos gráficos que en la aplicación web",
+  "emptyPeriod": "No hay facturas en el periodo seleccionado. Ajuste las fechas o cree facturas desde el listado."
+}

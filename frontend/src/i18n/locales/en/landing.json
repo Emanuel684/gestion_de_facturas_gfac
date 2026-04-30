@@ -1,0 +1,13 @@
+{
+  "signin": "Sign in",
+  "createAccount": "Create account",
+  "heroTitle": "Web invoice management system for small and medium businesses",
+  "heroLead": "Centralize invoices, automate tracking, and make decisions with reliable data.",
+  "enterPlatform": "Enter platform",
+  "alreadyAccount": "I already have an account",
+  "viewPlans": "View plans",
+  "plansTitle": "Plans and pricing",
+  "plansSubtitle": "Choose the plan that best fits your organization.",
+  "finalTitle": "Ready to organize your invoicing?",
+  "finalSubtitle": "Create an account or sign in to access your organization dashboard."
+}

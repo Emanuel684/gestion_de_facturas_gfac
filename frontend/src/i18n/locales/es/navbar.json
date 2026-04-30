@@ -1,0 +1,16 @@
+{
+  "brand": "SGF — Facturas",
+  "openMenu": "Abrir menú",
+  "closeMenu": "Cerrar menú",
+  "invoices": "Facturas",
+  "dashboard": "Dashboard",
+  "reports": "Reportes",
+  "users": "Usuarios",
+  "billing": "Suscripción",
+  "organizations": "Organizaciones",
+  "notifications": "Notificaciones",
+  "updates": "Novedades",
+  "markAll": "Marcar todas",
+  "markRead": "Marcar leída",
+  "emptyNotifications": "No hay notificaciones."
+}

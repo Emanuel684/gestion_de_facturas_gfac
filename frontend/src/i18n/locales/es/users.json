@@ -1,0 +1,15 @@
+{
+  "title": "Usuarios",
+  "activeUsers": "{{count}} usuario activo",
+  "activeUsers_other": "{{count}} usuarios activos",
+  "newUser": "Nuevo Usuario",
+  "loadError": "Error al cargar usuarios.",
+  "noneFound": "No se encontraron usuarios.",
+  "editUser": "Editar usuario",
+  "deleteUser": "Eliminar usuario",
+  "active": "Activo",
+  "inactive": "Inactivo",
+  "since": "Desde",
+  "confirmDelete": "¿Eliminar al usuario «{{username}}»?\n\nSe eliminarán también todas las facturas que haya creado. En facturas de otros solo se quitará como asignado.",
+  "deleteError": "No se pudo eliminar el usuario."
+}

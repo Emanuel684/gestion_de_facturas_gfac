@@ -1,0 +1,15 @@
+{
+  "title": "Billing and subscription",
+  "subtitle": "Review your plan, renewal dates, and simulated payment history.",
+  "subStatusTitle": "Subscription status",
+  "plan": "Plan",
+  "status": "Status",
+  "nextCharge": "Next charge",
+  "graceUntil": "Grace until",
+  "currentPeriod": "Current period",
+  "payRenew": "Pay or renew plan (mock)",
+  "openingPayment": "Opening checkout...",
+  "historyTitle": "Payment history",
+  "noPayments": "No payments recorded yet.",
+  "errorGeneric": "Something went wrong."
+}

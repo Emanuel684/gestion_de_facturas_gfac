@@ -4,12 +4,12 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 1rem;
-  background: #fff;
-  border-bottom: 1px solid #e5e7eb;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--color-shadow);
   gap: 0.75rem;
 }
 
@@ -19,14 +19,14 @@
   gap: 0.6rem;
   font-weight: 700;
   font-size: 1rem;
-  color: #1e1b4b;
+  color: var(--color-text);
   text-decoration: none;
   flex-shrink: 0;
   min-width: 0;
 }
 
 .navbar-brand:hover {
-  color: #0e7490;
+  color: var(--color-primary);
 }
 
 /* Escritorio: enlaces + usuario en línea */
@@ -52,14 +52,14 @@
   border-radius: 8px;
   font-size: 0.88rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-text-muted);
   text-decoration: none;
   transition: background 0.12s, color 0.12s;
 }
 
 .nav-link:hover {
-  background: #f0fdfa;
-  color: #0e7490;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
 }
 
 .navbar-right {
@@ -69,14 +69,32 @@
   flex-shrink: 0;
 }
 
+.theme-toggle-btn {
+  padding: 0.35rem 0.8rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 36px;
+}
+
+.theme-toggle-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
 .notifications-wrap {
   position: relative;
 }
 
 .notifications-btn {
   position: relative;
-  border: 1px solid #d1d5db;
-  background: #fff;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
   border-radius: 10px;
   padding: 0.3rem 0.55rem;
   cursor: pointer;
@@ -108,8 +126,8 @@
   width: min(380px, calc(100vw - 2rem));
   max-height: 420px;
   overflow: auto;
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.15);
   padding: 0.6rem;
@@ -127,14 +145,14 @@
 .notifications-read-one {
   border: none;
   background: transparent;
-  color: #0e7490;
+  color: var(--color-primary);
   font-size: 0.78rem;
   cursor: pointer;
 }
 
 .notifications-empty {
   margin: 0.6rem 0.3rem;
-  color: #6b7280;
+  color: var(--color-text-muted);
   font-size: 0.85rem;
 }
 
@@ -147,14 +165,14 @@
 }
 
 .notifications-item {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   border-radius: 10px;
   padding: 0.55rem;
 }
 
 .notifications-item.is-unread {
-  border-color: #67e8f9;
-  background: #ecfeff;
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
 }
 
 .notifications-item-top {
@@ -166,7 +184,7 @@
 .notifications-item p {
   margin: 0.3rem 0 0;
   font-size: 0.82rem;
-  color: #374151;
+  color: var(--color-text-muted);
 }
 
 .navbar-user {
@@ -174,7 +192,7 @@
   align-items: center;
   gap: 0.5rem;
   font-size: 0.88rem;
-  color: #374151;
+  color: var(--color-text-muted);
   font-weight: 500;
 }
 
@@ -187,7 +205,7 @@
 
 .navbar-org {
   font-weight: 400;
-  color: #6b7280;
+  color: var(--color-text-subtle);
   font-size: 0.82rem;
 }
 
@@ -212,21 +230,21 @@
   padding: 0;
   border: none;
   border-radius: 10px;
-  background: #f3f4f6;
+  background: var(--color-bg-soft);
   cursor: pointer;
   flex-shrink: 0;
   transition: background 0.15s;
 }
 
 .navbar-menu-btn:hover {
-  background: #e5e7eb;
+  background: var(--color-surface-2);
 }
 
 .navbar-menu-icon {
   position: relative;
   width: 20px;
   height: 2px;
-  background: #374151;
+  background: var(--color-text-muted);
   border-radius: 1px;
   transition: background 0.2s;
 }
@@ -238,7 +256,7 @@
   left: 0;
   width: 20px;
   height: 2px;
-  background: #374151;
+  background: var(--color-text-muted);
   border-radius: 1px;
   transition: transform 0.2s, top 0.2s;
 }
@@ -288,7 +306,7 @@
     align-items: stretch;
     justify-content: flex-start;
     padding: 1rem 1rem 2rem;
-    background: #fff;
+    background: var(--color-surface);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
@@ -322,7 +340,7 @@
     gap: 1rem;
     margin-top: 1.25rem;
     padding-top: 1.25rem;
-    border-top: 1px solid #e5e7eb;
+    border-top: 1px solid var(--color-border);
   }
 
   .notifications-wrap {
@@ -365,7 +383,7 @@
     border: none;
     padding: 0;
     margin: 0;
-    background: rgba(15, 23, 42, 0.35);
+    background: var(--color-overlay);
     cursor: pointer;
     z-index: 101;
     animation: navbar-fade 0.2s ease;

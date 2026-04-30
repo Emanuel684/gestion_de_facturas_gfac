@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Navbar from '../components/Navbar';
 import { getTenantDashboard, exportTenantReport } from '../api';
 import { DashboardChartsGrid } from '../components/charts/DashboardCharts';
@@ -24,6 +25,7 @@ function triggerDownload(blob, fallbackName) {
 }
 
 export default function ReportsPage() {
+  const { t } = useTranslation(['reports', 'common']);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [status, setStatus] = useState('');
@@ -53,7 +55,7 @@ export default function ReportsPage() {
       const r = await getTenantDashboard(params);
       setStats(r.data);
     } catch {
-      setChartError('No se pudieron cargar los gráficos.');
+      setChartError(t('reports:chartError'));
       setStats(null);
     } finally {
       setLoadingCharts(false);
@@ -82,7 +84,7 @@ export default function ReportsPage() {
       const name = m ? m[1].trim() : `facturas.${format === 'xlsx' ? 'xlsx' : 'pdf'}`;
       triggerDownload(blob, name);
     } catch {
-      setError('No se pudo generar el archivo. Intente de nuevo.');
+      setError(t('reports:downloadError'));
     } finally {
       setLoading(null);
     }
@@ -93,21 +95,21 @@ export default function ReportsPage() {
       <Navbar />
       <main className="sgf-page">
         <header className="sgf-page-header">
-          <h1 className="sgf-page-title">Reportes</h1>
+          <h1 className="sgf-page-title">{t('reports:title')}</h1>
           <p className="sgf-page-sub">
-            Exporte a Excel o PDF y revise la vista previa con los mismos filtros que el archivo descargado.
+            {t('reports:subtitle')}
           </p>
           <Link to="/app/dashboard" className="sgf-page-link">
-            ← Volver al dashboard
+            {t('reports:backDashboard')}
           </Link>
         </header>
 
         <div className="sgf-panel sgf-panel--flush">
-          <h2 className="sgf-panel-title">Filtros y descarga</h2>
+          <h2 className="sgf-panel-title">{t('reports:filtersTitle')}</h2>
           <DateRangePresetBar activeKey={presetActive} onSelect={applyPreset} />
           <div className="sgf-toolbar sgf-toolbar--spaced">
             <div className="sgf-field">
-              <span className="sgf-field-label">Desde</span>
+              <span className="sgf-field-label">{t('common:from')}</span>
               <input
                 className="sgf-input"
                 type="date"
@@ -119,7 +121,7 @@ export default function ReportsPage() {
               />
             </div>
             <div className="sgf-field">
-              <span className="sgf-field-label">Hasta</span>
+              <span className="sgf-field-label">{t('common:to')}</span>
               <input
                 className="sgf-input"
                 type="date"
@@ -131,7 +133,7 @@ export default function ReportsPage() {
               />
             </div>
             <div className="sgf-field">
-              <span className="sgf-field-label">Estado</span>
+              <span className="sgf-field-label">{t('reports:status')}</span>
               <select
                 className="sgf-select"
                 value={status}
@@ -151,7 +153,7 @@ export default function ReportsPage() {
                 disabled={loading}
                 onClick={() => download('xlsx')}
               >
-                {loading === 'xlsx' ? 'Generando…' : 'Descargar Excel'}
+                {loading === 'xlsx' ? t('reports:generating') : t('reports:downloadExcel')}
               </button>
               <button
                 type="button"
@@ -159,20 +161,20 @@ export default function ReportsPage() {
                 disabled={loading}
                 onClick={() => download('pdf')}
               >
-                {loading === 'pdf' ? 'Generando…' : 'Descargar PDF'}
+                {loading === 'pdf' ? t('reports:generating') : t('reports:downloadPdf')}
               </button>
             </div>
           </div>
           {error && <div className="alert alert-error">{error}</div>}
           <p className="sgf-report-hint">
-            Los datos respetan su rol: los asistentes solo ven facturas creadas o asignadas a ellos.
+            {t('reports:hint')}
           </p>
         </div>
 
         <div className="sgf-panel">
           <div className="sgf-section-head sgf-section-head--tight">
-            <h2 className="sgf-section-title">Vista previa (gráficos)</h2>
-            <p className="sgf-section-sub">Se actualiza al cambiar filtros</p>
+            <h2 className="sgf-section-title">{t('reports:previewTitle')}</h2>
+            <p className="sgf-section-sub">{t('reports:previewSub')}</p>
           </div>
           {chartError && <div className="alert alert-error">{chartError}</div>}
           {loadingCharts && (
@@ -182,7 +184,7 @@ export default function ReportsPage() {
             <>
               <DashboardChartsGrid stats={stats} />
               {stats.total_invoices === 0 && (
-                <p className="sgf-empty-hint">Sin datos para graficar con los filtros actuales.</p>
+                <p className="sgf-empty-hint">{t('reports:noGraphData')}</p>
               )}
             </>
           )}

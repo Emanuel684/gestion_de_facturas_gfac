@@ -1,0 +1,15 @@
+{
+  "title": "Facturación y suscripción",
+  "subtitle": "Consulte su plan, fechas de renovación y el historial de pagos simulados.",
+  "subStatusTitle": "Estado de la suscripción",
+  "plan": "Plan",
+  "status": "Estado",
+  "nextCharge": "Próximo cobro",
+  "graceUntil": "Gracia hasta",
+  "currentPeriod": "Periodo actual",
+  "payRenew": "Pagar o renovar plan (simulado)",
+  "openingPayment": "Abriendo pago...",
+  "historyTitle": "Historial de pagos",
+  "noPayments": "No hay pagos registrados aún.",
+  "errorGeneric": "Ocurrió un error."
+}

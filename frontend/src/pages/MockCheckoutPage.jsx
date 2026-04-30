@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { completePublicCheckout, getPublicCheckout } from '../api';
 import { useAuth } from '../context/AuthContext';
 import './MockCheckoutPage.css';
@@ -22,6 +23,7 @@ const STATUS_LABELS = {
 };
 
 export default function MockCheckoutPage() {
+  const { t } = useTranslation(['auth']);
   const { sessionToken } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -88,7 +90,7 @@ export default function MockCheckoutPage() {
                 strokeLinecap="round"
               />
             </svg>
-            <h1>Pago no disponible</h1>
+          <h1>{t('auth:mockUnavailable', { defaultValue: 'Pago no disponible' })}</h1>
           </div>
           <p className="checkout-mock-sub">{error || 'No se encontró la sesión de checkout.'}</p>
           <p className="checkout-mock-footer">
@@ -116,10 +118,10 @@ export default function MockCheckoutPage() {
               strokeLinecap="round"
             />
           </svg>
-          <h1>Pago simulado</h1>
+          <h1>{t('auth:mockTitle')}</h1>
         </div>
         <p className="checkout-mock-sub">
-          Entorno de prueba: confirme o rechace el pago. No se procesan cobros reales.
+          {t('auth:mockSubtitle')}
         </p>
 
         <p className="checkout-mock-detail">

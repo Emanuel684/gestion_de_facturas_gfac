@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getUsers, deleteUser } from '../api';
 import { useAuth } from '../context/AuthContext';
 import UserModal from '../components/UserModal';
@@ -18,6 +19,7 @@ const ROLE_COLORS = {
 };
 
 export default function UsersPage() {
+  const { t, i18n } = useTranslation(['users']);
   const { user } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,7 +35,7 @@ export default function UsersPage() {
       const resp = await getUsers();
       setUsers(resp.data);
     } catch {
-      setError('Error al cargar usuarios.');
+      setError(t('users:loadError'));
     } finally {
       setLoading(false);
     }
@@ -54,10 +56,7 @@ export default function UsersPage() {
 
   const handleDeleteUser = async (u) => {
     if (u.id === user?.id) return;
-    const msg =
-      `¿Eliminar al usuario «${u.username}»?\n\n` +
-      'Se eliminarán también todas las facturas que haya creado. ' +
-      'En facturas de otros solo se quitará como asignado.';
+    const msg = t('users:confirmDelete', { username: u.username });
     if (!window.confirm(msg)) return;
     setDeletingId(u.id);
     try {
@@ -65,7 +64,7 @@ export default function UsersPage() {
       await fetchUsers();
     } catch (err) {
       const d = err.response?.data?.detail;
-      const text = typeof d === 'string' ? d : Array.isArray(d) ? d.map((e) => e.msg).join(' ') : 'No se pudo eliminar el usuario.';
+      const text = typeof d === 'string' ? d : Array.isArray(d) ? d.map((e) => e.msg).join(' ') : t('users:deleteError');
       alert(text);
     } finally {
       setDeletingId(null);
@@ -78,14 +77,14 @@ export default function UsersPage() {
       <main className="users-main">
         <div className="users-header">
           <div>
-            <h2 className="users-title">👥 Usuarios</h2>
+            <h2 className="users-title">👥 {t('users:title')}</h2>
             <p className="users-sub">
-              {users.length} usuario{users.length !== 1 ? 's' : ''} activo{users.length !== 1 ? 's' : ''}
+              {t('users:activeUsers', { count: users.length })}
             </p>
           </div>
           {isAdmin && (
             <button className="btn btn-primary" onClick={() => setModalUser(null)}>
-              ＋ Nuevo Usuario
+              ＋ {t('users:newUser')}
             </button>
           )}
         </div>
@@ -96,7 +95,7 @@ export default function UsersPage() {
           <div className="spinner-center"><div className="spinner" /></div>
         ) : users.length === 0 ? (
           <div className="empty-state">
-            <p>No se encontraron usuarios.</p>
+            <p>{t('users:noneFound')}</p>
           </div>
         ) : (
           <div className="users-grid">
@@ -111,17 +110,17 @@ export default function UsersPage() {
                       <button
                         type="button"
                         className="user-edit-btn"
-                        title="Editar usuario"
+                        title={t('users:editUser')}
                         onClick={() => setModalUser(u)}
                       >
-                        Editar
+                        {t('users:editUser')}
                       </button>
                     )}
                     {isAdmin && u.id !== user?.id && (
                       <button
                         type="button"
                         className="user-delete-btn"
-                        title="Eliminar usuario"
+                        title={t('users:deleteUser')}
                         disabled={deletingId === u.id}
                         onClick={() => handleDeleteUser(u)}
                       >
@@ -130,14 +129,14 @@ export default function UsersPage() {
                     )}
                     <span
                       className={`status-dot ${u.is_active ? 'active' : 'inactive'}`}
-                      title={u.is_active ? 'Activo' : 'Inactivo'}
+                      title={u.is_active ? t('users:active') : t('users:inactive')}
                     />
                   </div>
                 </div>
                 <h3 className="user-name">{u.username}</h3>
                 <p className="user-email">{u.email}</p>
                 <p className="user-since">
-                  Desde {new Date(u.created_at).toLocaleDateString('es-CO')}
+                  {t('users:since')} {new Date(u.created_at).toLocaleDateString(i18n.resolvedLanguage === 'en' ? 'en-US' : 'es-CO')}
                 </p>
               </div>
             ))}

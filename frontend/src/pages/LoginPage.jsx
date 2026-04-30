@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { login, getMe } from '../api';
 import { useAuth } from '../context/AuthContext';
 import './LoginPage.css';
 
 export default function LoginPage() {
+  const { t } = useTranslation(['auth']);
   const { signIn } = useAuth();
   const navigate = useNavigate();
   const [organizationSlug, setOrganizationSlug] = useState('demo');
@@ -47,13 +49,13 @@ export default function LoginPage() {
             <rect width="40" height="40" rx="10" fill="#0e7490"/>
             <path d="M10 14h20M10 20h20M10 26h14" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
           </svg>
-          <h1>Gestión de Facturas</h1>
+          <h1>{t('auth:loginTitle')}</h1>
         </div>
-        <p className="login-subtitle">Inicie sesión en su organización</p>
+        <p className="login-subtitle">{t('auth:loginSubtitle')}</p>
 
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
-            <label htmlFor="org">Organización (slug)</label>
+            <label htmlFor="org">{t('auth:organization')}</label>
             <input
               id="org"
               type="text"
@@ -65,7 +67,7 @@ export default function LoginPage() {
             />
           </div>
           <div className="form-group">
-            <label htmlFor="username">Usuario</label>
+            <label htmlFor="username">{t('auth:user')}</label>
             <input
               id="username"
               type="text"
@@ -76,7 +78,7 @@ export default function LoginPage() {
             />
           </div>
           <div className="form-group">
-            <label htmlFor="password">Contraseña</label>
+            <label htmlFor="password">{t('auth:password')}</label>
             <input
               id="password"
               type="password"
@@ -90,7 +92,7 @@ export default function LoginPage() {
           {error && <div className="alert alert-error">{error}</div>}
 
           <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
-            {loading ? 'Ingresando…' : 'Iniciar Sesión'}
+            {loading ? t('auth:loginLoading') : t('auth:loginButton')}
           </button>
         </form>
 
@@ -103,7 +105,7 @@ export default function LoginPage() {
         )}
 
         <p className="login-back">
-          <Link to="/">← Volver al inicio</Link>
+          <Link to="/">← {t('auth:loginBack')}</Link>
         </p>
       </div>
     </div>

@@ -1,0 +1,16 @@
+{
+  "title": "Reports",
+  "subtitle": "Export to Excel or PDF and review the preview using the same filters as the downloaded file.",
+  "backDashboard": "← Back to dashboard",
+  "filtersTitle": "Filters and download",
+  "status": "Status",
+  "downloadExcel": "Download Excel",
+  "downloadPdf": "Download PDF",
+  "generating": "Generating...",
+  "hint": "Data respects your role: assistants only see invoices they created or were assigned to.",
+  "previewTitle": "Preview (charts)",
+  "previewSub": "Updates when filters change",
+  "chartError": "Could not load charts.",
+  "downloadError": "Could not generate file. Please try again.",
+  "noGraphData": "No data to chart with current filters."
+}

@@ -1,0 +1,16 @@
+{
+  "title": "Reportes",
+  "subtitle": "Exporte a Excel o PDF y revise la vista previa con los mismos filtros que el archivo descargado.",
+  "backDashboard": "← Volver al dashboard",
+  "filtersTitle": "Filtros y descarga",
+  "status": "Estado",
+  "downloadExcel": "Descargar Excel",
+  "downloadPdf": "Descargar PDF",
+  "generating": "Generando...",
+  "hint": "Los datos respetan su rol: los asistentes solo ven facturas creadas o asignadas a ellos.",
+  "previewTitle": "Vista previa (gráficos)",
+  "previewSub": "Se actualiza al cambiar filtros",
+  "chartError": "No se pudieron cargar los gráficos.",
+  "downloadError": "No se pudo generar el archivo. Intente de nuevo.",
+  "noGraphData": "Sin datos para graficar con los filtros actuales."
+}

@@ -1,0 +1,16 @@
+{
+  "brand": "SGF — Invoices",
+  "openMenu": "Open menu",
+  "closeMenu": "Close menu",
+  "invoices": "Invoices",
+  "dashboard": "Dashboard",
+  "reports": "Reports",
+  "users": "Users",
+  "billing": "Subscription",
+  "organizations": "Organizations",
+  "notifications": "Notifications",
+  "updates": "Updates",
+  "markAll": "Mark all",
+  "markRead": "Mark as read",
+  "emptyNotifications": "No notifications yet."
+}

@@ -19,6 +19,17 @@ const STATUS_KEYS = ['pendiente', 'pagada', 'vencida'];
 const STATUS_COLORS = { pendiente: '#f59e0b', pagada: '#10b981', vencida: '#ef4444' };
 const STATUS_LABELS = { pendiente: 'Pendiente', pagada: 'Pagada', vencida: 'Vencida' };
 
+function chartTheme() {
+  if (typeof window === 'undefined') {
+    return { grid: '#e5e7eb', axis: '#6b7280' };
+  }
+  const styles = getComputedStyle(document.documentElement);
+  return {
+    grid: styles.getPropertyValue('--chart-grid')?.trim() || '#e5e7eb',
+    axis: styles.getPropertyValue('--chart-axis')?.trim() || '#6b7280',
+  };
+}
+
 export function moneyFmt(n) {
   if (n == null || Number.isNaN(Number(n))) return '—';
   return new Intl.NumberFormat('es-CO', {
@@ -118,6 +129,7 @@ export function StatusAmountPieChart({ stats }) {
 
 /** Barras: facturación mensual + línea de cantidad de documentos */
 export function MonthlyBillingChart({ monthly }) {
+  const colors = chartTheme();
   const rows = (monthly ?? []).map((m) => ({
     month: m.month,
     monto: Number(m.total_amount),
@@ -131,14 +143,14 @@ export function MonthlyBillingChart({ monthly }) {
   return (
     <ResponsiveContainer width="100%" height="100%" minHeight={280}>
       <ComposedChart data={rows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-        <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+        <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} />
+        <XAxis dataKey="month" tick={{ fontSize: 11, fill: colors.axis }} />
         <YAxis
           yAxisId="left"
           tickFormatter={(v) => (v >= 1e6 ? `${(v / 1e6).toFixed(1)}M` : `${(v / 1e3).toFixed(0)}k`)}
-          tick={{ fontSize: 11 }}
+          tick={{ fontSize: 11, fill: colors.axis }}
         />
-        <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} />
+        <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: colors.axis }} />
         <Tooltip
           formatter={(value, name) =>
             name === 'monto' ? [moneyFmt(value), 'Monto total'] : [value, 'Facturas']
@@ -163,6 +175,7 @@ export function MonthlyBillingChart({ monthly }) {
 
 /** Histograma: facturas por tramo de monto */
 export function AmountHistogramChart({ histogram }) {
+  const colors = chartTheme();
   const rows = (histogram ?? []).map((h) => ({
     label: h.label,
     n: h.invoice_count,
@@ -175,9 +188,9 @@ export function AmountHistogramChart({ histogram }) {
   return (
     <ResponsiveContainer width="100%" height="100%" minHeight={280}>
       <BarChart data={rows} layout="vertical" margin={{ left: 8, right: 16, top: 8, bottom: 8 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" horizontal />
-        <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
-        <YAxis type="category" dataKey="label" width={100} tick={{ fontSize: 11 }} />
+        <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} horizontal />
+        <XAxis type="number" tick={{ fontSize: 11, fill: colors.axis }} allowDecimals={false} />
+        <YAxis type="category" dataKey="label" width={100} tick={{ fontSize: 11, fill: colors.axis }} />
         <Tooltip formatter={(v) => [`${v} facturas`, 'Cantidad']} />
         <Bar dataKey="n" name="Facturas" fill="#14b8a6" radius={[0, 4, 4, 0]} />
       </BarChart>
@@ -187,6 +200,7 @@ export function AmountHistogramChart({ histogram }) {
 
 /** Barras horizontales: ranking de organizaciones (plataforma) */
 export function TopOrganizationsBarChart({ rows, maxBars = 12 }) {
+  const colors = chartTheme();
   const slice = (rows ?? []).slice(0, maxBars).map((r) => ({
     name: r.name.length > 28 ? `${r.name.slice(0, 26)}…` : r.name,
     total: Number(r.total_amount),
@@ -200,13 +214,13 @@ export function TopOrganizationsBarChart({ rows, maxBars = 12 }) {
   return (
     <ResponsiveContainer width="100%" height="100%" minHeight={Math.min(420, 40 + slice.length * 36)}>
       <BarChart data={slice} layout="vertical" margin={{ left: 8, right: 24, top: 8, bottom: 8 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+        <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} />
         <XAxis
           type="number"
           tickFormatter={(v) => (v >= 1e9 ? `${(v / 1e9).toFixed(1)}B` : v >= 1e6 ? `${(v / 1e6).toFixed(1)}M` : `${(v / 1e3).toFixed(0)}k`)}
-          tick={{ fontSize: 10 }}
+          tick={{ fontSize: 10, fill: colors.axis }}
         />
-        <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 11 }} />
+        <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 11, fill: colors.axis }} />
         <Tooltip
           formatter={(v) => [moneyFmt(v), 'Facturación']}
           labelFormatter={(_, p) => p?.[0]?.payload?.slug ?? ''}

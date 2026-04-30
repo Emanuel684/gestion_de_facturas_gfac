@@ -1,0 +1,15 @@
+{
+  "title": "Users",
+  "activeUsers": "{{count}} active user",
+  "activeUsers_other": "{{count}} active users",
+  "newUser": "New User",
+  "loadError": "Failed to load users.",
+  "noneFound": "No users found.",
+  "editUser": "Edit user",
+  "deleteUser": "Delete user",
+  "active": "Active",
+  "inactive": "Inactive",
+  "since": "Since",
+  "confirmDelete": "Delete user \"{{username}}\"?\n\nInvoices created by this user will also be removed. For invoices created by others, this user will only be removed from assignees.",
+  "deleteError": "Could not delete user."
+}

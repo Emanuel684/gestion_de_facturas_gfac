@@ -1,0 +1,11 @@
+{
+  "title": "Dashboard",
+  "subtitle": "Invoice summary for your organization",
+  "goReports": "Go to reports (PDF / Excel) →",
+  "totalInvoices": "Total invoices",
+  "totalAmount": "Total amount",
+  "pendingNext7": "Pending (next 7 days)",
+  "visualization": "Visualization",
+  "visualizationSub": "Same charts shown in the web app",
+  "emptyPeriod": "No invoices found for the selected period. Adjust dates or create invoices from the list."
+}

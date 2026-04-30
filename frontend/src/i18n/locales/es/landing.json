@@ -1,0 +1,13 @@
+{
+  "signin": "Iniciar sesión",
+  "createAccount": "Crear cuenta",
+  "heroTitle": "Sistema web de gestión de facturas para pequeñas y medianas empresas",
+  "heroLead": "Centralice facturas, automatice seguimiento y tome decisiones con información confiable.",
+  "enterPlatform": "Entrar a la plataforma",
+  "alreadyAccount": "Ya tengo cuenta",
+  "viewPlans": "Ver planes",
+  "plansTitle": "Planes y precios",
+  "plansSubtitle": "Elija el nivel que mejor se adapte a su organización.",
+  "finalTitle": "¿Listo para ordenar su facturación?",
+  "finalSubtitle": "Cree una cuenta o inicie sesión para acceder al panel de su organización."
+}

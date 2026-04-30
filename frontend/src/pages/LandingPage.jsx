@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import './LandingPage.css';
 
 const PLANS = [
@@ -75,6 +76,7 @@ const COMPARATIVA = [
 ];
 
 export default function LandingPage() {
+  const { t } = useTranslation(['landing']);
   return (
     <div className="landing">
       <header className="landing-header" role="banner">
@@ -95,10 +97,10 @@ export default function LandingPage() {
           </nav>
           <div className="landing-header-cta">
             <Link to="/login" className="btn btn-landing-outline">
-              Iniciar sesión
+              {t('landing:signin')}
             </Link>
             <Link to="/signup" className="btn btn-landing-primary">
-              Crear cuenta
+              {t('landing:createAccount')}
             </Link>
           </div>
         </div>
@@ -108,22 +110,20 @@ export default function LandingPage() {
         <section className="landing-hero" aria-labelledby="hero-title">
           <div className="landing-hero-badge">Universidad Pontificia Bolivariana · Proyecto Aplicado en TIC I · 2026</div>
           <h1 id="hero-title">
-            Sistema web de gestión de facturas para{' '}
-            <span className="landing-hero-accent">pequeñas y medianas empresas</span>
+            {t('landing:heroTitle')}
           </h1>
           <p className="landing-lead">
-            Centralice facturas, automatice seguimiento y tome decisiones con información confiable. Una plataforma
-            ligera, pensada para equipos administrativos y contables que necesitan orden sin complejidad innecesaria.
+            {t('landing:heroLead')}
           </p>
           <div className="landing-hero-actions">
             <Link to="/signup" className="btn btn-landing-primary btn-landing-lg">
-              Entrar a la plataforma
+              {t('landing:enterPlatform')}
             </Link>
             <Link to="/login" className="btn btn-landing-ghost btn-landing-lg">
-              Ya tengo cuenta
+              {t('landing:alreadyAccount')}
             </Link>
             <a href="#planes" className="btn btn-landing-outline btn-landing-lg">
-              Ver planes
+              {t('landing:viewPlans')}
             </a>
           </div>
           <ul className="landing-stats" aria-label="Impacto esperado del proyecto">
@@ -374,8 +374,8 @@ export default function LandingPage() {
 
         <section id="planes" className="landing-section landing-plans">
           <div className="landing-container">
-            <h2 className="landing-section-title">Planes y precios</h2>
-            <p className="landing-plans-sub">Elija el nivel que mejor se adapte a su organización.</p>
+            <h2 className="landing-section-title">{t('landing:plansTitle')}</h2>
+            <p className="landing-plans-sub">{t('landing:plansSubtitle')}</p>
             <div className="landing-grid">
               {PLANS.map((p) => (
                 <article key={p.key} className={`plan-card${p.highlight ? ' plan-card-highlight' : ''}`}>
@@ -405,8 +405,8 @@ export default function LandingPage() {
 
         <section className="landing-cta-final">
           <div className="landing-container landing-cta-inner">
-            <h2>¿Listo para ordenar su facturación?</h2>
-            <p>Cree una cuenta o inicie sesión para acceder al panel de su organización.</p>
+            <h2>{t('landing:finalTitle')}</h2>
+            <p>{t('landing:finalSubtitle')}</p>
             <div className="landing-hero-actions">
               <Link to="/signup" className="btn btn-landing-primary btn-landing-lg">
                 Crear cuenta gratuita

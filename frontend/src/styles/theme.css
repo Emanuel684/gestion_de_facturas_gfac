@@ -1,0 +1,303 @@
+:root {
+  --color-bg: #f9fafb;
+  --color-bg-soft: #f3f4f6;
+  --color-surface: #ffffff;
+  --color-surface-2: #f8fafc;
+  --color-text: #111827;
+  --color-text-muted: #6b7280;
+  --color-text-subtle: #9ca3af;
+  --color-border: #e5e7eb;
+  --color-border-strong: #d1d5db;
+  --color-primary: #0e7490;
+  --color-primary-strong: #0c6577;
+  --color-primary-soft: #ecfeff;
+  --color-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  --color-overlay: rgba(15, 23, 42, 0.35);
+  --focus-ring: 0 0 0 3px rgba(14, 116, 144, 0.18);
+  --chart-grid: #e5e7eb;
+  --chart-axis: #6b7280;
+  --chart-tooltip-bg: #ffffff;
+}
+
+html[data-theme='dark'] {
+  --color-bg: #0b1220;
+  --color-bg-soft: #111827;
+  --color-surface: #172033;
+  --color-surface-2: #1d2940;
+  --color-text: #e5e7eb;
+  --color-text-muted: #cbd5e1;
+  --color-text-subtle: #94a3b8;
+  --color-border: #334155;
+  --color-border-strong: #475569;
+  --color-primary: #22d3ee;
+  --color-primary-strong: #67e8f9;
+  --color-primary-soft: #083344;
+  --color-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+  --color-overlay: rgba(2, 6, 23, 0.62);
+  --focus-ring: 0 0 0 3px rgba(34, 211, 238, 0.28);
+  --chart-grid: #334155;
+  --chart-axis: #cbd5e1;
+  --chart-tooltip-bg: #172033;
+}
+
+html,
+body,
+#root,
+.App {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+/* Generic surfaces and text */
+.navbar,
+.navbar-collapse,
+.notifications-btn,
+.notifications-panel,
+.notifications-item,
+.sgf-panel,
+.sgf-kpi,
+.sgf-rank-panel,
+.chart-card,
+.invoice-card,
+.invoice-compact-list,
+.kanban-card,
+.kanban-column-header,
+.billing-card,
+.users-main .user-card,
+.orgs-form-section,
+.orgs-list-section,
+.orgs-card,
+.org-detail-card,
+.modal-box,
+.landing-stats li,
+.landing-card,
+.landing-objective-general,
+.landing-tech-list li,
+.plan-card,
+.landing-team-card,
+.landing-scope-card,
+.landing-highlight-card {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+  box-shadow: var(--color-shadow);
+}
+
+input,
+textarea,
+select,
+.sgf-input,
+.sgf-select,
+.supplier-search,
+.pagination-btn,
+.filter-btn,
+.view-mode-btn,
+.sgf-preset-btn,
+.btn-secondary {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
+}
+
+input:focus,
+textarea:focus,
+select:focus,
+.sgf-input:focus,
+.sgf-select:focus,
+.supplier-search:focus {
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
+}
+
+.btn-primary,
+.filter-btn.active,
+.view-mode-btn.active,
+.sgf-preset-btn.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-primary-strong);
+}
+
+.invoices-title,
+.sgf-page-title,
+.sgf-panel-title,
+.sgf-section-title,
+.chart-card-title,
+.invoice-number,
+.billing-title,
+.users-title,
+.orgs-header h1,
+.org-detail-header h1,
+.landing-subtitle,
+.plan-card h3,
+.landing-team-card h3 {
+  color: var(--color-text);
+}
+
+.invoices-sub,
+.sgf-page-sub,
+.sgf-section-sub,
+.chart-card-sub,
+.invoice-desc,
+.invoice-meta,
+.notifications-empty,
+.user-email,
+.billing-sub,
+.landing-muted,
+.landing-lead,
+.landing-plans-sub,
+.orgs-sub,
+.org-detail-muted,
+.pagination-info {
+  color: var(--color-text-muted);
+}
+
+.navbar-brand,
+.nav-link,
+.navbar-user,
+.notifications-item p,
+.invoice-supplier,
+.invoice-compact-supplier,
+.sgf-field-label,
+.view-mode-label,
+.filter-label {
+  color: var(--color-text-muted);
+}
+
+.navbar-brand:hover,
+.nav-link:hover,
+.sgf-page-link,
+.invoice-amount,
+.kanban-card-amount,
+.invoices-org,
+.landing-brand,
+.landing-footer-logo {
+  color: var(--color-primary);
+}
+
+.navbar {
+  background: var(--color-surface);
+  border-bottom-color: var(--color-border);
+}
+
+.navbar-menu-btn {
+  background: var(--color-bg-soft);
+}
+
+.navbar-menu-icon,
+.navbar-menu-icon::before,
+.navbar-menu-icon::after {
+  background: var(--color-text-muted);
+}
+
+.navbar-backdrop {
+  background: var(--color-overlay);
+}
+
+.notifications-item.is-unread,
+.sgf-kpi--teal,
+.view-mode-btn.active,
+.icon-btn.edit:hover,
+.btn-landing-outline:hover,
+.landing-scope-in {
+  background: color-mix(in srgb, var(--color-primary-soft) 86%, var(--color-surface));
+}
+
+.sgf-empty-hint,
+.kanban-column,
+.landing-footer,
+.landing-section-alt,
+.landing-tech,
+.invoice-compact-row:hover {
+  background: var(--color-surface-2);
+}
+
+.kanban-card-number,
+.invoice-compact-num,
+.billing-field span,
+.org-user-item strong {
+  color: var(--color-text);
+}
+
+.kanban-card-supplier,
+.invoice-compact-date,
+.kanban-count,
+.landing-footer-brand,
+.landing-team-desc {
+  color: var(--color-text-subtle);
+}
+
+.sgf-toolbar--spaced,
+.kanban-column-header,
+.pagination-bar,
+.orgs-list-toolbar,
+.org-detail-section-head,
+.landing-footer {
+  border-color: var(--color-border);
+}
+
+.sgf-rank-table th,
+.sgf-rank-table td,
+.invoice-compact-row,
+.org-invoices-table th,
+.org-invoices-table td {
+  border-color: var(--color-border);
+}
+
+.sgf-rank-table tr,
+.org-invoices-table tr,
+.invoice-compact-list,
+.orgs-card {
+  background: var(--color-surface);
+}
+
+.sgf-rank-slug,
+.invoice-compact-sep,
+.landing-compare-list span {
+  color: var(--color-text-subtle);
+}
+
+.landing {
+  background: linear-gradient(180deg, var(--color-bg) 0%, var(--color-surface-2) 38%, var(--color-surface) 100%);
+  color: var(--color-text);
+}
+
+.landing header.landing-header {
+  background: color-mix(in srgb, var(--color-surface) 85%, transparent);
+  border-bottom-color: var(--color-border);
+}
+
+.landing-nav-link,
+.landing-prose p,
+.landing-card p,
+.landing-objective-general p,
+.landing-tech-list li,
+.plan-desc,
+.plan-features {
+  color: var(--color-text-muted);
+}
+
+.landing-differential {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+.landing-differential p,
+.landing-differential .landing-subtitle,
+.landing-differential strong {
+  color: #e2e8f0;
+}
+
+.landing-cta-final {
+  background: linear-gradient(135deg, #12304a 0%, #155e75 50%, #0f766e 100%);
+}
+
+.recharts-default-tooltip {
+  background: var(--color-surface) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-text) !important;
+}

@@ -5,7 +5,7 @@
   align-items: flex-start;
   gap: 0.5rem;
   font-size: 0.9rem;
-  color: #374151;
+  color: var(--color-text-muted);
   cursor: pointer;
   margin-bottom: 0.25rem;
 }

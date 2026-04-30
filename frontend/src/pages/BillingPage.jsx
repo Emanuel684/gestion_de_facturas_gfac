@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { createCheckout, getPayments, getSubscription } from '../api';
 import Navbar from '../components/Navbar';
 import './BillingPage.css';
@@ -22,10 +23,10 @@ const PAYMENT_LABELS = {
   pending: 'Pendiente',
 };
 
-function formatCurrency(amount, currency = 'COP') {
+function formatCurrency(amount, currency = 'COP', locale = 'es-CO') {
   const n = typeof amount === 'string' ? parseFloat(amount, 10) : amount;
   if (Number.isNaN(n)) return amount;
-  return new Intl.NumberFormat('es-CO', {
+  return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: currency || 'COP',
     minimumFractionDigits: 0,
@@ -33,10 +34,10 @@ function formatCurrency(amount, currency = 'COP') {
   }).format(n);
 }
 
-function formatDate(iso) {
+function formatDate(iso, locale = 'es-CO') {
   if (!iso) return '—';
   try {
-    return new Date(iso).toLocaleString('es-CO', {
+    return new Date(iso).toLocaleString(locale, {
       dateStyle: 'medium',
       timeStyle: 'short',
     });
@@ -45,14 +46,16 @@ function formatDate(iso) {
   }
 }
 
-function formatApiError(err) {
+function formatApiError(err, t) {
   const d = err.response?.data?.detail;
   if (typeof d === 'string') return d;
   if (Array.isArray(d)) return d.map((x) => x.msg || JSON.stringify(x)).join('; ');
-  return 'Ocurrió un error.';
+  return t('billing:errorGeneric');
 }
 
 export default function BillingPage() {
+  const { t, i18n } = useTranslation(['billing']);
+  const locale = i18n.resolvedLanguage?.startsWith('en') ? 'en-US' : 'es-CO';
   const [subscription, setSubscription] = useState(null);
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -67,7 +70,7 @@ export default function BillingPage() {
       setSubscription(subRes.data);
       setPayments(payRes.data);
     } catch (err) {
-      setError(formatApiError(err));
+      setError(formatApiError(err, t));
       setSubscription(null);
       setPayments([]);
     } finally {
@@ -87,7 +90,7 @@ export default function BillingPage() {
       const { data } = await createCheckout(subscription.plan_tier);
       window.location.href = data.checkout_url;
     } catch (err) {
-      setError(formatApiError(err));
+      setError(formatApiError(err, t));
     } finally {
       setCheckoutLoading(false);
     }
@@ -104,9 +107,9 @@ export default function BillingPage() {
       <Navbar />
       <main className="billing-main">
         <div className="billing-header">
-          <h1 className="billing-title">Facturación y suscripción</h1>
+          <h1 className="billing-title">{t('billing:title')}</h1>
           <p className="billing-sub">
-            Consulte su plan, fechas de renovación y el historial de pagos simulados.
+            {t('billing:subtitle')}
           </p>
         </div>
 
@@ -120,29 +123,29 @@ export default function BillingPage() {
           <>
             {subscription && (
               <section className="billing-card" aria-labelledby="sub-heading">
-                <h2 id="sub-heading">Estado de la suscripción</h2>
+                <h2 id="sub-heading">{t('billing:subStatusTitle')}</h2>
                 <div className="billing-grid">
                   <div className="billing-field">
-                    <label>Plan</label>
+                    <label>{t('billing:plan')}</label>
                     <span>{planLabel(subscription.plan_tier)}</span>
                   </div>
                   <div className="billing-field">
-                    <label>Estado</label>
+                    <label>{t('billing:status')}</label>
                     <span className={subClass}>{subLabel(subscription.status)}</span>
                   </div>
                   <div className="billing-field">
-                    <label>Próximo cobro</label>
-                    <span>{formatDate(subscription.next_due_date)}</span>
+                    <label>{t('billing:nextCharge')}</label>
+                    <span>{formatDate(subscription.next_due_date, locale)}</span>
                   </div>
                   <div className="billing-field">
-                    <label>Gracia hasta</label>
-                    <span>{formatDate(subscription.grace_expires_at)}</span>
+                    <label>{t('billing:graceUntil')}</label>
+                    <span>{formatDate(subscription.grace_expires_at, locale)}</span>
                   </div>
                   <div className="billing-field">
-                    <label>Periodo actual</label>
+                    <label>{t('billing:currentPeriod')}</label>
                     <span>
                       {subscription.current_period_start && subscription.current_period_end
-                        ? `${formatDate(subscription.current_period_start)} — ${formatDate(subscription.current_period_end)}`
+                        ? `${formatDate(subscription.current_period_start, locale)} — ${formatDate(subscription.current_period_end, locale)}`
                         : '—'}
                     </span>
                   </div>
@@ -154,25 +157,25 @@ export default function BillingPage() {
                     onClick={onPay}
                     disabled={checkoutLoading}
                   >
-                    {checkoutLoading ? 'Abriendo pago…' : 'Pagar o renovar plan (simulado)'}
+                    {checkoutLoading ? t('billing:openingPayment') : t('billing:payRenew')}
                   </button>
                 </div>
               </section>
             )}
 
             <section className="billing-card" aria-labelledby="pay-heading">
-              <h2 id="pay-heading">Historial de pagos</h2>
+              <h2 id="pay-heading">{t('billing:historyTitle')}</h2>
               {payments.length === 0 ? (
-                <p className="billing-empty-payments">No hay pagos registrados aún.</p>
+                <p className="billing-empty-payments">{t('billing:noPayments')}</p>
               ) : (
                 payments.map((p) => (
                   <div key={p.id} className="billing-payment-row">
                     <span className="billing-pay-id">#{p.id}</span>
                     <span className="billing-pay-meta">
-                      {formatDate(p.created_at)} · {p.provider}
+                      {formatDate(p.created_at, locale)} · {p.provider}
                     </span>
                     <span className="billing-pay-amount">
-                      {formatCurrency(p.amount, p.currency)}
+                      {formatCurrency(p.amount, p.currency, locale)}
                     </span>
                     <span
                       className={`billing-pay-status billing-status-${p.status}`}

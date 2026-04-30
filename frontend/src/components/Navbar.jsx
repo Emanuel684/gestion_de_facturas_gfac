@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
+import { useTheme } from '../theme/ThemeContext';
 import {
   getNotificationsPage,
   getNotificationsUnreadCount,
@@ -24,6 +26,8 @@ const ROLE_LABELS = {
 };
 
 export default function Navbar() {
+  const { t, i18n } = useTranslation(['common', 'navbar']);
+  const { theme, toggleTheme } = useTheme();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -144,7 +148,7 @@ export default function Navbar() {
             strokeLinecap="round"
           />
         </svg>
-        SGF — Facturas
+        {t('navbar:brand')}
       </Link>
 
       {user && (
@@ -154,7 +158,7 @@ export default function Navbar() {
             className="navbar-menu-btn"
             aria-expanded={menuOpen}
             aria-controls="navbar-mobile-panel"
-            aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'}
+            aria-label={menuOpen ? t('navbar:closeMenu') : t('navbar:openMenu')}
             onClick={() => setMenuOpen((o) => !o)}
           >
             <span className={`navbar-menu-icon ${menuOpen ? 'is-open' : ''}`} aria-hidden />
@@ -166,43 +170,61 @@ export default function Navbar() {
             {!isPlatform && (
               <div className="navbar-links">
                 <Link to="/app" className="nav-link" onClick={closeMenu}>
-                  Facturas
+                  {t('navbar:invoices')}
                 </Link>
                 <Link to="/app/dashboard" className="nav-link" onClick={closeMenu}>
-                  Dashboard
+                  {t('navbar:dashboard')}
                 </Link>
                 <Link to="/app/reportes" className="nav-link" onClick={closeMenu}>
-                  Reportes
+                  {t('navbar:reports')}
                 </Link>
                 <Link to="/app/users" className="nav-link" onClick={closeMenu}>
-                  Usuarios
+                  {t('navbar:users')}
                 </Link>
                 <Link to="/app/billing" className="nav-link" onClick={closeMenu}>
-                  Suscripción
+                  {t('navbar:billing')}
                 </Link>
               </div>
             )}
             {isPlatform && (
               <div className="navbar-links">
                 <Link to="/app/organizaciones" className="nav-link" onClick={closeMenu}>
-                  Organizaciones
+                  {t('navbar:organizations')}
                 </Link>
                 <Link to="/app/plataforma/dashboard" className="nav-link" onClick={closeMenu}>
-                  Dashboard
+                  {t('navbar:dashboard')}
                 </Link>
                 <Link to="/app/plataforma/reportes" className="nav-link" onClick={closeMenu}>
-                  Reportes
+                  {t('navbar:reports')}
                 </Link>
               </div>
             )}
 
             <div className="navbar-right">
+              <button
+                type="button"
+                className="theme-toggle-btn"
+                onClick={toggleTheme}
+                aria-label={t('common:theme')}
+                title={t('common:theme')}
+              >
+                {theme === 'dark' ? t('common:lightMode') : t('common:darkMode')}
+              </button>
+              <select
+                className="nav-link"
+                aria-label={t('common:language')}
+                value={i18n.resolvedLanguage?.startsWith('en') ? 'en' : 'es'}
+                onChange={(e) => i18n.changeLanguage(e.target.value)}
+              >
+                <option value="es">{t('common:spanish')}</option>
+                <option value="en">{t('common:english')}</option>
+              </select>
               {!isPlatform && (
                 <div className="notifications-wrap">
                   <button
                     type="button"
                     className="notifications-btn"
-                    aria-label="Notificaciones"
+                    aria-label={t('navbar:notifications')}
                     onClick={(e) => {
                       e.stopPropagation();
                       setNotifOpen((v) => !v);
@@ -216,13 +238,13 @@ export default function Navbar() {
                   {notifOpen && (
                     <div className="notifications-panel">
                       <div className="notifications-header">
-                        <strong>Novedades</strong>
+                        <strong>{t('navbar:updates')}</strong>
                         <button type="button" className="notifications-mark-all" onClick={handleMarkAllRead}>
-                          Marcar todas
+                          {t('navbar:markAll')}
                         </button>
                       </div>
                       {notifications.length === 0 ? (
-                        <p className="notifications-empty">No hay notificaciones.</p>
+                        <p className="notifications-empty">{t('navbar:emptyNotifications')}</p>
                       ) : (
                         <ul className="notifications-list">
                           {notifications.map((n) => (
@@ -235,7 +257,7 @@ export default function Navbar() {
                                     className="notifications-read-one"
                                     onClick={() => handleMarkRead(n.id)}
                                   >
-                                    Marcar leída
+                                    {t('navbar:markRead')}
                                   </button>
                                 )}
                               </div>
@@ -263,7 +285,7 @@ export default function Navbar() {
                 </span>
               </span>
               <button type="button" className="btn btn-secondary btn-sm" onClick={handleLogout}>
-                Cerrar Sesión
+                {t('common:closeSession')}
               </button>
             </div>
           </div>
@@ -271,7 +293,7 @@ export default function Navbar() {
             <button
               type="button"
               className="navbar-backdrop"
-              aria-label="Cerrar menú"
+              aria-label={t('navbar:closeMenu')}
               onClick={closeMenu}
             />
           )}

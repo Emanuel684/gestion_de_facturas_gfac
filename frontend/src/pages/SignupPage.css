@@ -5,12 +5,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #ecfeff 0%, #e0f2fe 100%);
+  background: linear-gradient(135deg, var(--color-bg-soft) 0%, var(--color-surface-2) 100%);
   padding: 1rem;
 }
 
 .signup-card {
-  background: #fff;
+  background: var(--color-surface);
   border-radius: 16px;
   box-shadow: 0 10px 40px rgba(14, 116, 144, 0.12);
   padding: 2.25rem 2rem;
@@ -28,11 +28,11 @@
 .signup-logo h1 {
   font-size: 1.45rem;
   font-weight: 700;
-  color: #1e1b4b;
+  color: var(--color-text);
 }
 
 .signup-subtitle {
-  color: #6b7280;
+  color: var(--color-text-muted);
   font-size: 0.9rem;
   line-height: 1.5;
   margin-bottom: 1.5rem;
@@ -55,9 +55,9 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #0e7490;
+  color: var(--color-primary);
   padding-bottom: 0.35rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .signup-row {
@@ -81,20 +81,21 @@
 .signup-form .form-group label {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--color-text-muted);
 }
 
 .signup-form .form-group input,
 .signup-form .form-group select {
   padding: 0.6rem 0.85rem;
-  border: 1.5px solid #d1d5db;
+  border: 1.5px solid var(--color-border-strong);
   border-radius: 8px;
   font-size: 1rem;
   font-family: inherit;
   width: 100%;
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
-  background: #fff;
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 
 .signup-form .form-group select {
@@ -103,28 +104,28 @@
 
 .signup-form .form-group input:focus,
 .signup-form .form-group select:focus {
-  border-color: #0e7490;
-  box-shadow: 0 0 0 3px rgba(14, 116, 144, 0.1);
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
 }
 
 .signup-hint {
   margin-top: 0.25rem;
   font-size: 0.78rem;
-  color: #9ca3af;
+  color: var(--color-text-subtle);
   line-height: 1.45;
 }
 
 .signup-footer {
   margin-top: 1.35rem;
   padding-top: 1.25rem;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid var(--color-border);
   text-align: center;
   font-size: 0.88rem;
-  color: #6b7280;
+  color: var(--color-text-muted);
 }
 
 .signup-footer a {
-  color: #0e7490;
+  color: var(--color-primary);
   text-decoration: none;
   font-weight: 600;
 }

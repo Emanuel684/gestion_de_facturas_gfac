@@ -17,8 +17,8 @@ body {
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #f9fafb;
-  color: #111827;
+  background: var(--color-bg);
+  color: var(--color-text);
 }
 
 .App {
@@ -48,7 +48,7 @@ input[type="password"],
 input[type="datetime-local"],
 input[type="email"] {
   padding: 0.6rem 0.85rem;
-  border: 1.5px solid #d1d5db;
+  border: 1.5px solid var(--color-border-strong);
   border-radius: 8px;
   font-size: 0.95rem;
   width: 100%;
@@ -56,8 +56,8 @@ input[type="email"] {
   transition: border-color 0.15s;
 }
 input:focus {
-  border-color: #0e7490;
-  box-shadow: 0 0 0 3px rgba(14, 116, 144, 0.1);
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
 }
 
 /* ── Shared buttons ──────────────────────────────────────────── */
@@ -79,11 +79,11 @@ input:focus {
 .btn:active { transform: scale(0.97); }
 .btn:disabled { opacity: 0.55; cursor: default; }
 
-.btn-primary   { background: #0e7490; color: #fff; }
-.btn-primary:hover:not(:disabled)   { background: #0c6577; }
+.btn-primary   { background: var(--color-primary); color: #fff; }
+.btn-primary:hover:not(:disabled)   { background: var(--color-primary-strong); }
 
-.btn-secondary { background: #f3f4f6; color: #374151; border: 1.5px solid #e5e7eb; }
-.btn-secondary:hover:not(:disabled) { background: #e5e7eb; }
+.btn-secondary { background: var(--color-bg-soft); color: var(--color-text-muted); border: 1.5px solid var(--color-border); }
+.btn-secondary:hover:not(:disabled) { background: var(--color-surface-2); }
 
 .btn-full { width: 100%; }
 .btn-sm   { padding: 0.35rem 0.8rem; font-size: 0.82rem; min-height: 40px; }
@@ -95,9 +95,9 @@ input:focus {
   font-size: 0.875rem;
 }
 .alert-error {
-  background: #fef2f2;
-  color: #b91c1c;
-  border: 1px solid #fecaca;
+  background: color-mix(in srgb, #ef4444 15%, var(--color-surface));
+  color: #ef4444;
+  border: 1px solid color-mix(in srgb, #ef4444 35%, var(--color-border));
 }
 
 /* ── Spinner (shared) ────────────────────────────────────────── */
@@ -108,8 +108,8 @@ input:focus {
 }
 .spinner {
   width: 36px; height: 36px;
-  border: 3px solid #e5e7eb;
-  border-top-color: #0e7490;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-primary);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }

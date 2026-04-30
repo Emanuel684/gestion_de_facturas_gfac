@@ -10,11 +10,11 @@
 }
 
 .chart-card {
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   padding: 1rem 1rem 0.5rem;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--color-shadow);
   min-height: 320px;
   display: flex;
   flex-direction: column;
@@ -31,13 +31,13 @@
 .chart-card-title {
   font-size: 1rem;
   font-weight: 600;
-  color: #1e1b4b;
+  color: var(--color-text);
   margin: 0 0 0.25rem;
 }
 
 .chart-card-sub {
   font-size: 0.8rem;
-  color: #9ca3af;
+  color: var(--color-text-subtle);
   margin: 0 0 0.75rem;
 }
 
@@ -52,7 +52,7 @@
   align-items: center;
   justify-content: center;
   min-height: 220px;
-  color: #9ca3af;
+  color: var(--color-text-subtle);
   font-size: 0.9rem;
 }
 
@@ -68,39 +68,41 @@
 .sgf-presets-label {
   font-size: 0.78rem;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--color-text-muted);
   margin-right: 0.15rem;
 }
 
 .sgf-preset-btn {
   padding: 0.45rem 0.9rem;
-  border: 1.5px solid #e5e7eb;
+  border: 1.5px solid var(--color-border);
   border-radius: 20px;
-  background: #fff;
+  background: var(--color-surface);
   font-size: 0.82rem;
   cursor: pointer;
-  color: #374151;
+  color: var(--color-text-muted);
   font-weight: 500;
   min-height: 40px;
   transition: border-color 0.15s, background 0.15s, color 0.15s;
 }
 
 .sgf-preset-btn:hover {
-  border-color: #0e7490;
-  color: #0e7490;
-  background: #f0fdfa;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
 }
 
 .sgf-preset-btn.active {
-  background: #0e7490;
+  background: var(--color-primary);
   color: #fff;
-  border-color: #0e7490;
+  border-color: var(--color-primary);
 }
 
 .recharts-default-tooltip {
   border-radius: 8px !important;
-  border: 1px solid #e5e7eb !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+  border: 1px solid var(--color-border) !important;
+  box-shadow: var(--color-shadow) !important;
+  background: var(--chart-tooltip-bg) !important;
+  color: var(--color-text) !important;
 }
 
 @media (max-width: 640px) {

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { publicSignup } from '../api';
 import './SignupPage.css';
 
@@ -10,6 +11,7 @@ const PLAN_OPTIONS = [
 ];
 
 export default function SignupPage() {
+  const { t } = useTranslation(['auth']);
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -47,7 +49,7 @@ export default function SignupPage() {
           ? d
           : Array.isArray(d)
             ? d.map((x) => x.msg || JSON.stringify(x)).join(' ')
-            : 'No se pudo crear la cuenta. Revise los datos e intente de nuevo.'
+            : t('auth:signupCreateError', { defaultValue: 'No se pudo crear la cuenta. Revise los datos e intente de nuevo.' })
       );
     } finally {
       setLoading(false);
@@ -67,17 +69,17 @@ export default function SignupPage() {
               strokeLinecap="round"
             />
           </svg>
-          <h1>Crear cuenta empresarial</h1>
+          <h1>{t('auth:signupTitle')}</h1>
         </div>
         <p className="signup-subtitle">
-          Registre su organización, defina el administrador y continúe al pago del plan elegido.
+          {t('auth:signupSubtitle')}
         </p>
 
         <form onSubmit={onSubmit} className="signup-form" noValidate>
           <div className="signup-section">
-            <div className="signup-section-title">Organización</div>
+            <div className="signup-section-title">{t('auth:organizationSection')}</div>
             <div className="form-group">
-              <label htmlFor="name">Nombre de la organización</label>
+              <label htmlFor="name">{t('auth:organizationName')}</label>
               <input
                 id="name"
                 name="name"
@@ -92,7 +94,7 @@ export default function SignupPage() {
             </div>
             <div className="signup-row">
               <div className="form-group">
-                <label htmlFor="slug">Identificador (slug)</label>
+                <label htmlFor="slug">{t('auth:slug')}</label>
                 <input
                   id="slug"
                   name="slug"
@@ -106,7 +108,7 @@ export default function SignupPage() {
                 />
               </div>
               <div className="form-group">
-                <label htmlFor="plan_tier">Plan</label>
+                <label htmlFor="plan_tier">{t('auth:plan')}</label>
                 <select
                   id="plan_tier"
                   name="plan_tier"
@@ -127,9 +129,9 @@ export default function SignupPage() {
           </div>
 
           <div className="signup-section">
-            <div className="signup-section-title">Administrador</div>
+            <div className="signup-section-title">{t('auth:adminSection')}</div>
             <div className="form-group">
-              <label htmlFor="admin_username">Usuario</label>
+              <label htmlFor="admin_username">{t('auth:user')}</label>
               <input
                 id="admin_username"
                 name="admin_username"
@@ -142,7 +144,7 @@ export default function SignupPage() {
               />
             </div>
             <div className="form-group">
-              <label htmlFor="admin_email">Correo electrónico</label>
+              <label htmlFor="admin_email">{t('auth:email')}</label>
               <input
                 id="admin_email"
                 name="admin_email"
@@ -155,7 +157,7 @@ export default function SignupPage() {
               />
             </div>
             <div className="form-group">
-              <label htmlFor="admin_password">Contraseña</label>
+              <label htmlFor="admin_password">{t('auth:password')}</label>
               <input
                 id="admin_password"
                 name="admin_password"
@@ -173,7 +175,7 @@ export default function SignupPage() {
           {error && <div className="alert alert-error">{error}</div>}
 
           <button className="btn btn-primary btn-full" disabled={loading} type="submit">
-            {loading ? 'Creando cuenta…' : 'Continuar al pago'}
+            {loading ? t('auth:creatingAccount') : t('auth:continuePayment')}
           </button>
         </form>
 
@@ -181,7 +183,7 @@ export default function SignupPage() {
           <div className="signup-footer-row">
             <Link to="/">← Volver al inicio</Link>
             <span aria-hidden>·</span>
-            <Link to="/login">¿Ya tiene cuenta? Iniciar sesión</Link>
+            <Link to="/login">{t('auth:alreadyHaveAccount')}</Link>
           </div>
         </div>
       </div>

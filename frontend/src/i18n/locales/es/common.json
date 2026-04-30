@@ -1,0 +1,17 @@
+{
+  "language": "Idioma",
+  "spanish": "Español",
+  "english": "Inglés",
+  "theme": "Tema",
+  "lightMode": "Modo claro",
+  "darkMode": "Modo oscuro",
+  "loading": "Cargando...",
+  "update": "Actualizar",
+  "from": "Desde",
+  "to": "Hasta",
+  "allStatuses": "Todos los estados",
+  "pending": "Pendiente",
+  "paid": "Pagada",
+  "overdue": "Vencida",
+  "closeSession": "Cerrar Sesión"
+}
