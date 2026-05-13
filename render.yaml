@@ -1,5 +1,7 @@
 # Static Site (Vite): build desde la raíz del repo — no hace falta "Root Directory = frontend".
 # En el Dashboard, si configuras a mano: Build = npm run build, Publish = frontend/dist
+# Si el sitio NO usa este Blueprint: añada en Render → Redirects/Rewrites una Rewrite
+#   Source /*  →  Destination /index.html  (ver README, sección Render SPA).
 services:
   - type: web
     name: sgf-frontend

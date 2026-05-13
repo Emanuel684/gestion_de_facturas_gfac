@@ -10,15 +10,16 @@ API de producción con frontend en React para digitalizar y automatizar el proce
 2. [Stack Tecnológico](#stack-tecnológico)
 3. [Arquitectura](#arquitectura)
 4. [Inicio Rápido](#inicio-rápido)
-5. [Configuración](#configuración)
-6. [Cuentas Predeterminadas](#cuentas-predeterminadas)
-7. [API Reference](#api-reference)
-8. [Control de Acceso (RBAC)](#control-de-acceso-rbac)
-9. [Carga de Documentos](#carga-de-documentos)
-10. [Estructura del Proyecto](#estructura-del-proyecto)
-11. [Modelos de Base de Datos](#modelos-de-base-de-datos)
-12. [Pruebas](#pruebas)
-13. [Decisiones Técnicas](#decisiones-técnicas)
+5. [Static site en Render (SPA)](#static-site-en-render-spa)
+6. [Configuración](#configuración)
+7. [Cuentas Predeterminadas](#cuentas-predeterminadas)
+8. [API Reference](#api-reference)
+9. [Control de Acceso (RBAC)](#control-de-acceso-rbac)
+10. [Carga de Documentos](#carga-de-documentos)
+11. [Estructura del Proyecto](#estructura-del-proyecto)
+12. [Modelos de Base de Datos](#modelos-de-base-de-datos)
+13. [Pruebas](#pruebas)
+14. [Decisiones Técnicas](#decisiones-técnicas)
 
 ---
 
@@ -121,6 +122,26 @@ npm run dev        # http://localhost:5173
 > - **Linux/Debian:** `apt-get install tesseract-ocr tesseract-ocr-spa`
 > - **macOS:** `brew install tesseract tesseract-lang`
 > - **Windows:** Descargue el instalador desde [UB-Mannheim/tesseract](https://github.com/UB-Mannheim/tesseract/wiki) y añada el ejecutable al `PATH`.
+
+---
+
+## Static site en Render (SPA)
+
+React Router resuelve rutas como `/login/demo` en el cliente **después** de cargar `index.html`. En un **static site** de Render, si no hay una regla que devuelva `index.html` para rutas sin archivo físico, al abrir o recargar esa URL el sitio no funcionará (404 o redirección indeseada).
+
+**Si el static site se creó en el dashboard** (y no hereda el [`render.yaml`](render.yaml) del repo), en el servicio → **Redirects/Rewrites** → **Add Rule**:
+
+| Campo | Valor |
+|--------|--------|
+| **Source** | `/*` |
+| **Destination** | `/index.html` |
+| **Action** | **Rewrite** (no usar “Redirect”) |
+
+Documentación oficial: [Static Site Redirects and Rewrites](https://render.com/docs/redirects-rewrites).
+
+**Si despliega con Blueprint** desde la raíz del repositorio, el archivo [`render.yaml`](render.yaml) ya incluye esa `rewrite` (`/*` → `/index.html`) junto con cabeceras de seguridad.
+
+El archivo [`frontend/public/_redirects`](frontend/public/_redirects) sirve para hosts estilo Netlify; **Render no lo interpreta** para este propósito: use el dashboard o el Blueprint.
 
 ---
 
