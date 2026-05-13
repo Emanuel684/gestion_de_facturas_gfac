@@ -25,6 +25,7 @@ from src.models import (
     Notification,
     Organization,
     OrganizationFiscalProfile,
+    OrganizationInvoiceStatus,
     Payment,
     Subscription,
     SubscriptionStatus,
@@ -35,6 +36,9 @@ from src.schemas import (
     OrganizationCreate,
     OrganizationOut,
     OrganizationUpdate,
+    OrganizationInvoiceStatusCreate,
+    OrganizationInvoiceStatusOut,
+    OrganizationInvoiceStatusUpdate,
     PlatformInvoiceSummaryOut,
     InvoiceOut,
     InvoiceUpdate,
@@ -43,13 +47,29 @@ from src.schemas import (
     user_to_out,
 )
 
-from src.invoice_statuses import assert_invoice_status_allowed, ensure_default_invoice_statuses
+from src.invoice_status_constants import RESERVED_INVOICE_STATUS_KEYS
+from src.invoice_statuses import (
+    assert_invoice_status_allowed,
+    ensure_default_invoice_statuses,
+    invoice_count_for_status_key,
+    label_map_for_org,
+    list_status_definitions,
+)
 from src.routers.invoices import _invoice_to_out_with_labels
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/organizations", tags=["organizations"])
 
 PLATFORM_SLUG = "plataforma"
+
+
+async def _tenant_organization_or_404(organization_id: int, db: AsyncSession) -> Organization:
+    """Organización cliente (no la org interna de plataforma)."""
+    org_res = await db.execute(select(Organization).where(Organization.id == organization_id))
+    org = org_res.scalar_one_or_none()
+    if not org or org.slug == PLATFORM_SLUG:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organización no encontrada")
+    return org
 
 
 async def _get_org_invoice_or_404(organization_id: int, invoice_id: int, db: AsyncSession) -> Invoice:
@@ -384,6 +404,121 @@ async def delete_organization_user(
     await db.commit()
 
 
+@router.get("/{organization_id}/invoice-statuses", response_model=list[OrganizationInvoiceStatusOut])
+async def platform_list_org_invoice_statuses(
+    organization_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_platform_admin),
+) -> list[OrganizationInvoiceStatusOut]:
+    await _tenant_organization_or_404(organization_id, db)
+    rows = await list_status_definitions(db, organization_id)
+    return [OrganizationInvoiceStatusOut.model_validate(r) for r in rows]
+
+
+@router.post(
+    "/{organization_id}/invoice-statuses",
+    response_model=OrganizationInvoiceStatusOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def platform_create_org_invoice_status(
+    organization_id: int,
+    payload: OrganizationInvoiceStatusCreate,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_platform_admin),
+) -> OrganizationInvoiceStatusOut:
+    await _tenant_organization_or_404(organization_id, db)
+    dup = await db.execute(
+        select(OrganizationInvoiceStatus).where(
+            OrganizationInvoiceStatus.organization_id == organization_id,
+            OrganizationInvoiceStatus.key == payload.key,
+        )
+    )
+    if dup.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Ya existe un estado con la clave '{payload.key}'",
+        )
+    row = OrganizationInvoiceStatus(
+        organization_id=organization_id,
+        key=payload.key,
+        label=payload.label,
+        sort_order=payload.sort_order,
+        auto_overdue_eligible=payload.auto_overdue_eligible,
+    )
+    db.add(row)
+    await db.commit()
+    await db.refresh(row)
+    return OrganizationInvoiceStatusOut.model_validate(row)
+
+
+@router.patch(
+    "/{organization_id}/invoice-statuses/{status_id}",
+    response_model=OrganizationInvoiceStatusOut,
+)
+async def platform_patch_org_invoice_status(
+    organization_id: int,
+    status_id: int,
+    payload: OrganizationInvoiceStatusUpdate,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_platform_admin),
+) -> OrganizationInvoiceStatusOut:
+    await _tenant_organization_or_404(organization_id, db)
+    r = await db.execute(
+        select(OrganizationInvoiceStatus).where(
+            OrganizationInvoiceStatus.id == status_id,
+            OrganizationInvoiceStatus.organization_id == organization_id,
+        )
+    )
+    row = r.scalar_one_or_none()
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Estado no encontrado")
+    data = payload.model_dump(exclude_unset=True)
+    if "label" in data and data["label"] is not None:
+        row.label = data["label"]
+    if "sort_order" in data and data["sort_order"] is not None:
+        row.sort_order = data["sort_order"]
+    if "auto_overdue_eligible" in data:
+        row.auto_overdue_eligible = data["auto_overdue_eligible"]
+    await db.commit()
+    await db.refresh(row)
+    return OrganizationInvoiceStatusOut.model_validate(row)
+
+
+@router.delete(
+    "/{organization_id}/invoice-statuses/{status_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def platform_delete_org_invoice_status(
+    organization_id: int,
+    status_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_platform_admin),
+) -> None:
+    await _tenant_organization_or_404(organization_id, db)
+    r = await db.execute(
+        select(OrganizationInvoiceStatus).where(
+            OrganizationInvoiceStatus.id == status_id,
+            OrganizationInvoiceStatus.organization_id == organization_id,
+        )
+    )
+    row = r.scalar_one_or_none()
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Estado no encontrado")
+    if row.key in RESERVED_INVOICE_STATUS_KEYS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No se pueden eliminar los estados reservados (pendiente, pagada, vencida).",
+        )
+    cnt = await invoice_count_for_status_key(db, organization_id, row.key)
+    if cnt > 0:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Hay facturas usando este estado; reasigne o elimine esas facturas antes.",
+        )
+    await db.delete(row)
+    await db.commit()
+
+
 @router.get("/{organization_id}/invoices", response_model=list[PlatformInvoiceSummaryOut])
 async def list_organization_invoices(
     organization_id: int,
@@ -393,10 +528,7 @@ async def list_organization_invoices(
     db: AsyncSession = Depends(get_db),
     _: User = Depends(require_platform_admin),
 ) -> list[PlatformInvoiceSummaryOut]:
-    org_res = await db.execute(select(Organization).where(Organization.id == organization_id))
-    org = org_res.scalar_one_or_none()
-    if not org or org.slug == PLATFORM_SLUG:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organización no encontrada")
+    await _tenant_organization_or_404(organization_id, db)
 
     stmt = select(Invoice).where(Invoice.organization_id == organization_id)
     if status_filter:
@@ -406,7 +538,21 @@ async def list_organization_invoices(
     stmt = stmt.order_by(Invoice.created_at.desc()).limit(limit)
 
     invoices = (await db.execute(stmt)).scalars().all()
-    return [PlatformInvoiceSummaryOut.model_validate(i) for i in invoices]
+    labels = await label_map_for_org(db, organization_id)
+    return [
+        PlatformInvoiceSummaryOut(
+            id=inv.id,
+            organization_id=inv.organization_id,
+            invoice_number=inv.invoice_number,
+            supplier=inv.supplier,
+            amount=inv.amount,
+            status=inv.status,
+            status_label=labels.get(inv.status),
+            due_date=inv.due_date,
+            created_at=inv.created_at,
+        )
+        for inv in invoices
+    ]
 
 
 @router.put("/{organization_id}/invoices/{invoice_id}", response_model=InvoiceOut)
@@ -417,6 +563,7 @@ async def update_organization_invoice(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_platform_admin),
 ) -> InvoiceOut:
+    await _tenant_organization_or_404(organization_id, db)
     invoice = await _get_org_invoice_or_404(organization_id, invoice_id, db)
 
     locked = is_document_editing_locked(invoice.dian_lifecycle_status, invoice.document_locked)
@@ -553,6 +700,7 @@ async def delete_organization_invoice(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_platform_admin),
 ) -> None:
+    await _tenant_organization_or_404(organization_id, db)
     invoice = await _get_org_invoice_or_404(organization_id, invoice_id, db)
     await db.execute(
         update(Notification)

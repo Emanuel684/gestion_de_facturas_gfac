@@ -157,6 +157,18 @@ export const updateOrganizationInvoice = (organizationId, invoiceId, data) =>
 export const deleteOrganizationInvoice = (organizationId, invoiceId) =>
   api.delete(`/organizations/${organizationId}/invoices/${invoiceId}`);
 
+export const getOrganizationInvoiceStatuses = (organizationId) =>
+  api.get(`/organizations/${organizationId}/invoice-statuses`);
+
+export const createOrganizationInvoiceStatus = (organizationId, data) =>
+  api.post(`/organizations/${organizationId}/invoice-statuses`, data);
+
+export const patchOrganizationInvoiceStatus = (organizationId, statusId, data) =>
+  api.patch(`/organizations/${organizationId}/invoice-statuses/${statusId}`, data);
+
+export const deleteOrganizationInvoiceStatus = (organizationId, statusId) =>
+  api.delete(`/organizations/${organizationId}/invoice-statuses/${statusId}`);
+
 // ── Public signup / mock checkout ────────────────────────────────────────────
 export const publicSignup = (data) => api.post('/public/signup', data);
 export const getPublicCheckout = (token) => api.get(`/public/checkout/${token}`);

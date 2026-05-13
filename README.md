@@ -257,6 +257,8 @@ Authorization: Bearer <access_token>
 
 **Estados de cobranza (`organization_invoice_statuses`):** cada fila tiene `key` (estable), `label` (visible en UI), `sort_order` y `auto_overdue_eligible`. El job de vencimiento pasa facturas con `due_date` vencida al estado `vencida` solo si su estado actual tiene `auto_overdue_eligible=true` (por defecto solo `pendiente`).
 
+**Plataforma (super-usuario):** para una organización cliente, `GET|POST|PATCH|DELETE /api/organizations/{organization_id}/invoice-statuses` (y `.../invoice-statuses/{status_id}` en PATCH/DELETE) exponen el mismo contrato que en tenant; solo rol `plataforma_admin`. La lista de facturas `GET /api/organizations/{id}/invoices` devuelve `status_label` resuelto para cada fila.
+
 
 ### Usuarios
 

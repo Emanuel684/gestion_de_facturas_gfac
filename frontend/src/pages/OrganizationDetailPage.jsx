@@ -5,12 +5,14 @@ import {
   deleteOrganizationUser,
   getOrganization,
   getOrganizationInvoices,
+  getOrganizationInvoiceStatuses,
   getOrganizationUsers,
   updateOrganizationInvoice,
   updateOrganization,
   updateOrganizationUser,
 } from '../api';
 import InvoiceModal from '../components/InvoiceModal';
+import PlatformOrgInvoiceStatusesPanel from '../components/PlatformOrgInvoiceStatusesPanel';
 import Navbar from '../components/Navbar';
 import { useTranslation } from 'react-i18next';
 import { localeFromLanguage } from '../utils/locale';
@@ -19,8 +21,6 @@ import './OrganizationDetailPage.css';
 const PLAN_OPTIONS = ['basico', 'profesional', 'empresarial'];
 
 const ROLE_OPTIONS = ['administrador', 'contador', 'asistente'];
-
-const STATUS_OPTIONS = ['', 'pendiente', 'pagada', 'vencida'];
 
 function fmtMoney(amount, locale) {
   return new Intl.NumberFormat(locale, { style: 'currency', currency: 'COP' }).format(amount);
@@ -45,10 +45,31 @@ export default function OrganizationDetailPage() {
   const [showInactiveUsers, setShowInactiveUsers] = useState(false);
 
   const [invoices, setInvoices] = useState([]);
+  const [collectionStatuses, setCollectionStatuses] = useState([]);
   const [invoiceStatus, setInvoiceStatus] = useState('');
   const [invoiceSupplier, setInvoiceSupplier] = useState('');
   const [editingInvoice, setEditingInvoice] = useState(null);
   const [deletingInvoiceId, setDeletingInvoiceId] = useState(null);
+
+  const sortedCollectionStatuses = useMemo(() => {
+    if (collectionStatuses.length > 0) {
+      return [...collectionStatuses].sort((a, b) => a.sort_order - b.sort_order || a.id - b.id);
+    }
+    return [
+      { id: -1, key: 'pendiente', label: t('common:pending'), sort_order: 0 },
+      { id: -2, key: 'vencida', label: t('common:overdue'), sort_order: 1 },
+      { id: -3, key: 'pagada', label: t('common:paid'), sort_order: 2 },
+    ];
+  }, [collectionStatuses, t]);
+
+  const invoiceStatusDisplay = useCallback(
+    (inv) => {
+      if (inv.status_label) return inv.status_label;
+      const def = sortedCollectionStatuses.find((s) => s.key === inv.status);
+      return def?.label || inv.status;
+    },
+    [sortedCollectionStatuses]
+  );
 
   const fetchUsers = useCallback(async () => {
     const r = await getOrganizationUsers(orgId, showInactiveUsers);
@@ -67,13 +88,21 @@ export default function OrganizationDetailPage() {
     setLoading(true);
     setError('');
     try {
-      const [orgResp] = await Promise.all([getOrganization(orgId), fetchUsers(), fetchInvoices()]);
+      const orgResp = await getOrganization(orgId);
       setOrg(orgResp.data);
       setOrgForm({
         name: orgResp.data.name ?? '',
         slug: orgResp.data.slug ?? '',
         plan_tier: orgResp.data.plan_tier ?? 'basico',
       });
+      let statusRows = [];
+      try {
+        statusRows = (await getOrganizationInvoiceStatuses(orgId)).data || [];
+      } catch {
+        statusRows = [];
+      }
+      setCollectionStatuses(statusRows);
+      await Promise.all([fetchUsers(), fetchInvoices()]);
     } catch (err) {
       const d = err.response?.data?.detail;
       setError(typeof d === 'string' ? d : t('organizations:detail.loadError'));
@@ -81,6 +110,16 @@ export default function OrganizationDetailPage() {
       setLoading(false);
     }
   }, [orgId, fetchUsers, fetchInvoices]);
+
+  const refreshStatusesAndInvoices = useCallback(async () => {
+    try {
+      const r = await getOrganizationInvoiceStatuses(orgId);
+      setCollectionStatuses(r.data || []);
+    } catch {
+      setCollectionStatuses([]);
+    }
+    await fetchInvoices();
+  }, [orgId, fetchInvoices]);
 
   useEffect(() => {
     fetchAll();
@@ -172,7 +211,7 @@ export default function OrganizationDetailPage() {
 
   const handleInvoiceSaved = async () => {
     setEditingInvoice(null);
-    await fetchInvoices();
+    await refreshStatusesAndInvoices();
   };
 
   return (
@@ -281,6 +320,8 @@ export default function OrganizationDetailPage() {
               </div>
             </section>
 
+            <PlatformOrgInvoiceStatusesPanel organizationId={orgId} onChanged={refreshStatusesAndInvoices} />
+
             <section className="org-detail-card">
               <div className="org-detail-section-head">
               <h2>{t('organizations:detail.invoicesAndStatus')}</h2>
@@ -289,15 +330,11 @@ export default function OrganizationDetailPage() {
                 <div className="form-group">
                   <label>{t('organizations:detail.status')}</label>
                   <select value={invoiceStatus} onChange={(e) => setInvoiceStatus(e.target.value)}>
-                    {STATUS_OPTIONS.map((statusValue) => (
+                    {['', ...sortedCollectionStatuses.map((s) => s.key)].map((statusValue) => (
                       <option key={statusValue || 'all'} value={statusValue}>
                         {statusValue === ''
                           ? t('common:allStatuses')
-                          : statusValue === 'pendiente'
-                            ? t('common:pending')
-                            : statusValue === 'pagada'
-                              ? t('common:paid')
-                              : t('common:overdue')}
+                          : sortedCollectionStatuses.find((d) => d.key === statusValue)?.label || statusValue}
                       </option>
                     ))}
                   </select>
@@ -328,7 +365,7 @@ export default function OrganizationDetailPage() {
                       <tr key={inv.id}>
                         <td>{inv.invoice_number}</td>
                         <td>{inv.supplier}</td>
-                        <td>{inv.status}</td>
+                        <td>{invoiceStatusDisplay(inv)}</td>
                         <td>{fmtMoney(inv.amount, locale)}</td>
                         <td>{inv.due_date ? new Date(inv.due_date).toLocaleDateString(locale) : '—'}</td>
                         <td>
@@ -440,6 +477,7 @@ export default function OrganizationDetailPage() {
         <InvoiceModal
           invoice={editingInvoice}
           users={users.filter((u) => u.is_active)}
+          collectionStatuses={sortedCollectionStatuses}
           updateHandler={(invoiceId, data) => updateOrganizationInvoice(orgId, invoiceId, data)}
           onSuccess={handleInvoiceSaved}
           onClose={() => setEditingInvoice(null)}

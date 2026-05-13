@@ -15,6 +15,30 @@ SAMPLE_INVOICE = {
 
 
 @pytest.mark.asyncio
+async def test_platform_list_org_invoice_statuses(
+    client: AsyncClient, platform_token: str, tenant_org
+):
+    r = await client.get(
+        f"/api/organizations/{tenant_org.id}/invoice-statuses",
+        headers=auth(platform_token),
+    )
+    assert r.status_code == 200
+    keys = {x["key"] for x in r.json()}
+    assert keys == {"pendiente", "pagada", "vencida"}
+
+
+@pytest.mark.asyncio
+async def test_tenant_admin_cannot_access_platform_org_invoice_statuses(
+    client: AsyncClient, admin_token: str, tenant_org
+):
+    r = await client.get(
+        f"/api/organizations/{tenant_org.id}/invoice-statuses",
+        headers=auth(admin_token),
+    )
+    assert r.status_code == 403
+
+
+@pytest.mark.asyncio
 async def test_platform_admin_can_update_org_invoice(
     client: AsyncClient,
     admin_token: str,

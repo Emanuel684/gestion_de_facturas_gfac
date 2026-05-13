@@ -75,6 +75,8 @@
     "yes": "Sí",
     "no": "No",
     "newPasswordOptional": "Nueva contraseña (opcional)",
-    "save": "Guardar"
+    "save": "Guardar",
+    "platformStatusesTitle": "Estados de cobranza (esta organización)",
+    "platformStatusesHint": "Mismas reglas que en el tenant: no se pueden borrar claves reservadas; el vencimiento automático marca qué estados abren paso al job antes de pasar a vencida."
   }
 }

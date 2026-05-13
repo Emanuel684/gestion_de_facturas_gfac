@@ -363,20 +363,16 @@ export default function InvoicesPage() {
     e.dataTransfer.effectAllowed = 'move';
   };
 
-  const totalPendiente = useMemo(
+  const summaryRows = useMemo(
     () =>
-      displayInvoices.filter((inv) => inv.status === 'pendiente').reduce((sum, inv) => sum + parseFloat(inv.amount), 0),
-    [displayInvoices]
-  );
-  const totalVencida = useMemo(
-    () =>
-      displayInvoices.filter((inv) => inv.status === 'vencida').reduce((sum, inv) => sum + parseFloat(inv.amount), 0),
-    [displayInvoices]
-  );
-  const totalPagada = useMemo(
-    () =>
-      displayInvoices.filter((inv) => inv.status === 'pagada').reduce((sum, inv) => sum + parseFloat(inv.amount), 0),
-    [displayInvoices]
+      sortedCollectionStatuses.map((row) => ({
+        key: row.key,
+        label: row.label,
+        total: displayInvoices
+          .filter((inv) => inv.status === row.key)
+          .reduce((sum, inv) => sum + parseFloat(inv.amount), 0),
+      })),
+    [displayInvoices, sortedCollectionStatuses]
   );
 
   const sortedCompact = useMemo(() => {
@@ -492,18 +488,23 @@ export default function InvoicesPage() {
         )}
 
         <div className="summary-row">
-          <div className="summary-card summary-pendiente">
-            <span className="summary-label">{t('invoices:pending')}</span>
-            <span className="summary-value">{formatCurrency(totalPendiente, locale)}</span>
-          </div>
-          <div className="summary-card summary-vencida">
-            <span className="summary-label">{t('invoices:overdue')}</span>
-            <span className="summary-value">{formatCurrency(totalVencida, locale)}</span>
-          </div>
-          <div className="summary-card summary-pagada">
-            <span className="summary-label">{t('invoices:paid')}</span>
-            <span className="summary-value">{formatCurrency(totalPagada, locale)}</span>
-          </div>
+          {summaryRows.map((row) => (
+            <div
+              key={row.key}
+              className={`summary-card ${
+                row.key === 'pendiente'
+                  ? 'summary-pendiente'
+                  : row.key === 'vencida'
+                    ? 'summary-vencida'
+                    : row.key === 'pagada'
+                      ? 'summary-pagada'
+                      : 'summary-custom'
+              }`}
+            >
+              <span className="summary-label">{row.label}</span>
+              <span className="summary-value">{formatCurrency(row.total, locale)}</span>
+            </div>
+          ))}
         </div>
 
         <div className="filter-bar filter-bar-with-view">

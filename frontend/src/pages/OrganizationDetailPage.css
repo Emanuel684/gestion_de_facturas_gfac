@@ -36,6 +36,21 @@
   color: var(--color-text);
 }
 
+.org-detail-subh3 {
+  font-size: 0.95rem;
+  margin: 0.35rem 0 0.65rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.org-detail-statuses-card .statuses-section {
+  margin-bottom: 1rem;
+}
+
+.org-detail-statuses-card .statuses-section:last-child {
+  margin-bottom: 0;
+}
+
 .org-detail-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

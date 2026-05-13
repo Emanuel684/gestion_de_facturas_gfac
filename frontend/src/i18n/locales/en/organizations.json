@@ -75,6 +75,8 @@
     "yes": "Yes",
     "no": "No",
     "newPasswordOptional": "New password (optional)",
-    "save": "Save"
+    "save": "Save",
+    "platformStatusesTitle": "Collection statuses (this organization)",
+    "platformStatusesHint": "Same rules as the tenant admin screen: reserved keys cannot be deleted; auto overdue controls which states are eligible for the due-date job before moving to vencida."
   }
 }
