@@ -727,6 +727,7 @@ async def _delete_organization_cascade(org_id: int, db: AsyncSession) -> None:
 
     await db.execute(delete(InvoiceEvent).where(InvoiceEvent.organization_id == org_id))
     await db.execute(delete(InvoiceAssignee).where(InvoiceAssignee.invoice_id.in_(inv_ids_subq)))
+    await db.execute(delete(Notification).where(Notification.organization_id == org_id))
     await db.execute(delete(Invoice).where(Invoice.organization_id == org_id))
     await db.execute(delete(Payment).where(Payment.organization_id == org_id))
     await db.execute(delete(CheckoutSession).where(CheckoutSession.organization_id == org_id))
