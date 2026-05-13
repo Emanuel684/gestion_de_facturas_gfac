@@ -28,7 +28,7 @@ API de producción con frontend en React para digitalizar y automatizar el proce
 |---|---|
 | **Autenticación JWT** | Login con usuario y contraseña, token Bearer de 24 h |
 | **CRUD de Facturas** | Crear, leer, actualizar y eliminar facturas |
-| **Estados de Factura** | `pendiente` → `pagada` / `vencida` |
+| **Estados de Factura** | Claves estables (`pendiente`, `pagada`, `vencida` reservadas) + estados personalizados por organización; etiqueta, orden Kanban y elegibilidad al vencimiento automático |
 | **RBAC de 3 niveles** | `administrador`, `contador`, `asistente` con permisos diferenciados |
 | **Dashboard financiero** | Totales por estado en COP (pendiente / vencida / pagada) |
 | **Filtros en tiempo real** | Por estado y búsqueda por proveedor (`ilike`) |
@@ -199,6 +199,10 @@ Authorization: Bearer <access_token>
 | `GET` | `/api/invoices` | Listar facturas | Todos |
 | `POST` | `/api/invoices` | Crear factura | Todos |
 | `POST` | `/api/invoices/upload` | Cargar documento y extraer datos | Todos |
+| `GET` | `/api/invoices/collection-statuses` | Listar definiciones de estado de cobranza del tenant | Todos |
+| `POST` | `/api/invoices/collection-statuses` | Crear estado personalizado (`key`, `label`, `sort_order`, `auto_overdue_eligible`) | Solo `administrador` |
+| `PATCH` | `/api/invoices/collection-statuses/{id}` | Actualizar etiqueta, orden o `auto_overdue_eligible` | Solo `administrador` |
+| `DELETE` | `/api/invoices/collection-statuses/{id}` | Eliminar estado custom sin facturas asociadas | Solo `administrador` |
 | `GET` | `/api/invoices/{id}` | Obtener factura por ID | Todos* |
 | `PUT` | `/api/invoices/{id}` | Actualizar factura | `administrador`, `contador`* |
 | `DELETE` | `/api/invoices/{id}` | Eliminar factura | Solo `administrador` |
@@ -209,7 +213,7 @@ Authorization: Bearer <access_token>
 
 | Parámetro | Tipo | Ejemplo | Descripción |
 |---|---|---|---|
-| `status` | string | `pendiente` | Filtrar por estado (`pendiente`, `pagada`, `vencida`) |
+| `status` | string | `pendiente` | Filtrar por **clave** de estado (incluye claves personalizadas de la organización) |
 | `supplier` | string | `acme` | Búsqueda parcial por proveedor (insensible a mayúsculas) |
 
 **`POST /api/invoices` — Cuerpo:**
@@ -234,6 +238,7 @@ Authorization: Bearer <access_token>
   "description": "Compra de insumos de oficina",
   "amount": "1500000.50",
   "status": "pendiente",
+  "status_label": "Pendiente de pago",
   "due_date": "2026-06-15T00:00:00Z",
   "creator_id": 1,
   "created_at": "2026-03-04T10:00:00Z",
@@ -248,9 +253,10 @@ Authorization: Bearer <access_token>
 - `invoice_number`: no puede estar vacío, debe ser único en la BD
 - `supplier`: no puede estar vacío ni ser solo espacios
 - `amount`: debe ser mayor que `0`
-- `status`: uno de `pendiente`, `pagada`, `vencida`
+- `status`: debe ser una **clave** existente en las definiciones de la organización (`GET /api/invoices/collection-statuses`). Por defecto existen `pendiente`, `pagada` y `vencida`; el administrador puede añadir más.
 
----
+**Estados de cobranza (`organization_invoice_statuses`):** cada fila tiene `key` (estable), `label` (visible en UI), `sort_order` y `auto_overdue_eligible`. El job de vencimiento pasa facturas con `due_date` vencida al estado `vencida` solo si su estado actual tiene `auto_overdue_eligible=true` (por defecto solo `pendiente`).
+
 
 ### Usuarios
 
@@ -289,6 +295,7 @@ Authorization: Bearer <access_token>
 | Campo | Tipo | Descripción |
 |---|---|---|
 | `file` | `UploadFile` | Archivo a procesar (máx. 10 MB) |
+| `pdf_password` | `string` (opcional) | Contraseña de usuario del PDF si el documento está cifrado; mismo `multipart/form-data` que `file` |
 
 **Formatos soportados:**
 

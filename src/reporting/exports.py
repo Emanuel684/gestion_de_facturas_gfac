@@ -73,7 +73,7 @@ def build_invoices_xlsx_bytes(
         ws.cell(row=row_idx, column=2, value=_safe_xlsx_text(inv.invoice_number))
         ws.cell(row=row_idx, column=3, value=_safe_xlsx_text(inv.supplier))
         ws.cell(row=row_idx, column=4, value=float(inv.amount))
-        ws.cell(row=row_idx, column=5, value=inv.status.value)
+        ws.cell(row=row_idx, column=5, value=inv.status)
         ws.cell(row=row_idx, column=6, value=inv.currency)
         ws.cell(row=row_idx, column=7, value=_fmt_dt(inv.issue_date))
         ws.cell(row=row_idx, column=8, value=_fmt_dt(inv.due_date))
@@ -150,7 +150,7 @@ def build_invoices_pdf_bytes(
                 inv.invoice_number[:24],
                 (inv.supplier or "")[:40],
                 _fmt_money(inv.amount),
-                inv.status.value,
+                inv.status,
                 inv.currency,
                 _fmt_dt(inv.issue_date)[:10],
                 _fmt_dt(inv.due_date)[:10] if inv.due_date else "",

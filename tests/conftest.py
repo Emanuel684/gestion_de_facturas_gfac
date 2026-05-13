@@ -66,6 +66,9 @@ async def tenant_org(db_session: AsyncSession) -> Organization:
     )
     db_session.add(org)
     await db_session.flush()
+    from src.invoice_statuses import ensure_default_invoice_statuses
+
+    await ensure_default_invoice_statuses(db_session, org.id)
     now = now_utc()
     db_session.add(
         Subscription(

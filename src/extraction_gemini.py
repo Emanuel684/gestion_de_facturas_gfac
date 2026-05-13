@@ -230,31 +230,53 @@ def extract_with_gemini(
     content_type: str,
     filename: str,
     doc_plain_text: str,
+    pdf_use_text_only: bool = False,
 ) -> dict[str, Any]:
     """
     Llama a Gemini y devuelve un dict normalizado o {} si falla.
     doc_plain_text: texto ya extraído (OCR/docx) para modo texto o refuerzo.
+    pdf_use_text_only: si True y el documento es PDF, no envía bytes (sigue cifrado);
+        usa solo el texto extraído con contraseña, como en DOCX.
     """
     api_key = (settings.gemini_api_key or "").strip()
     if not api_key:
         return {}
 
-    if len(file_bytes) > MAX_INLINE_BYTES:
+    ct = content_type or "application/octet-stream"
+    docx = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    fn_lower = filename.lower()
+    is_docx = ct == docx or fn_lower.endswith(".docx")
+    is_pdf = ct == "application/pdf" or (
+        ct == "application/octet-stream" and fn_lower.endswith(".pdf")
+    )
+    use_pdf_text_only = pdf_use_text_only and is_pdf
+    skip_inline_payload = is_docx or use_pdf_text_only
+
+    if len(file_bytes) > MAX_INLINE_BYTES and not skip_inline_payload:
         logger.warning("Archivo demasiado grande para Gemini inline (%s bytes)", len(file_bytes))
         return {}
 
     model = (settings.gemini_model or "gemini-2.0-flash").strip()
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
-    ct = content_type or "application/octet-stream"
-    docx = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-
     user_parts: list[dict[str, Any]] = []
-    if ct == docx or filename.lower().endswith(".docx"):
+    if is_docx:
         user_parts.append(
             {
                 "text": (
                     "Extrae los datos del siguiente texto de un documento Word (factura o similar):\n\n"
+                    "---\n"
+                    f"{doc_plain_text[:48000]}"
+                )
+            }
+        )
+    elif use_pdf_text_only:
+        user_parts.append(
+            {
+                "text": (
+                    "Extrae los datos del siguiente texto extraído de un PDF "
+                    "(factura o documento similar). El archivo puede haber estado protegido; "
+                    "confía en el texto:\n\n"
                     "---\n"
                     f"{doc_plain_text[:48000]}"
                 )

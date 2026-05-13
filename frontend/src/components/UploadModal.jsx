@@ -15,6 +15,7 @@ function formatFileSize(bytes) {
 export default function UploadModal({ onExtracted, onClose }) {
   const { t } = useTranslation(['modals']);
   const [file, setFile] = useState(null);
+  const [pdfPassword, setPdfPassword] = useState('');
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -53,10 +54,16 @@ export default function UploadModal({ onExtracted, onClose }) {
     return true;
   };
 
+  const isPdfFile = (f) =>
+    f?.type === 'application/pdf' || f?.name?.toLowerCase().endsWith('.pdf');
+
   const handleFileSelect = (e) => {
     setError('');
     const f = e.target.files?.[0];
-    if (f && validateFile(f)) setFile(f);
+    if (f && validateFile(f)) {
+      setFile(f);
+      setPdfPassword('');
+    }
   };
 
   const handleDrop = (e) => {
@@ -64,7 +71,10 @@ export default function UploadModal({ onExtracted, onClose }) {
     setDragActive(false);
     setError('');
     const f = e.dataTransfer.files?.[0];
-    if (f && validateFile(f)) setFile(f);
+    if (f && validateFile(f)) {
+      setFile(f);
+      setPdfPassword('');
+    }
   };
 
   const handleDragOver = (e) => { e.preventDefault(); setDragActive(true); };
@@ -75,7 +85,8 @@ export default function UploadModal({ onExtracted, onClose }) {
     setError('');
     setLoading(true);
     try {
-      const resp = await uploadInvoiceFile(file);
+      const opts = isPdfFile(file) && pdfPassword ? { pdfPassword } : {};
+      const resp = await uploadInvoiceFile(file, opts);
       onExtracted(resp.data);
     } catch (err) {
       const detail = err.response?.data?.detail;
@@ -85,7 +96,11 @@ export default function UploadModal({ onExtracted, onClose }) {
     }
   };
 
-  const removeFile = () => { setFile(null); setError(''); };
+  const removeFile = () => {
+    setFile(null);
+    setPdfPassword('');
+    setError('');
+  };
 
   const getFileIcon = () => {
     if (!file) return '📄';
@@ -156,6 +171,23 @@ export default function UploadModal({ onExtracted, onClose }) {
               >
                 ✕
               </button>
+            </div>
+          )}
+
+          {file && isPdfFile(file) && (
+            <div className="upload-pdf-password">
+              <label htmlFor="upload-pdf-password-input">{t('modals:upload.pdfPasswordLabel')}</label>
+              <input
+                id="upload-pdf-password-input"
+                type="password"
+                className="upload-pdf-password-input"
+                autoComplete="off"
+                value={pdfPassword}
+                onChange={(e) => setPdfPassword(e.target.value)}
+                placeholder={t('modals:upload.pdfPasswordPlaceholder')}
+                disabled={loading}
+              />
+              <p className="upload-pdf-password-hint">{t('modals:upload.pdfPasswordHint')}</p>
             </div>
           )}
 

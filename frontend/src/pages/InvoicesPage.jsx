@@ -8,6 +8,7 @@ import {
   getOverdueInvoices,
   getDueSoonInvoices,
   updateInvoice,
+  getCollectionStatuses,
 } from '../api';
 import { useAuth } from '../context/AuthContext';
 import InvoiceModal from '../components/InvoiceModal';
@@ -16,17 +17,6 @@ import UploadModal from '../components/UploadModal';
 import Navbar from '../components/Navbar';
 import { localeFromLanguage } from '../utils/locale';
 import './InvoicesPage.css';
-
-const STATUS_LABELS = { pendiente: 'pending', pagada: 'paid', vencida: 'overdue' };
-
-const STATUS_COLORS = {
-  pendiente: 'badge-pendiente',
-  pagada: 'badge-pagada',
-  vencida: 'badge-vencida',
-};
-
-/** Columnas del tablero Kanban (orden visual izquierda → derecha) */
-const KANBAN_STATUSES = ['pendiente', 'vencida', 'pagada'];
 
 const DIAN_LABELS = {
   borrador: 'Borrador',
@@ -109,6 +99,52 @@ export default function InvoicesPage() {
   const [traceInvoice, setTraceInvoice] = useState(null);
   const [dragInvoiceId, setDragInvoiceId] = useState(null);
   const [statusUpdatingId, setStatusUpdatingId] = useState(null);
+  const [collectionStatuses, setCollectionStatuses] = useState([]);
+
+  const sortedCollectionStatuses = useMemo(() => {
+    if (collectionStatuses.length > 0) {
+      return [...collectionStatuses].sort((a, b) => a.sort_order - b.sort_order || a.id - b.id);
+    }
+    return [
+      { id: -1, key: 'pendiente', label: t('invoices:pending'), sort_order: 0 },
+      { id: -2, key: 'vencida', label: t('invoices:overdue'), sort_order: 1 },
+      { id: -3, key: 'pagada', label: t('invoices:paid'), sort_order: 2 },
+    ];
+  }, [collectionStatuses, t]);
+
+  const statusOrderMap = useMemo(() => {
+    const m = {};
+    sortedCollectionStatuses.forEach((s, i) => {
+      m[s.key] = i;
+    });
+    return m;
+  }, [sortedCollectionStatuses]);
+
+  const statusDisplayLabel = useCallback(
+    (inv) => {
+      if (inv.status_label) return inv.status_label;
+      const def = sortedCollectionStatuses.find((s) => s.key === inv.status);
+      return def?.label || inv.status;
+    },
+    [sortedCollectionStatuses]
+  );
+
+  const statusBadgeClass = useCallback((key) => {
+    if (key === 'pendiente') return 'badge-pendiente';
+    if (key === 'pagada') return 'badge-pagada';
+    if (key === 'vencida') return 'badge-vencida';
+    return 'badge-custom';
+  }, []);
+
+  const kanbanColumnClass = useCallback((key) => {
+    if (key === 'pendiente' || key === 'pagada' || key === 'vencida') return `kanban-column-${key}`;
+    return 'kanban-column-custom';
+  }, []);
+
+  const compactDotClass = useCallback((key) => {
+    if (key === 'pendiente' || key === 'pagada' || key === 'vencida') return `invoice-compact-dot-${key}`;
+    return 'invoice-compact-dot-custom';
+  }, []);
 
   const isGridView = viewMode === 'grid';
   const displayInvoices = isGridView ? invoices : allInvoices;
@@ -202,6 +238,12 @@ export default function InvoicesPage() {
     getUsers().then((r) => setUsers(r.data)).catch(() => {});
   }, []);
 
+  useEffect(() => {
+    getCollectionStatuses()
+      .then((r) => setCollectionStatuses(r.data))
+      .catch(() => setCollectionStatuses([]));
+  }, []);
+
   const canDelete = user?.role === 'administrador';
   const canEdit = user?.role !== 'asistente';
 
@@ -293,7 +335,13 @@ export default function InvoicesPage() {
     setStatusUpdatingId(id);
     try {
       await updateInvoice(id, { status: targetStatus });
-      setAllInvoices((prev) => prev.map((i) => (i.id === id ? { ...i, status: targetStatus } : i)));
+      const labelRow = sortedCollectionStatuses.find((s) => s.key === targetStatus);
+      const nextLabel = labelRow?.label;
+      setAllInvoices((prev) =>
+        prev.map((i) =>
+          i.id === id ? { ...i, status: targetStatus, status_label: nextLabel ?? i.status_label } : i
+        )
+      );
       await fetchOverdue();
       await fetchDueSoon();
     } catch (err) {
@@ -332,14 +380,13 @@ export default function InvoicesPage() {
   );
 
   const sortedCompact = useMemo(() => {
-    const order = { vencida: 0, pendiente: 1, pagada: 2 };
     return [...allInvoices].sort((a, b) => {
-      const oa = order[a.status] ?? 3;
-      const ob = order[b.status] ?? 3;
+      const oa = statusOrderMap[a.status] ?? 999;
+      const ob = statusOrderMap[b.status] ?? 999;
       if (oa !== ob) return oa - ob;
       return (a.invoice_number || '').localeCompare(b.invoice_number || '');
     });
-  }, [allInvoices]);
+  }, [allInvoices, statusOrderMap]);
 
   const renderInvoiceActions = (inv, { compact = false } = {}) => (
     <div className={compact ? 'invoice-actions invoice-actions-compact' : 'invoice-actions'}>
@@ -462,14 +509,14 @@ export default function InvoicesPage() {
         <div className="filter-bar filter-bar-with-view">
           <div className="filter-bar-left">
             <span className="filter-label">{t('invoices:filter')}</span>
-            {['', 'pendiente', 'pagada', 'vencida'].map((s) => (
+            {['', ...sortedCollectionStatuses.map((s) => s.key)].map((s) => (
               <button
-                key={s}
+                key={s || 'all'}
                 type="button"
                 className={`filter-btn ${statusFilter === s ? 'active' : ''}`}
                 onClick={() => setStatusFilter(s)}
               >
-                {s === '' ? t('invoices:all') : t(`invoices:${STATUS_LABELS[s]}`)}
+                {s === '' ? t('invoices:all') : sortedCollectionStatuses.find((d) => d.key === s)?.label || s}
               </button>
             ))}
             <input
@@ -537,7 +584,7 @@ export default function InvoicesPage() {
                 className={`invoice-card${inv.status === 'vencida' ? ' invoice-card-overdue' : ''}`}
               >
                 <div className="invoice-card-header">
-                <span className={`badge ${STATUS_COLORS[inv.status]}`}>{t(`invoices:${STATUS_LABELS[inv.status]}`)}</span>
+                <span className={`badge ${statusBadgeClass(inv.status)}`}>{statusDisplayLabel(inv)}</span>
                   {renderInvoiceActions(inv)}
                 </div>
 
@@ -573,23 +620,23 @@ export default function InvoicesPage() {
           </div>
         ) : viewMode === 'kanban' ? (
           <div className="kanban-board">
-            {KANBAN_STATUSES.map((st) => (
+            {sortedCollectionStatuses.map((st) => (
               <div
-                key={st}
-                className={`kanban-column kanban-column-${st}`}
+                key={st.key}
+                className={`kanban-column ${kanbanColumnClass(st.key)}`}
                 onDragOver={(e) => {
                   e.preventDefault();
                   e.dataTransfer.dropEffect = 'move';
                 }}
-                onDrop={(e) => handleDropOnColumn(st, e)}
+                onDrop={(e) => handleDropOnColumn(st.key, e)}
               >
                 <div className="kanban-column-header">
-                  <span className={`badge ${STATUS_COLORS[st]}`}>{t(`invoices:${STATUS_LABELS[st]}`)}</span>
-                  <span className="kanban-count">{allInvoices.filter((i) => i.status === st).length}</span>
+                  <span className={`badge ${statusBadgeClass(st.key)}`}>{st.label}</span>
+                  <span className="kanban-count">{allInvoices.filter((i) => i.status === st.key).length}</span>
                 </div>
                 <div className="kanban-column-body">
                   {allInvoices
-                    .filter((i) => i.status === st)
+                    .filter((i) => i.status === st.key)
                     .map((inv) => (
                       <div
                         key={inv.id}
@@ -622,7 +669,10 @@ export default function InvoicesPage() {
                 key={inv.id}
                 className={`invoice-compact-row${inv.status === 'vencida' ? ' invoice-compact-row-overdue' : ''}`}
               >
-                <span className={`invoice-compact-dot invoice-compact-dot-${inv.status}`} title={t(`invoices:${STATUS_LABELS[inv.status]}`)} />
+                <span
+                  className={`invoice-compact-dot ${compactDotClass(inv.status)}`}
+                  title={statusDisplayLabel(inv)}
+                />
                 <div className="invoice-compact-main">
                   <span className="invoice-compact-num">{inv.invoice_number}</span>
                   <span className="invoice-compact-sep">·</span>
@@ -663,6 +713,7 @@ export default function InvoicesPage() {
           invoice={editingInvoice}
           users={users}
           prefill={prefillData}
+          collectionStatuses={sortedCollectionStatuses}
           onSuccess={handleModalSuccess}
           onClose={() => setModalOpen(false)}
         />

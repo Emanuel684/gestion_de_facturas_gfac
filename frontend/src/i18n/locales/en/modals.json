@@ -76,7 +76,10 @@
     "removeFile": "Remove file",
     "maxSize": "Max {{max}} MB.",
     "unsupportedFormat": "Unsupported format. Use image, PDF or DOCX.",
-    "processError": "Error processing file."
+    "processError": "Error processing file.",
+    "pdfPasswordLabel": "PDF password (optional)",
+    "pdfPasswordPlaceholder": "Only if the file is password-protected",
+    "pdfPasswordHint": "If the PDF asks for a password when you open it, enter it here. It is not stored on the server after processing."
   },
   "user": {
     "username": "Username *",

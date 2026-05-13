@@ -28,6 +28,8 @@ import esModals from './locales/es/modals.json';
 import enModals from './locales/en/modals.json';
 import esTraceability from './locales/es/traceability.json';
 import enTraceability from './locales/en/traceability.json';
+import esInvoiceStatuses from './locales/es/invoiceStatuses.json';
+import enInvoiceStatuses from './locales/en/invoiceStatuses.json';
 
 const resources = {
   es: {
@@ -44,6 +46,7 @@ const resources = {
     organizations: esOrganizations,
     modals: esModals,
     traceability: esTraceability,
+    invoiceStatuses: esInvoiceStatuses,
   },
   en: {
     common: enCommon,
@@ -59,6 +62,7 @@ const resources = {
     organizations: enOrganizations,
     modals: enModals,
     traceability: enTraceability,
+    invoiceStatuses: enInvoiceStatuses,
   },
 };
 

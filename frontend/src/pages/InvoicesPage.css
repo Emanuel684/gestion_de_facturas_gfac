@@ -162,6 +162,7 @@
 .kanban-column-pendiente { border-top: 3px solid #f59e0b; }
 .kanban-column-vencida   { border-top: 3px solid #ef4444; }
 .kanban-column-pagada    { border-top: 3px solid #10b981; }
+.kanban-column-custom   { border-top: 3px solid #6366f1; }
 .kanban-column-header {
   display: flex;
   align-items: center;
@@ -288,6 +289,7 @@
 .invoice-compact-dot-pendiente { background: #f59e0b; }
 .invoice-compact-dot-pagada    { background: #10b981; }
 .invoice-compact-dot-vencida   { background: #ef4444; }
+.invoice-compact-dot-custom   { background: #6366f1; }
 .invoice-compact-main {
   min-width: 0;
   display: flex;
@@ -398,6 +400,10 @@
 .badge-pendiente { background: #fef3c7; color: #92400e; }
 .badge-pagada    { background: #d1fae5; color: #065f46; }
 .badge-vencida   { background: #fee2e2; color: #991b1b; }
+.badge-custom {
+  background: #f1f5f9;
+  color: #334155;
+}
 .badge-dian {
   background: #e0e7ff;
   color: #3730a3;

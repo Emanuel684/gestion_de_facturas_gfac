@@ -5,14 +5,14 @@ import re
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, computed_field, field_validator
 
+from src.invoice_status_constants import KEY_PENDIENTE, RESERVED_INVOICE_STATUS_KEYS
 from src.models import (
     CheckoutSessionStatus,
     DianDocumentType,
     DianLifecycleStatus,
     InvoiceEventType,
-    InvoiceStatus,
     NotificationType,
     PaymentStatus,
     PlanTier,
@@ -287,12 +287,66 @@ class AssignedUser(BaseModel):
     username: str
 
 
+class OrganizationInvoiceStatusOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    organization_id: int
+    key: str
+    label: str
+    sort_order: int
+    auto_overdue_eligible: bool
+
+    @computed_field
+    @property
+    def is_reserved(self) -> bool:
+        return self.key in RESERVED_INVOICE_STATUS_KEYS
+
+
+class OrganizationInvoiceStatusCreate(BaseModel):
+    key: str
+    label: str
+    sort_order: int = 0
+    auto_overdue_eligible: bool = False
+
+    @field_validator("key")
+    @classmethod
+    def key_rules(cls, v: str) -> str:
+        v = v.strip().lower()
+        if v in RESERVED_INVOICE_STATUS_KEYS:
+            raise ValueError("No puede crear una clave reservada del sistema; use solo estados personalizados.")
+        if not re.fullmatch(r"^[a-z][a-z0-9_]{0,63}$", v):
+            raise ValueError("Clave inválida: use minúsculas, empiece con letra, solo letras, números y _.")
+        return v
+
+    @field_validator("label")
+    @classmethod
+    def label_nonempty(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("label must not be empty")
+        return v
+
+
+class OrganizationInvoiceStatusUpdate(BaseModel):
+    label: str | None = None
+    sort_order: int | None = None
+    auto_overdue_eligible: bool | None = None
+
+    @field_validator("label")
+    @classmethod
+    def label_nonempty(cls, v: str | None) -> str | None:
+        if v is not None and not v.strip():
+            raise ValueError("label must not be empty")
+        return v.strip() if v else v
+
+
 class InvoiceCreate(BaseModel):
     invoice_number: str
     supplier: str
     description: str | None = None
     amount: Decimal
-    status: InvoiceStatus = InvoiceStatus.pendiente
+    status: str = KEY_PENDIENTE
     due_date: datetime | None = None
     assigned_user_ids: list[int] = []
     # Preparación DIAN (opcional; valores por defecto en servidor si no se envían)
@@ -337,7 +391,7 @@ class InvoiceUpdate(BaseModel):
     supplier: str | None = None
     description: str | None = None
     amount: Decimal | None = None
-    status: InvoiceStatus | None = None
+    status: str | None = None
     due_date: datetime | None = None
     assigned_user_ids: list[int] | None = None
     document_type: DianDocumentType | None = None
@@ -384,7 +438,8 @@ class InvoiceOut(BaseModel):
     supplier: str
     description: str | None
     amount: Decimal
-    status: InvoiceStatus
+    status: str
+    status_label: str | None = None
     due_date: datetime | None
     creator_id: int
     created_at: datetime
@@ -426,7 +481,8 @@ class PlatformInvoiceSummaryOut(BaseModel):
     invoice_number: str
     supplier: str
     amount: Decimal
-    status: InvoiceStatus
+    status: str
+    status_label: str | None = None
     due_date: datetime | None
     created_at: datetime
 

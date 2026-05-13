@@ -7,7 +7,8 @@ from decimal import Decimal
 from sqlalchemy import and_, case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.models import Invoice, InvoiceStatus, Organization
+from src.invoice_status_constants import KEY_PAGADA, KEY_PENDIENTE, KEY_VENCIDA
+from src.models import Invoice, Organization, OrganizationInvoiceStatus
 from src.reporting.scope import append_date_range, invoice_visibility_conditions
 from src.schemas import (
     AmountHistogramBin,
@@ -47,7 +48,7 @@ async def compute_dashboard_stats(
     org_name: str | None,
     date_from: datetime | None,
     date_to: datetime | None,
-    status_filter: InvoiceStatus | None = None,
+    status_filter: str | None = None,
 ) -> DashboardStatsOut:
     conds = invoice_visibility_conditions(org_id, user, platform_scope=platform_scope)
     append_date_range(conds, date_from, date_to)
@@ -71,13 +72,13 @@ async def compute_dashboard_stats(
         total_n += int(cnt)
         amt = sm if isinstance(sm, Decimal) else Decimal(str(sm))
         total_amt += amt
-        if st == InvoiceStatus.pendiente:
+        if st == KEY_PENDIENTE:
             counts.pendiente = int(cnt)
             amounts.pendiente = amt
-        elif st == InvoiceStatus.pagada:
+        elif st == KEY_PAGADA:
             counts.pagada = int(cnt)
             amounts.pagada = amt
-        elif st == InvoiceStatus.vencida:
+        elif st == KEY_VENCIDA:
             counts.vencida = int(cnt)
             amounts.vencida = amt
 
@@ -118,9 +119,18 @@ async def compute_dashboard_stats(
     week_end = now + timedelta(days=7)
     conds_due = invoice_visibility_conditions(org_id, user, platform_scope=platform_scope)
     append_date_range(conds_due, date_from, date_to)
+    open_for_due = (
+        select(OrganizationInvoiceStatus.id)
+        .where(
+            OrganizationInvoiceStatus.organization_id == Invoice.organization_id,
+            OrganizationInvoiceStatus.key == Invoice.status,
+            OrganizationInvoiceStatus.auto_overdue_eligible.is_(True),
+        )
+        .exists()
+    )
     conds_due.extend(
         [
-            Invoice.status == InvoiceStatus.pendiente,
+            open_for_due,
             Invoice.due_date.isnot(None),
             Invoice.due_date >= now,
             Invoice.due_date <= week_end,

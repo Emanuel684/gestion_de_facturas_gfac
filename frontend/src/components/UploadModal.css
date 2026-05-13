@@ -147,6 +147,47 @@
   cursor: default;
 }
 
+/* ── PDF password (optional) ────────────────────────────────── */
+.upload-pdf-password {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.upload-pdf-password label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.upload-pdf-password-input {
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.upload-pdf-password-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 25%, transparent);
+}
+
+.upload-pdf-password-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.upload-pdf-password-hint {
+  font-size: 0.75rem;
+  color: var(--color-text-subtle);
+  margin: 0;
+  line-height: 1.45;
+}
+
 /* ── Button spinner ─────────────────────────────────────────── */
 .btn-spinner {
   display: inline-block;

@@ -4,6 +4,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import InvoicesPage from './pages/InvoicesPage';
+import InvoiceStatusesPage from './pages/InvoiceStatusesPage';
 import UsersPage from './pages/UsersPage';
 import OrganizationsPage from './pages/OrganizationsPage';
 import SignupPage from './pages/SignupPage';
@@ -57,6 +58,14 @@ export default function App() {
             element={
               <ProtectedRoute tenantOnly>
                 <UsersPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/app/invoice-statuses"
+            element={
+              <ProtectedRoute tenantOnly adminOnly>
+                <InvoiceStatusesPage />
               </ProtectedRoute>
             }
           />

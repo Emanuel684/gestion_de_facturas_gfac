@@ -36,6 +36,7 @@ export default function InvoiceModal({
   onSuccess,
   onClose,
   prefill,
+  collectionStatuses = null,
   createHandler = createInvoice,
   updateHandler = updateInvoice,
 }) {
@@ -117,6 +118,24 @@ export default function InvoiceModal({
     }),
     [invoice, prefill]
   );
+
+  const statusRows = useMemo(() => {
+    if (collectionStatuses?.length) {
+      return [...collectionStatuses].sort((a, b) => a.sort_order - b.sort_order || a.id - b.id);
+    }
+    const base = STATUSES.map((key) => ({
+      key,
+      label: t(
+        `modals:invoice.statuses.${key === 'pendiente' ? 'pending' : key === 'pagada' ? 'paid' : 'overdue'}`
+      ),
+      sort_order: 0,
+    }));
+    const k = invoice?.status;
+    if (k && !STATUSES.includes(k)) {
+      return [...base, { key: k, label: k, sort_order: 99 }];
+    }
+    return base;
+  }, [collectionStatuses, t, invoice?.status]);
 
   const [form, setForm] = useState(initial);
   const [fiscalProfile, setFiscalProfile] = useState(null);
@@ -310,9 +329,9 @@ export default function InvoiceModal({
               <div className="form-group">
                 <label>{t('modals:invoice.collectionStatus')}</label>
                 <select value={form.status} onChange={set('status')}>
-                  {STATUSES.map((status) => (
-                    <option key={status} value={status}>
-                      {t(`modals:invoice.statuses.${status === 'pendiente' ? 'pending' : status === 'pagada' ? 'paid' : 'overdue'}`)}
+                  {statusRows.map((row) => (
+                    <option key={row.key} value={row.key}>
+                      {row.label}
                     </option>
                   ))}
                 </select>

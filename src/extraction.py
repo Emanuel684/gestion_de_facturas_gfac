@@ -23,6 +23,38 @@ from src.config import settings
 logger = logging.getLogger(__name__)
 
 
+def _pdf_password_provided(pdf_password: str | None) -> bool:
+    return pdf_password not in (None, "")
+
+
+def _open_pdfplumber(file_bytes: bytes, pdf_password: str | None):
+    """
+    Open a PDF with pdfplumber. Raises ValueError with a clear message on
+    password errors or other Pdfminer failures.
+    """
+    import pdfplumber
+    from pdfminer.pdfdocument import PDFPasswordIncorrect
+    from pdfplumber.utils.exceptions import PdfminerException
+
+    pwd = "" if pdf_password is None else pdf_password
+    provided = _pdf_password_provided(pdf_password)
+    try:
+        return pdfplumber.open(io.BytesIO(file_bytes), password=pwd)
+    except PdfminerException as e:
+        if isinstance(e.__cause__, PDFPasswordIncorrect):
+            if provided:
+                raise ValueError(
+                    "La contraseña indicada no es correcta para este PDF."
+                ) from e
+            raise ValueError(
+                "El PDF está protegido con contraseña. Envíe el campo opcional "
+                "`pdf_password` en el formulario de carga o exporte una copia sin protección."
+            ) from e
+        raise ValueError(
+            "No se pudo abrir el PDF. Verifique que el archivo no esté dañado."
+        ) from e
+
+
 # ── Text extractors ──────────────────────────────────────────────────────────
 
 def extract_text_from_image(file_bytes: bytes) -> str:
@@ -44,10 +76,10 @@ def extract_text_from_image(file_bytes: bytes) -> str:
     return text
 
 
-def extract_text_from_pdf(file_bytes: bytes) -> str:
+def extract_text_from_pdf(file_bytes: bytes, pdf_password: str | None = None) -> str:
     """Extract text from a PDF. Uses pdfplumber for text-based PDFs."""
     try:
-        import pdfplumber
+        import pdfplumber  # noqa: F401 — ensure dependency before _open_pdfplumber
     except ImportError as e:
         raise RuntimeError(
             "pdfplumber is required for PDF extraction. "
@@ -55,7 +87,7 @@ def extract_text_from_pdf(file_bytes: bytes) -> str:
         ) from e
 
     text_parts: list[str] = []
-    with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+    with _open_pdfplumber(file_bytes, pdf_password) as pdf:
         total_pages = len(pdf.pages)
         if total_pages > settings.max_upload_pages:
             raise ValueError(f"El PDF excede el límite de {settings.max_upload_pages} páginas.")
@@ -70,24 +102,23 @@ def extract_text_from_pdf(file_bytes: bytes) -> str:
     if not full_text.strip():
         logger.info("PDF has no embedded text — attempting OCR fallback")
         try:
-            full_text = _ocr_pdf_pages(file_bytes)
+            full_text = _ocr_pdf_pages(file_bytes, pdf_password)
         except Exception:
             logger.warning("OCR fallback for PDF failed", exc_info=True)
 
     return full_text
 
 
-def _ocr_pdf_pages(file_bytes: bytes) -> str:
+def _ocr_pdf_pages(file_bytes: bytes, pdf_password: str | None = None) -> str:
     """OCR fallback for scanned PDFs — convert pages to images and run tesseract."""
     try:
         from PIL import Image
         import pytesseract
-        import pdfplumber
     except ImportError:
         return ""
 
     text_parts: list[str] = []
-    with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+    with _open_pdfplumber(file_bytes, pdf_password) as pdf:
         total_pages = len(pdf.pages)
         if total_pages > settings.max_upload_pages:
             raise ValueError(f"El PDF excede el límite de {settings.max_upload_pages} páginas.")
@@ -311,7 +342,12 @@ SUPPORTED_DOC_TYPES = {
 ALL_SUPPORTED_TYPES = SUPPORTED_IMAGE_TYPES | SUPPORTED_PDF_TYPES | SUPPORTED_DOC_TYPES
 
 
-def extract_from_file(file_bytes: bytes, content_type: str, filename: str) -> dict[str, Any]:
+def extract_from_file(
+    file_bytes: bytes,
+    content_type: str,
+    filename: str,
+    pdf_password: str | None = None,
+) -> dict[str, Any]:
     """
     Main entry point: extract invoice data from an uploaded file.
 
@@ -319,6 +355,7 @@ def extract_from_file(file_bytes: bytes, content_type: str, filename: str) -> di
         file_bytes: raw file content
         content_type: MIME type of the file
         filename: original filename (used as fallback for type detection)
+        pdf_password: optional user password for encrypted PDFs (multipart field)
 
     Returns:
         dict with extracted invoice fields + 'raw_text' key with the full extracted text.
@@ -341,7 +378,7 @@ def extract_from_file(file_bytes: bytes, content_type: str, filename: str) -> di
     if content_type in SUPPORTED_IMAGE_TYPES:
         raw_text = extract_text_from_image(file_bytes)
     elif content_type in SUPPORTED_PDF_TYPES:
-        raw_text = extract_text_from_pdf(file_bytes)
+        raw_text = extract_text_from_pdf(file_bytes, pdf_password)
     elif content_type in SUPPORTED_DOC_TYPES:
         raw_text = extract_text_from_docx(file_bytes)
     else:
@@ -355,11 +392,21 @@ def extract_from_file(file_bytes: bytes, content_type: str, filename: str) -> di
     extracted = extract_invoice_data(raw_text)
     extraction_method = "regex"
 
+    pdf_use_text_only = content_type in SUPPORTED_PDF_TYPES and _pdf_password_provided(
+        pdf_password
+    )
+
     if (settings.gemini_api_key or "").strip():
         try:
             from src.extraction_gemini import extract_with_gemini
 
-            gemini_data = extract_with_gemini(file_bytes, content_type, filename, raw_text)
+            gemini_data = extract_with_gemini(
+                file_bytes,
+                content_type,
+                filename,
+                raw_text,
+                pdf_use_text_only=pdf_use_text_only,
+            )
             if gemini_data:
                 extracted = merge_extractions(extracted, gemini_data)
                 extraction_method = "gemini"

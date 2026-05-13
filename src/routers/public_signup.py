@@ -51,6 +51,10 @@ async def public_signup(payload: PublicSignupIn, db: AsyncSession = Depends(get_
     db.add(org)
     await db.flush()
 
+    from src.invoice_statuses import ensure_default_invoice_statuses
+
+    await ensure_default_invoice_statuses(db, org.id)
+
     admin = User(
         organization_id=org.id,
         username=payload.admin_username,

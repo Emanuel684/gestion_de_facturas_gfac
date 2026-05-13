@@ -96,13 +96,24 @@ export const getOverdueInvoices = () => api.get('/invoices/overdue');
 
 export const getDueSoonInvoices = (days = 7) => api.get('/invoices/due-soon', { params: { days } });
 
-export const uploadInvoiceFile = (file) => {
+export const uploadInvoiceFile = (file, { pdfPassword } = {}) => {
   const formData = new FormData();
   formData.append('file', file);
+  if (pdfPassword != null && pdfPassword !== '') {
+    formData.append('pdf_password', pdfPassword);
+  }
   return api.post('/invoices/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
 };
+
+export const getCollectionStatuses = () => api.get('/invoices/collection-statuses');
+
+export const createCollectionStatus = (data) => api.post('/invoices/collection-statuses', data);
+
+export const patchCollectionStatus = (id, data) => api.patch(`/invoices/collection-statuses/${id}`, data);
+
+export const deleteCollectionStatus = (id) => api.delete(`/invoices/collection-statuses/${id}`);
 
 // ── Users ─────────────────────────────────────────────────────────────────────
 export const getMe = () => api.get('/users/me');

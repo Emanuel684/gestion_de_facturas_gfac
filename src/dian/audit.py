@@ -30,7 +30,7 @@ def build_audit_pack(
             "currency": invoice.currency,
             "dian_lifecycle_status": invoice.dian_lifecycle_status.value,
             "document_locked": invoice.document_locked,
-            "internal_status": invoice.status.value,
+            "internal_status": invoice.status,
             "supplier": invoice.supplier,
             "description": invoice.description,
             "amount_internal": _decimal_to_str(invoice.amount),

@@ -4,8 +4,10 @@ Tests for POST /api/invoices/upload — document upload & data extraction.
 Uses unittest.mock to patch the extraction module so tests don't depend
 on tesseract, pdfplumber, or python-docx being installed.
 """
+import base64
+
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from httpx import AsyncClient
 
 
@@ -30,6 +32,12 @@ def _make_upload_file(content: bytes = b"fake file content", filename: str = "fa
     return {"file": (filename, content, content_type)}
 
 
+# Minimal valid PNG so _detect_mime can infer image/png from bytes when declared MIME is generic.
+_MIN_PNG_BYTES = base64.b64decode(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+)
+
+
 # ── Success cases ─────────────────────────────────────────────────────────────
 
 @pytest.mark.asyncio
@@ -48,6 +56,21 @@ async def test_upload_pdf_success(mock_extract, client: AsyncClient, admin_token
     assert body["extracted"]["amount"] == 1500000.50
     assert body["filename"] == "factura.pdf"
     mock_extract.assert_called_once()
+    assert mock_extract.call_args[0][3] is None
+
+
+@pytest.mark.asyncio
+@patch("src.routers.invoices.extract_from_file", return_value=FAKE_EXTRACTED)
+async def test_upload_pdf_password_passed_to_extract(mock_extract, client: AsyncClient, admin_token: str):
+    resp = await client.post(
+        "/api/invoices/upload",
+        files=_make_upload_file(),
+        data={"pdf_password": "mi-clave"},
+        headers=auth(admin_token),
+    )
+    assert resp.status_code == 200
+    mock_extract.assert_called_once()
+    assert mock_extract.call_args[0][3] == "mi-clave"
 
 
 @pytest.mark.asyncio
@@ -163,6 +186,40 @@ async def test_upload_extraction_value_error(mock_extract, client: AsyncClient, 
 
 
 @pytest.mark.asyncio
+@patch(
+    "src.routers.invoices.extract_from_file",
+    side_effect=ValueError(
+        "El PDF está protegido con contraseña. Envíe el campo opcional "
+        "`pdf_password` en el formulario de carga o exporte una copia sin protección."
+    ),
+)
+async def test_upload_pdf_password_required_returns_415(mock_extract, client: AsyncClient, admin_token: str):
+    resp = await client.post(
+        "/api/invoices/upload",
+        files=_make_upload_file(),
+        headers=auth(admin_token),
+    )
+    assert resp.status_code == 415
+    assert "pdf_password" in resp.json()["detail"]
+
+
+@pytest.mark.asyncio
+@patch(
+    "src.routers.invoices.extract_from_file",
+    side_effect=ValueError("La contraseña indicada no es correcta para este PDF."),
+)
+async def test_upload_pdf_password_incorrect_returns_415(mock_extract, client: AsyncClient, admin_token: str):
+    resp = await client.post(
+        "/api/invoices/upload",
+        files=_make_upload_file(),
+        data={"pdf_password": "wrong"},
+        headers=auth(admin_token),
+    )
+    assert resp.status_code == 415
+    assert "correcta" in resp.json()["detail"]
+
+
+@pytest.mark.asyncio
 @patch("src.routers.invoices.extract_from_file", side_effect=RuntimeError("pytesseract not installed"))
 async def test_upload_extraction_runtime_error(mock_extract, client: AsyncClient, admin_token: str):
     resp = await client.post(
@@ -189,10 +246,14 @@ async def test_upload_extraction_unexpected_error(mock_extract, client: AsyncCli
 @pytest.mark.asyncio
 @patch("src.routers.invoices.extract_from_file", return_value=FAKE_EXTRACTED)
 async def test_upload_fallback_by_extension(mock_extract, client: AsyncClient, admin_token: str):
-    """When content_type is generic but extension is valid, should still work."""
+    """When content_type is generic but bytes are a valid image, MIME is detected and upload works."""
     resp = await client.post(
         "/api/invoices/upload",
-        files=_make_upload_file(filename="factura.png", content_type="application/octet-stream"),
+        files=_make_upload_file(
+            content=_MIN_PNG_BYTES,
+            filename="factura.png",
+            content_type="application/octet-stream",
+        ),
         headers=auth(admin_token),
     )
     assert resp.status_code == 200

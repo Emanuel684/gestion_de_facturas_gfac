@@ -4,7 +4,7 @@ from __future__ import annotations
 from sqlalchemy import Select, and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.models import Invoice, InvoiceStatus
+from src.models import Invoice
 from src.reporting.scope import append_date_range, invoice_visibility_conditions
 
 
@@ -15,7 +15,7 @@ def invoices_export_select(
     platform_scope: bool,
     date_from,
     date_to,
-    status_filter: InvoiceStatus | None,
+    status_filter: str | None,
 ) -> Select[tuple[Invoice]]:
     conds = invoice_visibility_conditions(org_id, user, platform_scope=platform_scope)
     append_date_range(conds, date_from, date_to)
@@ -36,7 +36,7 @@ async def fetch_invoices_for_export(
     platform_scope: bool,
     date_from,
     date_to,
-    status_filter: InvoiceStatus | None,
+    status_filter: str | None,
     limit: int = 10_000,
 ) -> list[Invoice]:
     stmt = invoices_export_select(

@@ -184,6 +184,11 @@ export default function Navbar() {
                 <Link to="/app/billing" className="nav-link" onClick={closeMenu}>
                   {t('navbar:billing')}
                 </Link>
+                {user.role === 'administrador' && (
+                  <Link to="/app/invoice-statuses" className="nav-link" onClick={closeMenu}>
+                    {t('navbar:invoiceStatuses')}
+                  </Link>
+                )}
               </div>
             )}
             {isPlatform && (

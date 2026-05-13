@@ -15,6 +15,7 @@ from sqlalchemy import (
     Enum,
     ForeignKey,
     Index,
+    Integer,
     JSON,
     Numeric,
     String,
@@ -24,6 +25,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.db import Base
+from src.invoice_status_constants import KEY_PENDIENTE
 
 
 class PlanTier(str, enum.Enum):
@@ -39,12 +41,6 @@ class UserRole(str, enum.Enum):
     administrador = "administrador"
     contador = "contador"
     asistente = "asistente"
-
-
-class InvoiceStatus(str, enum.Enum):
-    pendiente = "pendiente"
-    pagada = "pagada"
-    vencida = "vencida"
 
 
 class TaxRegime(str, enum.Enum):
@@ -141,9 +137,32 @@ class Organization(Base):
         back_populates="organization",
         uselist=False,
     )
+    invoice_statuses: Mapped[list["OrganizationInvoiceStatus"]] = relationship(
+        "OrganizationInvoiceStatus",
+        back_populates="organization",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self) -> str:
         return f"<Organization id={self.id} slug={self.slug!r}>"
+
+
+class OrganizationInvoiceStatus(Base):
+    """Definiciones de estado de cobranza por organización (clave estable + etiqueta UI)."""
+
+    __tablename__ = "organization_invoice_statuses"
+    __table_args__ = (UniqueConstraint("organization_id", "key", name="uq_org_invoice_status_key"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    organization_id: Mapped[int] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    key: Mapped[str] = mapped_column(String(64), nullable=False)
+    label: Mapped[str] = mapped_column(String(200), nullable=False)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    auto_overdue_eligible: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+    organization: Mapped["Organization"] = relationship("Organization", back_populates="invoice_statuses")
 
 
 class OrganizationFiscalProfile(Base):
@@ -223,9 +242,7 @@ class Invoice(Base):
     supplier: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
-    status: Mapped[InvoiceStatus] = mapped_column(
-        Enum(InvoiceStatus, name="invoicestatus"), default=InvoiceStatus.pendiente, nullable=False
-    )
+    status: Mapped[str] = mapped_column(String(64), default=KEY_PENDIENTE, nullable=False)
     due_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     creator_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     created_at: Mapped[datetime] = mapped_column(

@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db import get_db
 from src.dependencies import require_active_tenant_user
-from src.models import InvoiceStatus, Organization, User
+from src.models import Organization, User
 from src.reporting.exports import build_invoices_pdf_bytes, build_invoices_xlsx_bytes, export_filename_prefix
 from src.reporting.fetch import fetch_invoices_for_export
 from src.reporting.scope import parse_date_range_bounds
@@ -26,7 +26,7 @@ router = APIRouter(prefix="/api/reports", tags=["reports"])
 async def tenant_dashboard(
     date_from: date | None = None,
     date_to: date | None = None,
-    status_filter: Annotated[InvoiceStatus | None, Query(alias="status")] = None,
+    status_filter: Annotated[str | None, Query(alias="status")] = None,
     current_user: User = Depends(require_active_tenant_user),
     db: AsyncSession = Depends(get_db),
 ) -> DashboardStatsOut:
@@ -48,7 +48,7 @@ async def tenant_export(
     export_format: Annotated[Literal["xlsx", "pdf"], Query(alias="format")],
     date_from: date | None = None,
     date_to: date | None = None,
-    status_filter: Annotated[InvoiceStatus | None, Query(alias="status")] = None,
+    status_filter: Annotated[str | None, Query(alias="status")] = None,
     current_user: User = Depends(require_active_tenant_user),
     db: AsyncSession = Depends(get_db),
 ) -> Response:

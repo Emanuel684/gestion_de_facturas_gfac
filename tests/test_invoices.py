@@ -759,3 +759,83 @@ async def test_fiscal_profile_get_returns_for_tenant(client: AsyncClient, admin_
     data = r.json()
     assert "organization_id" in data
     assert data["nit"] == ""
+
+
+# ── Collection statuses (cobranza por organización) ─────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_list_collection_statuses_seeded(client: AsyncClient, admin_token: str):
+    r = await client.get("/api/invoices/collection-statuses", headers=auth(admin_token))
+    assert r.status_code == 200
+    rows = r.json()
+    keys = {x["key"] for x in rows}
+    assert keys == {"pendiente", "pagada", "vencida"}
+    for row in rows:
+        assert "label" in row
+        assert "sort_order" in row
+        assert "auto_overdue_eligible" in row
+        assert "is_reserved" in row
+
+
+@pytest.mark.asyncio
+async def test_contador_can_list_collection_statuses(client: AsyncClient, contador_token: str):
+    r = await client.get("/api/invoices/collection-statuses", headers=auth(contador_token))
+    assert r.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_contador_cannot_create_collection_status(client: AsyncClient, contador_token: str):
+    r = await client.post(
+        "/api/invoices/collection-statuses",
+        json={"key": "en_revision", "label": "En revisión", "sort_order": 5, "auto_overdue_eligible": False},
+        headers=auth(contador_token),
+    )
+    assert r.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_create_invoice_rejects_unknown_status(client: AsyncClient, admin_token: str):
+    r = await client.post(
+        "/api/invoices",
+        json={**SAMPLE_INVOICE, "invoice_number": "FAC-BAD-ST", "status": "no_existe"},
+        headers=auth(admin_token),
+    )
+    assert r.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_admin_create_patch_delete_custom_collection_status(client: AsyncClient, admin_token: str):
+    created = await client.post(
+        "/api/invoices/collection-statuses",
+        json={"key": "en_revision", "label": "En revisión", "sort_order": 5, "auto_overdue_eligible": False},
+        headers=auth(admin_token),
+    )
+    assert created.status_code == 201
+    row = created.json()
+    sid = row["id"]
+    assert row["key"] == "en_revision"
+    assert row["is_reserved"] is False
+
+    inv = await client.post(
+        "/api/invoices",
+        json={**SAMPLE_INVOICE, "invoice_number": "FAC-CUSTOM-ST", "status": "en_revision"},
+        headers=auth(admin_token),
+    )
+    assert inv.status_code == 201
+
+    deleted = await client.delete(f"/api/invoices/collection-statuses/{sid}", headers=auth(admin_token))
+    assert deleted.status_code == 409
+
+    await client.delete(f"/api/invoices/{inv.json()['id']}", headers=auth(admin_token))
+
+    deleted2 = await client.delete(f"/api/invoices/collection-statuses/{sid}", headers=auth(admin_token))
+    assert deleted2.status_code == 204
+
+
+@pytest.mark.asyncio
+async def test_cannot_delete_reserved_collection_status(client: AsyncClient, admin_token: str):
+    listed = await client.get("/api/invoices/collection-statuses", headers=auth(admin_token))
+    pend = next(x for x in listed.json() if x["key"] == "pendiente")
+    r = await client.delete(f"/api/invoices/collection-statuses/{pend['id']}", headers=auth(admin_token))
+    assert r.status_code == 400

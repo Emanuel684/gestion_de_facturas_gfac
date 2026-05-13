@@ -33,9 +33,10 @@ from src.models import (
     User,
     UserRole,
     Invoice,
-    InvoiceStatus,
+    OrganizationInvoiceStatus,
     NotificationType,
 )
+from src.invoice_status_constants import KEY_VENCIDA
 from src.notifications import create_notification_for_org
 from src.routers import (
     auth,
@@ -145,6 +146,7 @@ async def on_startup() -> None:
         return
 
     from src.db import AsyncSessionLocal
+    from src.invoice_statuses import ensure_default_invoice_statuses
 
     async with AsyncSessionLocal() as db:
         # ── Plataforma (administradores de producto) ──────────────────────────
@@ -157,6 +159,7 @@ async def on_startup() -> None:
             )
             db.add(plat)
             await db.flush()
+            await ensure_default_invoice_statuses(db, plat.id)
             db.add(
                 User(
                     organization_id=plat.id,
@@ -180,6 +183,7 @@ async def on_startup() -> None:
             db.add(demo)
             await db.flush()
             logger.info("Seeded organization: demo")
+        await ensure_default_invoice_statuses(db, demo.id)
         r_sub = await db.execute(select(Subscription).where(Subscription.organization_id == demo.id))
         if r_sub.scalar_one_or_none() is None:
             now = now_utc()
@@ -248,7 +252,7 @@ async def on_startup() -> None:
                 created = 0
                 seq = 1
                 now = datetime.now(timezone.utc)
-                statuses = [InvoiceStatus.pendiente, InvoiceStatus.pagada, InvoiceStatus.vencida]
+                statuses = ["pendiente", "pagada", "vencida"]
 
                 while created < to_create:
                     invoice_number = f"FAC-DEMO-{seq:04d}"
@@ -304,12 +308,19 @@ async def _expire_overdue_invoices_loop() -> None:
 
     while True:
         try:
+            expired_ids: list[int] = []
             now = datetime.now(timezone.utc)
             async with AsyncSessionLocal() as db:
                 pending_rows = await db.execute(
                     select(Invoice.id, Invoice.organization_id, Invoice.invoice_number).where(
                         and_(
-                            Invoice.status == InvoiceStatus.pendiente,
+                            select(OrganizationInvoiceStatus.id)
+                            .where(
+                                OrganizationInvoiceStatus.organization_id == Invoice.organization_id,
+                                OrganizationInvoiceStatus.key == Invoice.status,
+                                OrganizationInvoiceStatus.auto_overdue_eligible.is_(True),
+                            )
+                            .exists(),
                             Invoice.due_date != None,  # noqa: E711
                             Invoice.due_date < now,
                         )
@@ -321,7 +332,7 @@ async def _expire_overdue_invoices_loop() -> None:
                     await db.execute(
                         update(Invoice)
                         .where(Invoice.id.in_(expired_ids))
-                        .values(status=InvoiceStatus.vencida)
+                        .values(status=KEY_VENCIDA)
                     )
                     for item in overdue_items:
                         await create_notification_for_org(

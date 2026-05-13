@@ -17,18 +17,25 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy import or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from src.db import get_db
-from src.dependencies import require_active_tenant_user
+from src.dependencies import require_active_tenant_user, require_admin
 from src.dian.audit import build_audit_pack
 from src.dian.audit_excel import audit_pack_to_xlsx_bytes, safe_audit_filename
 from src.dian.events import record_invoice_event
 from src.dian.validation import is_document_editing_locked, totals_match
+from src.invoice_status_constants import RESERVED_INVOICE_STATUS_KEYS
+from src.invoice_statuses import (
+    assert_invoice_status_allowed,
+    invoice_count_for_status_key,
+    label_map_for_org,
+    list_status_definitions,
+)
 from src.extraction import ALL_SUPPORTED_TYPES, extract_from_file
 from src.models import (
     DianDocumentType,
@@ -36,10 +43,10 @@ from src.models import (
     Invoice,
     InvoiceAssignee,
     InvoiceEventType,
-    InvoiceStatus,
     NotificationType,
     Notification,
     OrganizationFiscalProfile,
+    OrganizationInvoiceStatus,
     User,
     UserRole,
 )
@@ -52,6 +59,9 @@ from src.schemas import (
     InvoicePage,
     InvoiceTraceResponse,
     InvoiceUpdate,
+    OrganizationInvoiceStatusCreate,
+    OrganizationInvoiceStatusOut,
+    OrganizationInvoiceStatusUpdate,
 )
 
 logger = logging.getLogger(__name__)
@@ -67,12 +77,26 @@ def _actor_label(user: User) -> str:
     return user.username if user.username else f"usuario {user.id}"
 
 
-def _invoice_to_out(invoice: Invoice) -> InvoiceOut:
+def _invoice_collection_open_exists():
+    """Facturas cuyo estado de cobranza está marcado como elegible para vencimiento automático."""
+    return (
+        select(OrganizationInvoiceStatus.id)
+        .where(
+            OrganizationInvoiceStatus.organization_id == Invoice.organization_id,
+            OrganizationInvoiceStatus.key == Invoice.status,
+            OrganizationInvoiceStatus.auto_overdue_eligible.is_(True),
+        )
+        .exists()
+    )
+
+
+def _invoice_to_out(invoice: Invoice, label_by_key: dict[str, str] | None = None) -> InvoiceOut:
     assigned = [
         AssignedUser(id=a.user.id, username=a.user.username)
         for a in invoice.assignees
         if a.user is not None and a.user.is_active
     ]
+    st_label = label_by_key.get(invoice.status) if label_by_key else None
     return InvoiceOut(
         id=invoice.id,
         invoice_number=invoice.invoice_number,
@@ -80,6 +104,7 @@ def _invoice_to_out(invoice: Invoice) -> InvoiceOut:
         description=invoice.description,
         amount=invoice.amount,
         status=invoice.status,
+        status_label=st_label,
         due_date=invoice.due_date,
         creator_id=invoice.creator_id,
         created_at=invoice.created_at,
@@ -103,6 +128,11 @@ def _invoice_to_out(invoice: Invoice) -> InvoiceOut:
         dian_lifecycle_status=invoice.dian_lifecycle_status,
         document_locked=invoice.document_locked,
     )
+
+
+async def _invoice_to_out_with_labels(db: AsyncSession, invoice: Invoice) -> InvoiceOut:
+    labels = await label_map_for_org(db, invoice.organization_id)
+    return _invoice_to_out(invoice, labels)
 
 
 async def _get_invoice_or_404(invoice_id: int, org_id: int, db: AsyncSession) -> Invoice:
@@ -241,7 +271,7 @@ def _resolve_monetary_fields_update(invoice: Invoice, payload: InvoiceUpdate) ->
 
 @router.get("", response_model=InvoicePage)
 async def list_invoices(
-    status_filter: Annotated[InvoiceStatus | None, Query(alias="status")] = None,
+    status_filter: Annotated[str | None, Query(alias="status")] = None,
     supplier_filter: Annotated[str | None, Query(alias="supplier")] = None,
     page: Annotated[int, Query(ge=0)] = 0,
     page_size: Annotated[int, Query(ge=1, le=100, alias="page_size")] = 10,
@@ -274,9 +304,10 @@ async def list_invoices(
 
     has_next = len(rows) > page_size
     items = rows[:page_size]
+    labels = await label_map_for_org(db, org_id)
 
     return InvoicePage(
-        items=[_invoice_to_out(inv) for inv in items],
+        items=[_invoice_to_out(inv, labels) for inv in items],
         has_next=has_next,
         page=page,
         page_size=page_size,
@@ -314,6 +345,7 @@ def _detect_mime(file_bytes: bytes, filename: str, declared: str) -> str:
 @router.post("/upload", status_code=status.HTTP_200_OK)
 async def upload_invoice_document(
     file: UploadFile = File(...),
+    pdf_password: Annotated[str | None, Form()] = None,
     current_user: User = Depends(require_active_tenant_user),
 ) -> dict:
     content_type = file.content_type or ""
@@ -343,7 +375,7 @@ async def upload_invoice_document(
         )
 
     try:
-        extracted = extract_from_file(file_bytes, content_type, filename)
+        extracted = extract_from_file(file_bytes, content_type, filename, pdf_password)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
@@ -402,6 +434,11 @@ async def create_invoice(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Ya existe una factura con número '{payload.invoice_number}'",
         )
+
+    try:
+        await assert_invoice_status_allowed(db, org_id, payload.status)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
 
     now = datetime.now(timezone.utc)
     issue_dt = payload.issue_date or now
@@ -512,7 +549,7 @@ async def create_invoice(
 
     invoice = await _get_invoice_or_404(invoice.id, org_id, db)
     logger.info("Invoice id=%d created by user id=%d", invoice.id, current_user.id)
-    return _invoice_to_out(invoice)
+    return await _invoice_to_out_with_labels(db, invoice)
 
 
 # ── Trace & audit (before /{invoice_id} single segment handlers if any) ─────
@@ -537,7 +574,7 @@ async def get_invoice_trace(
     )
     events = r.scalars().all()
     return InvoiceTraceResponse(
-        invoice=_invoice_to_out(invoice),
+        invoice=await _invoice_to_out_with_labels(db, invoice),
         events=[InvoiceEventOut.model_validate(e) for e in events],
     )
 
@@ -611,7 +648,7 @@ async def list_overdue_invoices(
         .options(selectinload(Invoice.assignees).selectinload(InvoiceAssignee.user))
         .where(
             Invoice.organization_id == org_id,
-            Invoice.status == InvoiceStatus.pendiente,
+            _invoice_collection_open_exists(),
             Invoice.due_date.is_not(None),
             Invoice.due_date < now,
         )
@@ -628,7 +665,8 @@ async def list_overdue_invoices(
 
     result = await db.execute(query)
     invoices = result.scalars().unique().all()
-    return [_invoice_to_out(inv) for inv in invoices]
+    labels = await label_map_for_org(db, org_id)
+    return [_invoice_to_out(inv, labels) for inv in invoices]
 
 
 @router.get("/due-soon", response_model=list[InvoiceOut])
@@ -645,7 +683,7 @@ async def list_due_soon_invoices(
         .options(selectinload(Invoice.assignees).selectinload(InvoiceAssignee.user))
         .where(
             Invoice.organization_id == org_id,
-            Invoice.status == InvoiceStatus.pendiente,
+            _invoice_collection_open_exists(),
             Invoice.due_date.is_not(None),
             Invoice.due_date >= now,
             Invoice.due_date <= due_until,
@@ -663,7 +701,116 @@ async def list_due_soon_invoices(
 
     result = await db.execute(query)
     invoices = result.scalars().unique().all()
-    return [_invoice_to_out(inv) for inv in invoices]
+    labels = await label_map_for_org(db, org_id)
+    return [_invoice_to_out(inv, labels) for inv in invoices]
+
+
+# ── Collection statuses (cobranza por organización) ───────────────────────────
+
+
+@router.get("/collection-statuses", response_model=list[OrganizationInvoiceStatusOut])
+async def list_collection_statuses(
+    current_user: User = Depends(require_active_tenant_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[OrganizationInvoiceStatusOut]:
+    org_id = current_user.organization_id
+    rows = await list_status_definitions(db, org_id)
+    return [OrganizationInvoiceStatusOut.model_validate(r) for r in rows]
+
+
+@router.post(
+    "/collection-statuses",
+    response_model=OrganizationInvoiceStatusOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_collection_status(
+    payload: OrganizationInvoiceStatusCreate,
+    current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> OrganizationInvoiceStatusOut:
+    org_id = current_user.organization_id
+    dup = await db.execute(
+        select(OrganizationInvoiceStatus).where(
+            OrganizationInvoiceStatus.organization_id == org_id,
+            OrganizationInvoiceStatus.key == payload.key,
+        )
+    )
+    if dup.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Ya existe un estado con la clave '{payload.key}'",
+        )
+    row = OrganizationInvoiceStatus(
+        organization_id=org_id,
+        key=payload.key,
+        label=payload.label,
+        sort_order=payload.sort_order,
+        auto_overdue_eligible=payload.auto_overdue_eligible,
+    )
+    db.add(row)
+    await db.commit()
+    await db.refresh(row)
+    return OrganizationInvoiceStatusOut.model_validate(row)
+
+
+@router.patch("/collection-statuses/{status_id}", response_model=OrganizationInvoiceStatusOut)
+async def patch_collection_status(
+    status_id: int,
+    payload: OrganizationInvoiceStatusUpdate,
+    current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> OrganizationInvoiceStatusOut:
+    org_id = current_user.organization_id
+    r = await db.execute(
+        select(OrganizationInvoiceStatus).where(
+            OrganizationInvoiceStatus.id == status_id,
+            OrganizationInvoiceStatus.organization_id == org_id,
+        )
+    )
+    row = r.scalar_one_or_none()
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Estado no encontrado")
+    data = payload.model_dump(exclude_unset=True)
+    if "label" in data and data["label"] is not None:
+        row.label = data["label"]
+    if "sort_order" in data and data["sort_order"] is not None:
+        row.sort_order = data["sort_order"]
+    if "auto_overdue_eligible" in data:
+        row.auto_overdue_eligible = data["auto_overdue_eligible"]
+    await db.commit()
+    await db.refresh(row)
+    return OrganizationInvoiceStatusOut.model_validate(row)
+
+
+@router.delete("/collection-statuses/{status_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_collection_status(
+    status_id: int,
+    current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    org_id = current_user.organization_id
+    r = await db.execute(
+        select(OrganizationInvoiceStatus).where(
+            OrganizationInvoiceStatus.id == status_id,
+            OrganizationInvoiceStatus.organization_id == org_id,
+        )
+    )
+    row = r.scalar_one_or_none()
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Estado no encontrado")
+    if row.key in RESERVED_INVOICE_STATUS_KEYS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No se pueden eliminar los estados reservados (pendiente, pagada, vencida).",
+        )
+    cnt = await invoice_count_for_status_key(db, org_id, row.key)
+    if cnt > 0:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Hay facturas usando este estado; reasigne o elimine esas facturas antes.",
+        )
+    await db.delete(row)
+    await db.commit()
 
 
 # ── Read ──────────────────────────────────────────────────────────────────────
@@ -676,7 +823,7 @@ async def get_invoice(
 ) -> InvoiceOut:
     invoice = await _get_invoice_or_404(invoice_id, current_user.organization_id, db)
     _check_invoice_access(invoice, current_user)
-    return _invoice_to_out(invoice)
+    return await _invoice_to_out_with_labels(db, invoice)
 
 
 # ── Update ────────────────────────────────────────────────────────────────────
@@ -725,6 +872,10 @@ async def update_invoice(
     if payload.amount is not None:
         invoice.amount = payload.amount
     if payload.status is not None:
+        try:
+            await assert_invoice_status_allowed(db, org_id, payload.status)
+        except ValueError as e:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
         invoice.status = payload.status
     if payload.due_date is not None:
         invoice.due_date = payload.due_date
@@ -821,13 +972,13 @@ async def update_invoice(
             title="Estado de factura actualizado",
             message=(
                 f"{_actor_label(current_user)} cambió la factura {invoice.invoice_number} "
-                f"de {old_status.value} a {invoice.status.value}."
+                f"de {old_status} a {invoice.status}."
             ),
             invoice_id=invoice.id,
             payload={
                 "invoice_number": invoice.invoice_number,
-                "from_status": old_status.value,
-                "to_status": invoice.status.value,
+                "from_status": old_status,
+                "to_status": invoice.status,
             },
         )
 
@@ -861,7 +1012,7 @@ async def update_invoice(
     non_assignment_or_status_update = any(
         field not in {"status", "assigned_user_ids"} for field in changed_fields
     )
-    if non_assignment_or_status_update:
+    if non_assignment_or_status_update or status_changed:
         await create_notification_for_org(
             db,
             organization_id=org_id,
@@ -883,7 +1034,7 @@ async def update_invoice(
     await db.commit()
     invoice = await _get_invoice_or_404(invoice_id, org_id, db)
     logger.info("Invoice id=%d updated by user id=%d", invoice.id, current_user.id)
-    return _invoice_to_out(invoice)
+    return await _invoice_to_out_with_labels(db, invoice)
 
 
 # ── Delete ────────────────────────────────────────────────────────────────────

@@ -43,48 +43,13 @@ from src.schemas import (
     user_to_out,
 )
 
+from src.invoice_statuses import assert_invoice_status_allowed, ensure_default_invoice_statuses
+from src.routers.invoices import _invoice_to_out_with_labels
+
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/organizations", tags=["organizations"])
 
 PLATFORM_SLUG = "plataforma"
-
-
-def _invoice_to_out(invoice: Invoice) -> InvoiceOut:
-    assigned = [
-        {"id": a.user.id, "username": a.user.username}
-        for a in invoice.assignees
-        if a.user is not None and a.user.is_active
-    ]
-    return InvoiceOut(
-        id=invoice.id,
-        invoice_number=invoice.invoice_number,
-        supplier=invoice.supplier,
-        description=invoice.description,
-        amount=invoice.amount,
-        status=invoice.status,
-        due_date=invoice.due_date,
-        creator_id=invoice.creator_id,
-        created_at=invoice.created_at,
-        updated_at=invoice.updated_at,
-        assigned_users=assigned,
-        document_type=invoice.document_type,
-        issue_date=invoice.issue_date,
-        currency=invoice.currency,
-        buyer_id_type=invoice.buyer_id_type,
-        buyer_id_number=invoice.buyer_id_number,
-        buyer_name=invoice.buyer_name,
-        seller_snapshot_nit=invoice.seller_snapshot_nit,
-        seller_snapshot_dv=invoice.seller_snapshot_dv,
-        seller_snapshot_business_name=invoice.seller_snapshot_business_name,
-        subtotal=invoice.subtotal,
-        taxable_base=invoice.taxable_base,
-        iva_rate=invoice.iva_rate,
-        iva_amount=invoice.iva_amount,
-        withholding_amount=invoice.withholding_amount,
-        total_document=invoice.total_document,
-        dian_lifecycle_status=invoice.dian_lifecycle_status,
-        document_locked=invoice.document_locked,
-    )
 
 
 async def _get_org_invoice_or_404(organization_id: int, invoice_id: int, db: AsyncSession) -> Invoice:
@@ -161,6 +126,8 @@ async def create_organization(
     )
     db.add(org)
     await db.flush()
+
+    await ensure_default_invoice_statuses(db, org.id)
 
     u_dup = await db.execute(
         select(User).where(
@@ -482,6 +449,10 @@ async def update_organization_invoice(
     if payload.amount is not None:
         invoice.amount = payload.amount
     if payload.status is not None:
+        try:
+            await assert_invoice_status_allowed(db, organization_id, payload.status)
+        except ValueError as e:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
         invoice.status = payload.status
     if payload.due_date is not None:
         invoice.due_date = payload.due_date
@@ -572,7 +543,7 @@ async def update_organization_invoice(
 
     await db.commit()
     refreshed = await _get_org_invoice_or_404(organization_id, invoice_id, db)
-    return _invoice_to_out(refreshed)
+    return await _invoice_to_out_with_labels(db, refreshed)
 
 
 @router.delete("/{organization_id}/invoices/{invoice_id}", status_code=status.HTTP_204_NO_CONTENT)
