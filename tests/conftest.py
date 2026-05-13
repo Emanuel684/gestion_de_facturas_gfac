@@ -2,7 +2,7 @@
 Test fixtures — Sistema de Gestión de Facturas (SGF).
 
 Uses an in-memory SQLite database (via aiosqlite). Each test gets a fresh DB.
-Login uses organization_slug + username + password.
+Login uses organization_slug (tenant slug or portal_path) + username + password.
 """
 import os
 
@@ -62,6 +62,7 @@ async def tenant_org(db_session: AsyncSession) -> Organization:
     org = Organization(
         name="Test Org",
         slug=TEST_ORG_SLUG,
+        portal_path=TEST_ORG_SLUG,
         plan_tier=PlanTier.basico,
     )
     db_session.add(org)
@@ -166,6 +167,7 @@ async def platform_org(db_session: AsyncSession) -> Organization:
     org = Organization(
         name="Plataforma",
         slug="plataforma",
+        portal_path="plataforma",
         plan_tier=PlanTier.empresarial,
     )
     db_session.add(org)

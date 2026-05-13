@@ -51,6 +51,7 @@ class OrganizationBrief(BaseModel):
     id: int
     name: str
     slug: str
+    portal_path: str
     plan_tier: PlanTier
 
 
@@ -60,6 +61,7 @@ class OrganizationOut(BaseModel):
     id: int
     name: str
     slug: str
+    portal_path: str
     plan_tier: PlanTier
     is_active: bool
     created_at: datetime
@@ -71,10 +73,20 @@ _SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 class OrganizationCreate(BaseModel):
     name: str
     slug: str
+    portal_path: str | None = None
     plan_tier: PlanTier = PlanTier.basico
     admin_username: str
     admin_email: EmailStr
     admin_password: str
+
+    @field_validator("portal_path")
+    @classmethod
+    def portal_path_ok(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        from src.org_portal import validate_portal_path_format
+
+        return validate_portal_path_format(v)
 
     @field_validator("name")
     @classmethod
@@ -115,7 +127,17 @@ class OrganizationCreate(BaseModel):
 class OrganizationUpdate(BaseModel):
     name: str | None = None
     slug: str | None = None
+    portal_path: str | None = None
     plan_tier: PlanTier | None = None
+
+    @field_validator("portal_path")
+    @classmethod
+    def portal_path_ok(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        from src.org_portal import validate_portal_path_format
+
+        return validate_portal_path_format(v)
 
     @field_validator("name")
     @classmethod
@@ -145,10 +167,20 @@ class OrganizationUpdate(BaseModel):
 class PublicSignupIn(BaseModel):
     name: str
     slug: str
+    portal_path: str | None = None
     plan_tier: PlanTier = PlanTier.basico
     admin_username: str
     admin_email: EmailStr
     admin_password: str
+
+    @field_validator("portal_path")
+    @classmethod
+    def portal_path_ok(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        from src.org_portal import validate_portal_path_format
+
+        return validate_portal_path_format(v)
 
     @field_validator("name")
     @classmethod

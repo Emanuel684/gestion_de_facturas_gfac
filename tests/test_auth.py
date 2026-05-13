@@ -3,7 +3,9 @@ Tests for POST /api/auth/login — Sistema de Gestión de Facturas.
 """
 import pytest
 from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.models import Organization
 from tests.conftest import TEST_ORG_SLUG
 
 
@@ -21,6 +23,41 @@ async def test_login_success(client: AsyncClient, admin_user):
     body = resp.json()
     assert "access_token" in body
     assert body["token_type"] == "bearer"
+
+
+@pytest.mark.asyncio
+async def test_login_success_with_portal_path_or_slug(
+    client: AsyncClient,
+    admin_user,
+    tenant_org: Organization,
+    db_session: AsyncSession,
+):
+    tenant_org.portal_path = "portal-login-xyz"
+    await db_session.commit()
+    for org_key in ("portal-login-xyz", TEST_ORG_SLUG):
+        resp = await client.post(
+            "/api/auth/login",
+            json={
+                "organization_slug": org_key,
+                "username": "admin",
+                "password": "admin123",
+            },
+        )
+        assert resp.status_code == 200, org_key
+        assert resp.json().get("token_type") == "bearer"
+
+
+@pytest.mark.asyncio
+async def test_login_unknown_organization(client: AsyncClient):
+    resp = await client.post(
+        "/api/auth/login",
+        json={
+            "organization_slug": "no-such-tenant-slug-or-portal",
+            "username": "admin",
+            "password": "admin123",
+        },
+    )
+    assert resp.status_code == 401
 
 
 @pytest.mark.asyncio
@@ -75,3 +112,4 @@ async def test_get_me(client: AsyncClient, admin_token: str):
     assert body["username"] == "admin"
     assert body["role"] == "administrador"
     assert body["organization"]["slug"] == TEST_ORG_SLUG
+    assert body["organization"]["portal_path"] == TEST_ORG_SLUG

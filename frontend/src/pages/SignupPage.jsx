@@ -123,9 +123,7 @@ export default function SignupPage() {
                 </select>
               </div>
             </div>
-            <p className="signup-hint">
-              El slug se usa en la URL de acceso (solo letras minúsculas, números y guiones).
-            </p>
+            <p className="signup-hint">{t('auth:signupLoginUrlHint')}</p>
           </div>
 
           <div className="signup-section">

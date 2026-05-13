@@ -115,6 +115,7 @@ class Organization(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     slug: Mapped[str] = mapped_column(String(80), unique=True, index=True, nullable=False)
+    portal_path: Mapped[str] = mapped_column(String(80), unique=True, index=True, nullable=False)
     plan_tier: Mapped[PlanTier] = mapped_column(
         Enum(PlanTier, name="plantier"), default=PlanTier.basico, nullable=False
     )

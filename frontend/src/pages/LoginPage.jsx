@@ -1,19 +1,25 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { login, getMe } from '../api';
 import { useAuth } from '../context/AuthContext';
 import './LoginPage.css';
 
 export default function LoginPage() {
+  const { portalPath } = useParams();
   const { t } = useTranslation(['auth']);
   const { signIn } = useAuth();
   const navigate = useNavigate();
-  const [organizationSlug, setOrganizationSlug] = useState('demo');
+  const orgFromUrl = Boolean(portalPath);
+  const [organizationSlug, setOrganizationSlug] = useState(() => (portalPath ? portalPath : 'demo'));
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (portalPath) setOrganizationSlug(portalPath);
+  }, [portalPath]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -54,18 +60,22 @@ export default function LoginPage() {
         <p className="login-subtitle">{t('auth:loginSubtitle')}</p>
 
         <form onSubmit={handleSubmit} className="login-form">
-          <div className="form-group">
-            <label htmlFor="org">{t('auth:organization')}</label>
-            <input
-              id="org"
-              type="text"
-              value={organizationSlug}
-              onChange={(e) => setOrganizationSlug(e.target.value)}
-              placeholder="demo"
-              required
-              autoFocus
-            />
-          </div>
+          {orgFromUrl ? (
+            <p className="login-org-from-url">{t('auth:orgFromLink', { path: portalPath })}</p>
+          ) : (
+            <div className="form-group">
+              <label htmlFor="org">{t('auth:organization')}</label>
+              <input
+                id="org"
+                type="text"
+                value={organizationSlug}
+                onChange={(e) => setOrganizationSlug(e.target.value)}
+                placeholder="demo"
+                required
+                autoFocus
+              />
+            </div>
+          )}
           <div className="form-group">
             <label htmlFor="username">{t('auth:user')}</label>
             <input
@@ -75,6 +85,7 @@ export default function LoginPage() {
               onChange={(e) => setUsername(e.target.value)}
               placeholder="admin"
               required
+              autoFocus={orgFromUrl}
             />
           </div>
           <div className="form-group">
@@ -98,9 +109,9 @@ export default function LoginPage() {
 
         {import.meta.env.DEV && (
           <div className="login-hint">
-            <strong>Demo cliente:</strong> organización <code>demo</code> — admin / admin123 · maria / maria123 · carlos / carlos123
+            <strong>Demo cliente:</strong> <code>/login/demo</code> o slug <code>demo</code> — admin / admin123 · maria / maria123 · carlos / carlos123
             <br />
-            <strong>Plataforma:</strong> organización <code>plataforma</code> — super / super123
+            <strong>Plataforma:</strong> <code>/login/plataforma</code> — super / super123
           </div>
         )}
 

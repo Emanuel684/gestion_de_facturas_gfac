@@ -55,6 +55,7 @@ from src.invoice_statuses import (
     label_map_for_org,
     list_status_definitions,
 )
+from src.org_portal import find_org_identifier_conflict, validate_portal_path_format
 from src.routers.invoices import _invoice_to_out_with_labels
 
 logger = logging.getLogger(__name__)
@@ -132,16 +133,17 @@ async def create_organization(
     current_user: User = Depends(require_platform_admin),
 ) -> OrganizationOut:
     """Crea una organización y su primer usuario administrador."""
-    dup = await db.execute(select(Organization).where(Organization.slug == payload.slug))
-    if dup.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"Ya existe una organización con slug '{payload.slug}'",
-        )
+    portal_path = validate_portal_path_format(payload.portal_path or payload.slug)
+    conflict = await find_org_identifier_conflict(
+        db, exclude_org_id=None, slug=payload.slug, portal_path=portal_path
+    )
+    if conflict:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=conflict)
 
     org = Organization(
         name=payload.name,
         slug=payload.slug,
+        portal_path=portal_path,
         plan_tier=payload.plan_tier,
     )
     db.add(org)
@@ -228,23 +230,22 @@ async def update_organization(
     if not org or org.slug == PLATFORM_SLUG:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organización no encontrada")
 
-    if payload.slug is not None and payload.slug != org.slug:
-        dup = await db.execute(
-            select(Organization.id).where(
-                Organization.slug == payload.slug,
-                Organization.id != org.id,
-            )
+    new_slug = org.slug if payload.slug is None else payload.slug
+    new_portal = org.portal_path if payload.portal_path is None else validate_portal_path_format(payload.portal_path)
+
+    if payload.slug is not None or payload.portal_path is not None:
+        conflict = await find_org_identifier_conflict(
+            db, exclude_org_id=org.id, slug=new_slug, portal_path=new_portal
         )
-        if dup.scalar_one_or_none() is not None:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"Ya existe una organización con slug '{payload.slug}'",
-            )
+        if conflict:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=conflict)
 
     if payload.name is not None:
         org.name = payload.name
     if payload.slug is not None:
         org.slug = payload.slug
+    if payload.portal_path is not None:
+        org.portal_path = new_portal
     if payload.plan_tier is not None:
         org.plan_tier = payload.plan_tier
 

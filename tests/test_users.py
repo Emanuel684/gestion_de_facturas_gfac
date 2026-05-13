@@ -35,6 +35,7 @@ async def test_get_me(client: AsyncClient, admin_token: str):
     assert body["username"] == "admin"
     assert body["role"] == "administrador"
     assert body["organization"]["slug"] == "test-org"
+    assert body["organization"]["portal_path"] == "test-org"
 
 
 # ── Create ────────────────────────────────────────────────────────────────────

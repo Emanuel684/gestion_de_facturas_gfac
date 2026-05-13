@@ -83,6 +83,10 @@
   font-size: 0.88rem;
 }
 
+.org-detail-portal-hint {
+  margin-top: 0.35rem;
+}
+
 .org-users-list {
   display: flex;
   flex-direction: column;

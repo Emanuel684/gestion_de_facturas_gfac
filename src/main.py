@@ -155,6 +155,7 @@ async def on_startup() -> None:
             plat = Organization(
                 name="Plataforma SGF",
                 slug="plataforma",
+                portal_path="plataforma",
                 plan_tier=PlanTier.empresarial,
             )
             db.add(plat)
@@ -178,6 +179,7 @@ async def on_startup() -> None:
             demo = Organization(
                 name="Empresa Demo",
                 slug="demo",
+                portal_path="demo",
                 plan_tier=PlanTier.profesional,
             )
             db.add(demo)

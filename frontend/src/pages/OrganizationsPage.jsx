@@ -24,6 +24,7 @@ export default function OrganizationsPage() {
   const [form, setForm] = useState({
     name: '',
     slug: '',
+    portal_path: '',
     plan_tier: 'basico',
     admin_username: '',
     admin_email: '',
@@ -52,17 +53,21 @@ export default function OrganizationsPage() {
     setError('');
     setCreating(true);
     try {
-      await createOrganization({
+      const payload = {
         name: form.name.trim(),
         slug: form.slug.trim().toLowerCase(),
         plan_tier: form.plan_tier,
         admin_username: form.admin_username.trim(),
         admin_email: form.admin_email.trim(),
         admin_password: form.admin_password,
-      });
+      };
+      const pp = form.portal_path.trim().toLowerCase();
+      if (pp) payload.portal_path = pp;
+      await createOrganization(payload);
       setForm({
         name: '',
         slug: '',
+        portal_path: '',
         plan_tier: 'basico',
         admin_username: '',
         admin_email: '',
@@ -147,6 +152,16 @@ export default function OrganizationsPage() {
                 />
               </div>
               <div className="form-group">
+                <label>{t('organizations:portalPath')}</label>
+                <input
+                  value={form.portal_path}
+                  onChange={set('portal_path')}
+                  placeholder={t('organizations:portalPathOptional')}
+                  pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                  title={t('organizations:portalPathTitleHint')}
+                />
+              </div>
+              <div className="form-group">
                 <label>{t('organizations:plan')}</label>
                 <select value={form.plan_tier} onChange={set('plan_tier')}>
                   {PLAN_OPTIONS.map((p) => (
@@ -203,7 +218,15 @@ export default function OrganizationsPage() {
                 <li key={o.id} className="orgs-card">
                   <div className="orgs-card-main">
                     <strong>{o.name}</strong>
-                    <span className="orgs-slug">slug: <code>{o.slug}</code></span>
+                    <span className="orgs-slug">
+                      slug: <code>{o.slug}</code>
+                      {o.portal_path && o.portal_path !== o.slug ? (
+                        <>
+                          {' · '}
+                          {t('organizations:portalPathListLabel')}: <code>{o.portal_path}</code>
+                        </>
+                      ) : null}
+                    </span>
                   </div>
                   <div className="orgs-card-actions">
                     <span className="orgs-plan">{planLabel(o.plan_tier)}</span>

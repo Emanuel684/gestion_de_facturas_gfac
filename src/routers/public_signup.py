@@ -28,6 +28,7 @@ from src.models import (
     User,
     UserRole,
 )
+from src.org_portal import find_org_identifier_conflict, validate_portal_path_format
 from src.schemas import CheckoutActionIn, CheckoutSessionOut, PublicSignupIn, PublicSignupOut, SubscriptionOut
 
 router = APIRouter(prefix="/api/public", tags=["public"])
@@ -40,14 +41,14 @@ async def public_signup(payload: PublicSignupIn, db: AsyncSession = Depends(get_
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Registro público temporalmente deshabilitado.",
         )
-    existing = await db.execute(select(Organization).where(Organization.slug == payload.slug))
-    if existing.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"Ya existe una organización con slug '{payload.slug}'",
-        )
+    portal_path = validate_portal_path_format(payload.portal_path or payload.slug)
+    conflict = await find_org_identifier_conflict(
+        db, exclude_org_id=None, slug=payload.slug, portal_path=portal_path
+    )
+    if conflict:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=conflict)
 
-    org = Organization(name=payload.name, slug=payload.slug, plan_tier=payload.plan_tier)
+    org = Organization(name=payload.name, slug=payload.slug, portal_path=portal_path, plan_tier=payload.plan_tier)
     db.add(org)
     await db.flush()
 

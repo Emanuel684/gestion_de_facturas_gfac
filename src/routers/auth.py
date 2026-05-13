@@ -1,13 +1,13 @@
 """
 Authentication router.
 
-POST /api/auth/login — JSON body: organization_slug, username, password → JWT.
+POST /api/auth/login — JSON body: organization_slug (slug o portal_path), username, password → JWT.
 """
 import logging
 import time
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth import create_access_token, revoke_token, verify_password
@@ -60,7 +60,7 @@ async def login(
     _enforce_login_rate_limit(login_key)
     result_org = await db.execute(
         select(Organization).where(
-            Organization.slug == slug,
+            or_(Organization.slug == slug, Organization.portal_path == slug),
             Organization.is_active == True,  # noqa: E712
         )
     )

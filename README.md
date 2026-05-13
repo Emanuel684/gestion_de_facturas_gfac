@@ -158,6 +158,8 @@ Creadas automáticamente al iniciar la API por primera vez.
 
 > Cambie estas contraseñas en entornos de producción usando la funcionalidad de gestión de usuarios.
 
+En el frontend, el acceso por organización puede usar la ruta **`/login/<portal_path>`** (por defecto `portal_path` coincide con el slug hasta que la plataforma lo cambie en la ficha de la organización).
+
 ---
 
 ## API Reference
@@ -172,10 +174,17 @@ La documentación interactiva completa está disponible en:
 |---|---|---|---|
 | `POST` | `/api/auth/login` | Login — devuelve JWT | ❌ |
 
-**Request:** `application/x-www-form-urlencoded`
+**Request:** `application/json`
+
+```json
+{
+  "organization_slug": "demo",
+  "username": "admin",
+  "password": "admin123"
+}
 ```
-username=admin&password=admin123
-```
+
+El campo `organization_slug` acepta el **slug** de la organización o su **`portal_path`** (segmento público de URL, p. ej. la misma app en `/login/mi-empresa`). En la UI web, `/login/:portalPath` rellena este valor automáticamente.
 
 **Response 200:**
 ```json
@@ -428,7 +437,7 @@ gestion_de_facturas_gfac/
 │
 ├── tests/                      # Suite de pruebas
 │   ├── conftest.py             # Fixtures: SQLite in-memory, client, tokens
-│   ├── test_auth.py            # 6 tests de autenticación
+│   ├── test_auth.py            # 8 tests de autenticación
 │   ├── test_invoices.py        # ~22 tests CRUD + RBAC de facturas
 │   ├── test_users.py           # 12 tests de gestión de usuarios
 │   ├── test_upload.py          # 12 tests del endpoint de carga (con mocks)
@@ -440,7 +449,7 @@ gestion_de_facturas_gfac/
     ├── vite.config.js          # Dev proxy /api → localhost:8000
     └── src/
         ├── api.js              # Cliente Axios con interceptores JWT
-        ├── App.jsx             # Rutas: /login, /, /users
+        ├── App.jsx             # Rutas: /login/:portalPath, /login, /, /app/…
         ├── context/
         │   └── AuthContext.jsx # Estado global de autenticación
         ├── components/
@@ -521,7 +530,7 @@ pytest --cov=src --cov-report=term-missing
 
 | Archivo | Tests | Cobertura |
 |---|---|---|
-| `test_auth.py` | 6 | Login, tokens, rutas protegidas |
+| `test_auth.py` | 8 | Login, tokens, rutas protegidas |
 | `test_invoices.py` | ~22 | CRUD completo, filtros, RBAC, asignaciones |
 | `test_users.py` | 12 | Listar, crear, duplicados, permisos, validaciones |
 | `test_upload.py` | 12 | Endpoint upload: tipos, errores, permisos (mocks) |

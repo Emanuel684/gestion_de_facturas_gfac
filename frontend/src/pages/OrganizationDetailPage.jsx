@@ -35,7 +35,7 @@ export default function OrganizationDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [org, setOrg] = useState(null);
-  const [orgForm, setOrgForm] = useState({ name: '', slug: '', plan_tier: 'basico' });
+  const [orgForm, setOrgForm] = useState({ name: '', slug: '', portal_path: '', plan_tier: 'basico' });
   const [savingOrg, setSavingOrg] = useState(false);
 
   const [users, setUsers] = useState([]);
@@ -93,6 +93,7 @@ export default function OrganizationDetailPage() {
       setOrgForm({
         name: orgResp.data.name ?? '',
         slug: orgResp.data.slug ?? '',
+        portal_path: orgResp.data.portal_path ?? '',
         plan_tier: orgResp.data.plan_tier ?? 'basico',
       });
       let statusRows = [];
@@ -135,6 +136,13 @@ export default function OrganizationDetailPage() {
 
   const activeUsers = useMemo(() => users.filter((u) => u.is_active).length, [users]);
 
+  const portalLoginExampleUrl = useMemo(() => {
+    const seg = (orgForm.portal_path || '').trim();
+    if (!seg) return '';
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    return `${origin}/login/${seg}`;
+  }, [orgForm.portal_path]);
+
   const handleSaveOrg = async (e) => {
     e.preventDefault();
     setSavingOrg(true);
@@ -143,10 +151,17 @@ export default function OrganizationDetailPage() {
       const payload = {
         name: orgForm.name.trim(),
         slug: orgForm.slug.trim().toLowerCase(),
+        portal_path: orgForm.portal_path.trim().toLowerCase(),
         plan_tier: orgForm.plan_tier,
       };
       const r = await updateOrganization(orgId, payload);
       setOrg(r.data);
+      setOrgForm({
+        name: r.data.name ?? '',
+        slug: r.data.slug ?? '',
+        portal_path: r.data.portal_path ?? '',
+        plan_tier: r.data.plan_tier ?? 'basico',
+      });
     } catch (err) {
       const d = err.response?.data?.detail;
       setError(typeof d === 'string' ? d : t('organizations:detail.updateError'));
@@ -253,6 +268,21 @@ export default function OrganizationDetailPage() {
                       onChange={(e) => setOrgForm((f) => ({ ...f, slug: e.target.value }))}
                       required
                     />
+                  </div>
+                  <div className="form-group">
+                    <label>{t('organizations:detail.portalPath')}</label>
+                    <input
+                      value={orgForm.portal_path}
+                      onChange={(e) => setOrgForm((f) => ({ ...f, portal_path: e.target.value }))}
+                      required
+                      pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                      title={t('organizations:portalPathTitleHint')}
+                    />
+                    {portalLoginExampleUrl ? (
+                      <p className="org-detail-muted org-detail-portal-hint">
+                        {t('organizations:detail.portalPathHint', { url: portalLoginExampleUrl })}
+                      </p>
+                    ) : null}
                   </div>
                   <div className="form-group">
                     <label>{t('organizations:detail.plan')}</label>
