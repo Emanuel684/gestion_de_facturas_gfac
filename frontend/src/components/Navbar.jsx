@@ -37,8 +37,13 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     setMenuOpen(false);
+    const org = user?.organization;
+    const segment =
+      (org?.portal_path && String(org.portal_path).trim()) ||
+      (org?.slug && String(org.slug).trim()) ||
+      '';
     await signOut();
-    navigate('/login', { replace: true });
+    navigate(segment ? `/login/${encodeURIComponent(segment)}` : '/login', { replace: true });
   };
 
   const closeMenu = () => setMenuOpen(false);

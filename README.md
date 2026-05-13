@@ -129,6 +129,8 @@ npm run dev        # http://localhost:5173
 
 React Router resuelve rutas como `/login/demo` en el cliente **después** de cargar `index.html`. En un **static site** de Render, si no hay una regla que devuelva `index.html` para rutas sin archivo físico, al abrir o recargar esa URL el sitio no funcionará (404 o redirección indeseada).
 
+**Síntoma habitual:** página casi vacía con el texto **Not Found** al abrir `https://…onrender.com/login/demo` (u otra ruta profunda). Eso significa que **aún no está activa** la rewrite SPA en **ese** servicio static de Render.
+
 **Si el static site se creó en el dashboard** (y no hereda el [`render.yaml`](render.yaml) del repo), en el servicio → **Redirects/Rewrites** → **Add Rule**:
 
 | Campo | Valor |
@@ -136,6 +138,15 @@ React Router resuelve rutas como `/login/demo` en el cliente **después** de car
 | **Source** | `/*` |
 | **Destination** | `/index.html` |
 | **Action** | **Rewrite** (no usar “Redirect”) |
+
+Después de guardar, espere unos segundos o dispare un **Manual Deploy**; pruebe en ventana privada o sin caché.
+
+**Checklist si sigue fallando:**
+
+1. La regla debe figurar en el mismo static site cuya URL está probando (no solo en otro servicio o en el `render.yaml` si ese archivo no está conectado como Blueprint).
+2. **Action = Rewrite**, no Redirect (Redirect cambiaría la URL y no deja a React Router leer `/login/...`).
+3. **Publish directory** del sitio debe ser la carpeta donde está `index.html` en la raíz del artefacto (p. ej. `frontend/dist` tras `npm run build` en la raíz del repo).
+4. En DevTools → **Network**, la petición `GET /login/demo` debe pasar a **200** y el documento debe ser el HTML del SPA (mismo cuerpo que `GET /`).
 
 Documentación oficial: [Static Site Redirects and Rewrites](https://render.com/docs/redirects-rewrites).
 
